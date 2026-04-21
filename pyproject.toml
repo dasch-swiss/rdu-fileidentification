@@ -14,7 +14,7 @@ dependencies = [
 [project.optional-dependencies]
 update_fmt = [
     "bs4>=0.0.2",
-    "lxml>=6.0.2",
+    "lxml>=6.1.0",
     "requests>=2.32.5",
 ]
 
