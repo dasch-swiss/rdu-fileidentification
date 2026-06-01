@@ -126,33 +126,33 @@
         "fmt/91": {
             "format_name": "Scalable Vector Graphics",
             "bin": "magick",
-            "accepted": false,
-            "target_container": "tif",
-            "processing_args": "-density 300",
+            "accepted": true,
+            "target_container": "",
+            "processing_args": "",
             "expected": [
-                "fmt/353"
+                ""
             ],
             "remove_original": false
         },
         "fmt/92": {
             "format_name": "Scalable Vector Graphics",
             "bin": "magick",
-            "accepted": false,
-            "target_container": "tif",
-            "processing_args": "-density 300",
+            "accepted": true,
+            "target_container": "",
+            "processing_args": "",
             "expected": [
-                "fmt/353"
+                ""
             ],
             "remove_original": false
         },
         "fmt/413": {
             "format_name": "Scalable Vector Graphics Tiny",
             "bin": "magick",
-            "accepted": false,
-            "target_container": "tif",
-            "processing_args": "-density 300",
+            "accepted": true,
+            "target_container": "",
+            "processing_args": "",
             "expected": [
-                "fmt/353"
+                ""
             ],
             "remove_original": false
         },
