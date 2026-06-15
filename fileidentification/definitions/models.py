@@ -1,10 +1,11 @@
 import hashlib
 import re
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Self
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 
 from fileidentification.definitions.settings import Bin, FDMsg, PLMsg, PVErr
 
@@ -111,12 +112,19 @@ class LogTables(BaseModel):
 
     diagnostics: dict[str, list[SfInfo]] = Field(default_factory=dict)
     processing_errors: list[tuple[LogMsg, SfInfo]] = Field(default_factory=list)
+    _lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
 
     def diagnostics_add(self, sfinfo: SfInfo, fdgm: FDMsg) -> None:
-        """Append sfinfo to the diagnostics bucket identified by the FDMsg name."""
-        if fdgm.name not in self.diagnostics:
-            self.diagnostics[fdgm.name] = []
-        self.diagnostics[fdgm.name].append(sfinfo)
+        """Thread-safely append sfinfo to the diagnostics bucket identified by the FDMsg name."""
+        with self._lock:
+            if fdgm.name not in self.diagnostics:
+                self.diagnostics[fdgm.name] = []
+            self.diagnostics[fdgm.name].append(sfinfo)
+
+    def processing_error_add(self, msg: LogMsg, sfinfo: SfInfo) -> None:
+        """Thread-safely append a processing error."""
+        with self._lock:
+            self.processing_errors.append((msg, sfinfo))
 
     def dump_errors(self) -> list[SfInfo] | None:
         """Flush processing_errors into their SfInfo.processing_logs and return the affected SfInfo objects."""
