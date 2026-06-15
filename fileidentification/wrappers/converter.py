@@ -9,14 +9,14 @@ from fileidentification.definitions.settings import PDFSETTINGS, Bin, LOPath
 SOFFICE = LOPath.Linux if platform.system() == LOPath.Linux.name else LOPath.Darwin
 
 
-def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, Path]:
+def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, str]:
     """
-    Convert a file to the desired format passed by the args
+    Convert a file to the desired format passed by the args.
 
     :params sfinfo the metadata object of the file
     :params args the arguments how to convert ('bin', 'processing_args', 'target_container')
 
-    :returns the constructed target path, the cmd run and the log path
+    :returns the constructed target path, a human-readable command string, and the captured log output
     """
 
     wdir = Path(sfinfo.tdir / f"{sfinfo.filename.name}_{sfinfo.md5[:6]}")
@@ -24,33 +24,26 @@ def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, Path]:
         wdir.mkdir(parents=True)
 
     target = Path(wdir / f"{sfinfo.filename.stem}.{args.target_container}")
-    logfile_path = Path(wdir / f"{sfinfo.filename.stem}.log")
 
-    # set input, outputfile and log for shell
-    inputfile = shlex.quote(str(sfinfo.path))
-    outfile = shlex.quote(str(target))
-    logfile = shlex.quote(str(logfile_path))
+    cmd_list: list[str] = []
+    logtext: str = ""
 
-    cmd: str = ""
     match args.bin:
-        # construct command if its ffmpeg
         case Bin.FFMPEG:
-            cmd = f"ffmpeg -y -i {inputfile} {args.processing_args} {outfile} 2> {logfile}"
-        # construct command if its imagemagick
+            cmd_list = ["ffmpeg", "-y", "-i", str(sfinfo.path), *shlex.split(args.processing_args), str(target)]
+            res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
+            logtext = res.stderr
         case Bin.MAGICK:
-            cmd = f"magick {args.processing_args} {inputfile} {outfile} 2> {logfile}"
-        # construct command if its inkscape
+            cmd_list = ["magick", *shlex.split(args.processing_args), str(sfinfo.path), str(target)]
+            res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
+            logtext = res.stderr
         # case Bin.INCSCAPE:
-        # cmd = f'inkscape --export-filename={outfile} {args["processing_args"]} {inputfile} 2> {logfile}'
-        # construct command if its LibreOffice
+        #     cmd_list = ["inkscape", f"--export-filename={str(target)}", *shlex.split(args.processing_args), str(sfinfo.path)]
         case Bin.SOFFICE:
-            cmd = f"{SOFFICE} {args.processing_args} {args.target_container} {inputfile} "
-            # add the version if its pdf
-            if args.target_container == "pdf":
-                cmd = f"{SOFFICE} {args.processing_args} 'pdf{PDFSETTINGS}' {inputfile} "
-            cmd = cmd + f"--outdir {shlex.quote(str(wdir))} >> {logfile} 2>&1"
+            soffice_filter = f"pdf{PDFSETTINGS}" if args.target_container == "pdf" else args.target_container
+            cmd_list = [str(SOFFICE), *shlex.split(args.processing_args), soffice_filter, str(sfinfo.path), "--outdir", str(wdir)]
+            res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
+            logtext = res.stdout + res.stderr
 
-    # run cmd in shell (and as a string, so [error]output is redirected to logfile)
-    subprocess.run(cmd, check=False, shell=True)
-
-    return target, cmd, logfile_path
+    cmd_str = " ".join(shlex.quote(p) for p in cmd_list)
+    return target, cmd_str, logtext

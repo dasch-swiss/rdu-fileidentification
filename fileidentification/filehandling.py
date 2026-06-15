@@ -4,6 +4,7 @@ import os
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -24,7 +25,7 @@ from fileidentification.definitions.models import (
     SfInfo,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, FMT2EXT, MAX_WORKERS
+from fileidentification.definitions.settings import Bin, CSVFIELDS, DEFAULTPOLICIES, FMT2EXT, MAX_WORKERS
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
@@ -50,6 +51,7 @@ class FileHandler:
         self.stack: list[SfInfo] = []
         self.fp: FilePaths = FilePaths()
         self._stack_lock = threading.Lock()
+        self._soffice_lock = threading.Semaphore(1)
 
     def _load_sfinfos(self, root_folder: Path) -> None:
         """
@@ -265,7 +267,10 @@ class FileHandler:
             return
 
         def _convert_one(sfinfo: SfInfo) -> None:
-            conv_sfinfo, cmd = convert_file(sfinfo, self.policies)
+            is_soffice = self.policies[sfinfo.processed_as].bin == Bin.SOFFICE  # type: ignore[index]
+            ctx = self._soffice_lock if is_soffice else nullcontext()
+            with ctx:
+                conv_sfinfo, cmd = convert_file(sfinfo, self.policies)
             if conv_sfinfo:
                 msg = f"converted -> {sfinfo.tdir.stem}/{conv_sfinfo.filename.parent.name}/{conv_sfinfo.filename.name}"
                 sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
