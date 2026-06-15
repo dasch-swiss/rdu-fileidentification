@@ -35,7 +35,7 @@ def ffmpeg_media_info(file: Path) -> dict[str, Any] | None:
         str(file),
         "-hide_banner",
         "-show_entries",
-        "stream=index,codec_name,codec_long_name,profile,"
+        "stream=index,codec_type,codec_name,codec_long_name,profile,"
         "codec_tag,pix_fmt,color_space,coded_width,coded_height,r_frame_rate,bit_rate,channels,channel_layout,"
         "sample_aspect_ratio,display_aspect_ratio",
         "-output_format",
