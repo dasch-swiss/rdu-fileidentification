@@ -25,6 +25,7 @@ def imagemagick_collect_warnings(file: Path, verbose: bool) -> tuple[bool, str, 
 
 
 def imagemagick_media_info(file: Path) -> str:
+    """Return image technical metadata string (format, dimensions, bit depth, channels) using magick identify -ping."""
     cmd = ["identify", "-ping", "-format", "%m %wx%h %g %z-bit %[channels]", str(file)]
     res = subprocess.run(cmd, check=False, capture_output=True, text=True)
-    return res.stdout.replace(f"{file}/", "")
+    return res.stdout.replace(f"{file.parent}/", "")

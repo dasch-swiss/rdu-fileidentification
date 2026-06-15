@@ -200,6 +200,10 @@ class FileHandler:
                     secho(f"You find the file with the log in {t_sfinfo.filename.parent}")
 
     def inspect(self) -> None:
+        """
+        Probe all active files and write a dated report JSON without modifying any files.
+        Deletes the policies file so the report is not conflated with a processing run.
+        """
         self.fp.LOGJSON = self.fp.TMP_DIR / f"{datetime.now(UTC).strftime('%y%m%d')}_report.json"
         self.fp.POLJSON.unlink(missing_ok=True)
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
@@ -211,6 +215,7 @@ class FileHandler:
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
 
     def assert_integrity(self) -> None:
+        """Probe all active files: remove corrupt ones and rename files with extension mismatches."""
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Probing the files ...", total=None)
             for sfinfo in self.stack:
@@ -219,13 +224,19 @@ class FileHandler:
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
 
-    def _silenty_reencode(self, root_folder: Path, to_csv: bool) -> None:
+    def _silently_reencode(self, root_folder: Path, to_csv: bool) -> None:
+        """
+        Silently convert and clean up files that were flagged for re-encoding during integrity check
+        (e.g. non-intra slices in IDR NAL units) without producing console output.
+        Called when -i is used without -a.
+        """
         self.mode.QUIET = True
         self.mode.REMOVEORIGINAL = True
         self.convert()
         self.remove_tmp(root_folder, to_csv)
 
     def apply_policies(self) -> None:
+        """Evaluate the policy for every active file and mark those that need conversion as pending."""
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Applying policies ...")
             for sfinfo in self.stack:
@@ -256,6 +267,7 @@ class FileHandler:
                     self.log_tables.processing_errors.append((lmsg, sfinfo))
 
     def remove_tmp(self, root_folder: Path, to_csv: bool = False) -> None:
+        """Move converted files from the tmp dir to their destinations, clean up empty tmp folders, and write logs."""
         # move converted files from the working dir to its destination
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Moving files ...", total=None)
@@ -324,7 +336,7 @@ class FileHandler:
             self.assert_integrity()
             if not apply:
                 # this triggers -qarx (to catch fixes with reencoding)
-                self._silenty_reencode(root_folder, to_csv)
+                self._silently_reencode(root_folder, to_csv)
         # policies testing
         if test_puid:
             self._test_policies(puid=test_puid)
