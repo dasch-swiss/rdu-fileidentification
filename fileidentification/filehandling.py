@@ -25,7 +25,7 @@ from fileidentification.definitions.models import (
     SfInfo,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import Bin, CSVFIELDS, DEFAULTPOLICIES, FMT2EXT, MAX_WORKERS
+from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, FMT2EXT, MAX_WORKERS, Bin
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
@@ -235,7 +235,7 @@ class FileHandler:
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
 
-    def _silently_reencode(self, root_folder: Path, to_csv: bool) -> None:
+    def _silently_reencode(self, root_folder: Path) -> None:
         """
         Silently convert and clean up files that were flagged for re-encoding during integrity check
         (e.g. non-intra slices in IDR NAL units) without producing console output.
@@ -244,7 +244,7 @@ class FileHandler:
         self.mode.QUIET = True
         self.mode.REMOVEORIGINAL = True
         self.convert()
-        self.remove_tmp(root_folder, to_csv)
+        self.remove_tmp(root_folder)
 
     def apply_policies(self) -> None:
         """Evaluate the policy for every active file and mark those that need conversion as pending."""
@@ -287,23 +287,23 @@ class FileHandler:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 list(executor.map(_convert_one, pending))
 
-    def remove_tmp(self, root_folder: Path, to_csv: bool = False) -> None:
-        """Move converted files from the tmp dir to their destinations, clean up empty tmp folders, and write logs."""
+    def remove_tmp(self, root_folder: Path) -> None:
+        """Move converted files from the tmp dir to their destinations and clean up empty tmp folders."""
         # move converted files from the working dir to its destination
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Moving files ...", total=None)
-            write_logs = move_tmp(self.stack, self.policies, self.log_tables, self.mode.REMOVEORIGINAL)
+            files_moved = move_tmp(self.stack, self.policies, self.log_tables, self.mode.REMOVEORIGINAL)
 
         # remove empty folders in working dir
         if self.fp.TMP_DIR.is_dir():
             for path, _, _ in os.walk(self.fp.TMP_DIR, topdown=False):
                 if len(os.listdir(path)) == 0:  # noqa: PTH208
                     Path(path).rmdir()
-        if write_logs:
+        if files_moved:
             print_msg(f"\nMoved the files from {self.fp.TMP_DIR.stem} to {root_folder.stem} ...", self.mode.QUIET)
-            self.write_logs(to_csv=to_csv)
 
     def write_logs(self, to_csv: bool = False) -> None:
+        """Write the run state to _log.json and optionally export a CSV alongside it."""
         logoutput = LogOutput(files=self.stack, errors=self.log_tables.dump_errors(), duplicates=self.ba.duplicates)
         self.fp.LOGJSON.write_text(logoutput.model_dump_json(indent=4, exclude_none=True))
 
@@ -314,8 +314,6 @@ class FileHandler:
                 w = csv.DictWriter(f, CSVFIELDS)
                 w.writeheader()
                 [w.writerow(sfinfo2csv(el)) for el in self.stack]
-
-        sys.exit(0)
 
     # default run, has a typer interface for the params in identify.py
     def run(
@@ -357,7 +355,7 @@ class FileHandler:
             self.assert_integrity()
             if not apply:
                 # this triggers -qarx (to catch fixes with reencoding)
-                self._silently_reencode(root_folder, to_csv)
+                self._silently_reencode(root_folder)
         # policies testing
         if test_puid:
             self._test_policies(puid=test_puid)
@@ -371,6 +369,5 @@ class FileHandler:
             self.convert()
         # remove tmp files
         if remove_tmp:
-            self.remove_tmp(root_folder, to_csv)
-        # write logs (if not called within remove_tmp)
+            self.remove_tmp(root_folder)
         self.write_logs(to_csv=to_csv)
