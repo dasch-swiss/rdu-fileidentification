@@ -1,20 +1,24 @@
 import hashlib
 import re
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Self
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 
 from fileidentification.definitions.settings import Bin, FDMsg, PLMsg, PVErr
 
 
 class LogMsg(BaseModel):
+    """A single timestamped log entry attached to an SfInfo (media_info, warnings, processing_logs)."""
+
     name: str
     msg: str
     timestamp: datetime | None = None
 
     def model_post_init(self, context: Any, /) -> None:
+        """Set timestamp to the current UTC time if not provided."""
         if not self.timestamp:
             self.timestamp = datetime.now(UTC)
 
@@ -61,6 +65,11 @@ class SfInfo(BaseModel):
             self.md5 = get_md5(self.filename)
 
     def _fetch_puid(self) -> str | None:
+        """
+        Extract the PUID from the first siegfried match.
+        If the match is UNKNOWN, fall back to any PUID suggested by siegfried based on the file extension.
+        Returns None if no PUID can be determined.
+        """
         if self.matches:
             if self.matches[0]["id"] == "UNKNOWN":
                 # check whether pygfried suggest puid according to extension
@@ -75,6 +84,11 @@ class SfInfo(BaseModel):
         return None
 
     def set_processing_paths(self, root_folder: Path, tdir: Path, initial: bool) -> None:
+        """
+        Set root_folder and tdir, and derive the absolute path for this file.
+        On the initial run (scanned by pygfried), filename is made relative to root_folder.
+        When loaded from an existing log (initial=False), filename is already relative.
+        """
         if root_folder.is_file():
             root_folder = root_folder.parent
         self.root_folder = root_folder
@@ -86,6 +100,8 @@ class SfInfo(BaseModel):
 
 
 class LogOutput(BaseModel):
+    """Top-level structure written to _log.json: all files, processing errors, and duplicates."""
+
     duplicates: dict[str, list[Path]] | None
     files: list[SfInfo] | None = None
     errors: list[SfInfo] | None = None
@@ -96,18 +112,29 @@ class LogTables(BaseModel):
 
     diagnostics: dict[str, list[SfInfo]] = Field(default_factory=dict)
     processing_errors: list[tuple[LogMsg, SfInfo]] = Field(default_factory=list)
+    _lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
 
     def diagnostics_add(self, sfinfo: SfInfo, fdgm: FDMsg) -> None:
-        if fdgm.name not in self.diagnostics:
-            self.diagnostics[fdgm.name] = []
-        self.diagnostics[fdgm.name].append(sfinfo)
+        """Thread-safely append sfinfo to the diagnostics bucket identified by the FDMsg name."""
+        with self._lock:
+            if fdgm.name not in self.diagnostics:
+                self.diagnostics[fdgm.name] = []
+            self.diagnostics[fdgm.name].append(sfinfo)
+
+    def processing_error_add(self, msg: LogMsg, sfinfo: SfInfo) -> None:
+        """Thread-safely append a processing error."""
+        with self._lock:
+            self.processing_errors.append((msg, sfinfo))
 
     def dump_errors(self) -> list[SfInfo] | None:
-        if self.processing_errors:
-            for el in self.processing_errors:
-                el[1].processing_logs.append(el[0])
-            return [el[1] for el in self.processing_errors]
-        return None
+        """Flush processing_errors into their SfInfo.processing_logs and return the affected SfInfo objects."""
+        if not self.processing_errors:
+            return None
+        for el in self.processing_errors:
+            el[1].processing_logs.append(el[0])
+        result = [el[1] for el in self.processing_errors]
+        self.processing_errors.clear()
+        return result
 
 
 class BasicAnalytics(BaseModel):
@@ -117,6 +144,7 @@ class BasicAnalytics(BaseModel):
     blank: list[str] | None = None
 
     def append(self, sfinfo: SfInfo) -> None:
+        """Index sfinfo by PUID and MD5, and record it in siegfried_errors if siegfried reported a read error."""
         if sfinfo.processed_as:
             if sfinfo.md5 not in self.filehashes:
                 self.filehashes[sfinfo.md5] = []
@@ -128,10 +156,12 @@ class BasicAnalytics(BaseModel):
             self.siegfried_errors.append(sfinfo)
 
     def smallest_file(self, puid: str) -> SfInfo:
+        """Return the SfInfo with the smallest filesize for the given PUID (used as a conversion test sample)."""
         return sorted(self.puid_unique[puid], key=lambda x: x.filesize, reverse=False)[0]
 
     @property
     def duplicates(self) -> dict[str, list[Path]]:
+        """Return only the MD5 entries that have more than one file (i.e. actual duplicates)."""
         return {k: v for k, v in self.filehashes.items() if len(v) != 1}
 
 
@@ -148,6 +178,7 @@ class PolicyParams(BaseModel):
     @field_validator("bin", mode="after")
     @classmethod
     def allowed_bin(cls, value: str) -> str:
+        """Validate that bin is one of the supported executables (ffmpeg, magick, soffice, or empty)."""
         if value not in Bin:
             raise ValueError(f"{value} is not an allowed bin")  # noqa: EM102, TRY003
         return value
@@ -155,12 +186,14 @@ class PolicyParams(BaseModel):
     @field_validator("processing_args", mode="after")
     @classmethod
     def allowed_args(cls, value: str) -> str:
+        """Reject semicolons in processing_args to prevent shell command injection."""
         if ";" in value:
             raise ValueError(PVErr.SEMICOLON)
         return value
 
     @model_validator(mode="after")
     def assert_conv_args(self) -> Self:
+        """Require target_container, expected, and bin to be set whenever accepted=False."""
         if self.accepted is False:
             if self.target_container == "":
                 raise ValueError(PVErr.MISS_CON)
@@ -197,12 +230,15 @@ class Mode(BaseModel):
 
 
 class FilePaths(BaseModel, validate_assignment=True):
+    """Resolved filesystem paths used throughout a FileHandler run."""
+
     TMP_DIR: Path = Field(default_factory=Path)
     POLJSON: Path = Field(default_factory=Path)
     LOGJSON: Path = Field(default_factory=Path)
 
 
 def get_md5(path: str | Path) -> str:
+    """Compute and return the MD5 hex digest of the file at path."""
     md5 = hashlib.md5()  # noqa: S324
     with open(path, "rb") as s:  # noqa: PTH123
         for chunk in iter(lambda: s.read(4096), b""):
@@ -211,6 +247,7 @@ def get_md5(path: str | Path) -> str:
 
 
 def sfinfo2csv(sfinfo: SfInfo) -> dict[str, str | int]:
+    """Flatten an SfInfo into a dict of scalar values suitable for CSV output."""
     res: dict[str, str | int] = {
         "filename": f"{sfinfo.filename}",
         "filesize": sfinfo.filesize,

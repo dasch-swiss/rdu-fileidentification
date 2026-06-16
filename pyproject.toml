@@ -1,6 +1,6 @@
 [project]
 name = "fileidentification"
-version = "2.7.2"
+version = "2.7.3"
 description = ""
 authors = []
 readme = "README.md"
@@ -63,6 +63,7 @@ ignore = [
     "FBT001",   # Boolean-typed positional argument in function definition
     "FBT002",   # `flake8-boolean-trap` - Boolean default positional argument in function definition
     "FBT003",   # Boolean positional value in function call
+    "FURB171", # single item membership test
     "FIX",      # `flake8-fixme`
     "ISC001",   # handled by ruff format
     "PERF203",  # `try-except-in-loop` - obsolete in python >= 3.11

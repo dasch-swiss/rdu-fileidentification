@@ -11,18 +11,22 @@ from fileidentification.definitions.settings import LOGJSON, POLJSON, RMV_DIR, T
 def remove(sfinfo: SfInfo, log_tables: LogTables) -> None:
     """Move a file from its sfinfo path to tmp dir / _REMOVED / ..."""
     dest: Path = sfinfo.tdir / RMV_DIR / sfinfo.filename
-    if not dest.parent.exists():
-        dest.parent.mkdir(parents=True)
+    dest.parent.mkdir(parents=True, exist_ok=True)
     try:
         shutil.move(sfinfo.path, dest)
         sfinfo.status.removed = True
         #  sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="file removed"))
     except OSError as e:
         secho(f"{e}", fg=colors.RED)
-        log_tables.processing_errors.append((LogMsg(name="filehandler", msg=str(e)), sfinfo))
+        log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 
 def move_tmp(stack: list[SfInfo], policies: Policies, log_tables: LogTables, remove_original: bool) -> bool:
+    """
+    Move converted files from the tmp working directory next to their originals.
+    If remove_original is set (or the policy has remove_original=True), the source file is moved to _REMOVED.
+    Returns True if any files were moved (i.e. logs should be written).
+    """
     write_logs: bool = False
 
     for sfinfo in stack:
@@ -50,12 +54,17 @@ def move_tmp(stack: list[SfInfo], policies: Policies, log_tables: LogTables, rem
                 sfinfo.dest = None
             except OSError as e:
                 secho(f"{e}", fg=colors.RED)
-                log_tables.processing_errors.append((LogMsg(name="filehandler", msg=str(e)), sfinfo))
+                log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
     return write_logs
 
 
 def set_filepaths(fp: FilePaths, root_folder: Path, tmp_dir: Path | None = None) -> None:
+    """
+    Resolve and create the tmp directory and set LOGJSON / POLJSON paths on fp.
+    Defaults to <root_folder>/__fileidentification; if root_folder is a file, uses <parent>/<stem>.
+    An explicit tmp_dir overrides the default.
+    """
     # assert rootfolder
     if root_folder.__fspath__() == "." or not root_folder.exists():
         secho("root folder not found", fg=colors.RED)

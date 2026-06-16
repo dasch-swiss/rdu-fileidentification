@@ -143,8 +143,7 @@ NOTE: Currently only audio/video and image files are inspected.
 
 Apply the policies defined in `__fileidentification/_policies.json` (or in the policies passed with `-p`) and convert
 files into their target file format.
-The converted files are temporarily stored in `__fileidentification` with the log output
-of the program used as log.txt next to it.
+The converted files are temporarily stored in `__fileidentification`
 
 ### Clean Up Temporary Files
 

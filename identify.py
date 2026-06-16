@@ -98,25 +98,30 @@ def main(
     inspect: Annotated[bool, typer.Option("--inspect", help="inspect the files without any modification.")] = False,
 ) -> None:
     fh = FileHandler()
-    fh.run(
-        root_folder=root_folder,
-        assert_integrity=assert_integrity,
-        apply=apply,
-        convert=convert,
-        remove_tmp=remove_tmp,
-        tmp_dir=tmp_dir,
-        policies_path=policies_path,
-        blank=blank,
-        extend=extend,
-        test_puid=test_puid,
-        test_policies=test_policies,
-        remove_original=remove_original,
-        mode_strict=mode_strict,
-        mode_verbose=mode_verbose,
-        mode_quiet=mode_quiet,
-        to_csv=to_csv,
-        inspect=inspect,
-    )
+    try:
+        fh.run(
+            root_folder=root_folder,
+            assert_integrity=assert_integrity,
+            apply=apply,
+            convert=convert,
+            remove_tmp=remove_tmp,
+            tmp_dir=tmp_dir,
+            policies_path=policies_path,
+            blank=blank,
+            extend=extend,
+            test_puid=test_puid,
+            test_policies=test_policies,
+            remove_original=remove_original,
+            mode_strict=mode_strict,
+            mode_verbose=mode_verbose,
+            mode_quiet=mode_quiet,
+            to_csv=to_csv,
+            inspect=inspect,
+        )
+    except Exception:
+        if fh.stack and Path() != fh.fp.LOGJSON:
+            fh.write_logs()
+        raise
 
 
 if __name__ == "__main__":

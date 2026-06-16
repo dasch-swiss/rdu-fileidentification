@@ -12,6 +12,7 @@ from fileidentification.definitions.settings import FMT2EXT, FDMsg
 
 
 def print_siegfried_errors(ba: BasicAnalytics) -> None:
+    """Print files for which siegfried reported a read error during identification."""
     if ba.siegfried_errors:
         secho("got the following errors from siegfried", bold=True)
         for sfinfo in ba.siegfried_errors:
@@ -19,6 +20,11 @@ def print_siegfried_errors(ba: BasicAnalytics) -> None:
 
 
 def print_fmts(puids: list[str], ba: BasicAnalytics, policies: Policies, mode: Mode) -> None:
+    """
+    Print a summary table of all encountered file formats with their PUID, name, file count,
+    combined size, and policy status.
+    Rows are white (policy set), yellow (blank/missing), or red (missing in strict mode).
+    """
     if mode.QUIET:
         return
     table = Table(title="", box=box.SIMPLE)
@@ -51,6 +57,10 @@ def print_fmts(puids: list[str], ba: BasicAnalytics, policies: Policies, mode: M
 
 
 def print_diagnostic(log_tables: LogTables, mode: Mode) -> None:
+    """
+    Print corruption errors always, and (in verbose mode) warnings and extension mismatches.
+    Each entry shows file size, filename, and the associated log messages.
+    """
     # lists all corrupt files with the respective errors thrown
     if log_tables.diagnostics:
         if FDMsg.ERROR.name in log_tables.diagnostics:
@@ -72,6 +82,7 @@ def print_diagnostic(log_tables: LogTables, mode: Mode) -> None:
 
 
 def print_duplicates(duplicates: dict[str, list[Path]], mode: Mode) -> None:
+    """Print files that share the same MD5 checksum, grouped by hash."""
     if mode.QUIET:
         return
     if duplicates:
@@ -85,6 +96,7 @@ def print_duplicates(duplicates: dict[str, list[Path]], mode: Mode) -> None:
 
 
 def print_processing_errors(log_tables: LogTables) -> None:
+    """Print files that encountered an error during conversion or filesystem operations."""
     if log_tables.processing_errors:
         secho("\n----------- Processing errors -----------", bold=True)
         for err in log_tables.processing_errors:
@@ -93,16 +105,19 @@ def print_processing_errors(log_tables: LogTables) -> None:
 
 
 def _print_logs(logs: list[LogMsg]) -> None:
+    """Print a list of LogMsg entries as single-line timestamped entries."""
     for log in logs:
         secho(f"{log.timestamp}    {log.name}:    {log.msg.replace('\n', ' ')}")
 
 
 def print_msg(msg: str, quiet: bool) -> None:
+    """Print msg unless quiet mode is active."""
     if not quiet:
         secho(msg)
 
 
 def _format_bite_size(bytes_size: int) -> str:
+    """Convert a byte count to a human-readable MB / GB / TB string."""
     tmp = bytes_size / (1024**2)
     if math.ceil(tmp) > 1000:
         tmp = tmp / 1024

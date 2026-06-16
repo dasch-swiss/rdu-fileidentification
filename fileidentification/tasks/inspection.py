@@ -8,6 +8,11 @@ from fileidentification.wrappers.imagemagick import imagemagick_collect_warnings
 
 
 def assert_file_integrity(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verbose: bool) -> None:
+    """
+    Probe the file and act on the result: remove it if corrupt, rename it if the extension is wrong.
+    If the format has only one known extension, the rename is done automatically;
+    otherwise a manual rename warning is printed.
+    """
     res: FDMsg | None = inspect_file(sfinfo, policies, log_tables, verbose)
     if res == FDMsg.ERROR:
         remove(sfinfo, log_tables)
@@ -21,9 +26,14 @@ def assert_file_integrity(sfinfo: SfInfo, policies: Policies, log_tables: LogTab
 
 
 def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verbose: bool) -> FDMsg | None:
+    """
+    Probe the file without making any filesystem changes.
+    Returns ERROR if the file is corrupt, EXTMISMATCH if the extension is wrong, or None if the file is OK.
+    Populates sfinfo.media_info and sfinfo.warnings with the probe output.
+    """
     if not sfinfo.processed_as:
         msg = LogMsg(name="filehandler", msg=f"{FPMsg.PUIDFAIL} for {sfinfo.filename}")
-        log_tables.processing_errors.append((msg, sfinfo))
+        log_tables.processing_error_add(msg, sfinfo)
         return None
 
     # select bin out of mimetype if not specified in policies
@@ -54,6 +64,10 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verb
 
 
 def _rename(sfinfo: SfInfo, ext: str, log_tables: LogTables) -> None:
+    """
+    Rename the file on disk to the given extension and update sfinfo.path and sfinfo.filename.
+    If a file with the target name already exists, the MD5 prefix is appended to avoid collision.
+    """
     dest = sfinfo.path.with_suffix(ext)
     # if a file with same name and extension already there, append file hash to name
     if dest.is_file():
@@ -65,7 +79,7 @@ def _rename(sfinfo: SfInfo, ext: str, log_tables: LogTables) -> None:
         sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
     except OSError as e:
         secho(f"{e}", fg=colors.RED)
-        log_tables.processing_errors.append((LogMsg(name="filehandler", msg=str(e)), sfinfo))
+        log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 
 def _has_error(sfinfo: SfInfo, pbin: str, log_tables: LogTables, verbose: bool) -> bool:

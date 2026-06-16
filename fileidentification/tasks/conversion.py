@@ -63,12 +63,12 @@ def convert_file(sfinfo: SfInfo, policies: Policies) -> tuple[SfInfo | None, lis
 
     args: PolicyParams = policies[sfinfo.processed_as]  # type: ignore[index]
 
-    target_path, cmd, logfile_path = convert(sfinfo, args)
+    target_path, cmd, logtext = convert(sfinfo, args)
 
-    # replace abs path in logs, add name
+    # strip abs paths from log output
     processing_log = None
-    logtext = logfile_path.read_text().replace(f"{sfinfo.root_folder}/", "").replace(f"{sfinfo.tdir}/", "")
-    if logtext != "":
+    logtext = logtext.replace(f"{sfinfo.root_folder}/", "").replace(f"{sfinfo.tdir}/", "")
+    if logtext:
         processing_log = LogMsg(name=f"{args.bin}", msg=logtext)
 
     # create an SfInfo for target and verify output, add codec and processing logs

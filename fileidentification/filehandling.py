@@ -2,6 +2,9 @@ import csv
 import json
 import os
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -22,7 +25,7 @@ from fileidentification.definitions.models import (
     SfInfo,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, FMT2EXT
+from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, FMT2EXT, MAX_WORKERS, Bin
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
@@ -47,6 +50,8 @@ class FileHandler:
         self.ba = BasicAnalytics()
         self.stack: list[SfInfo] = []
         self.fp: FilePaths = FilePaths()
+        self._stack_lock = threading.Lock()
+        self._soffice_lock = threading.Semaphore(1)
 
     def _load_sfinfos(self, root_folder: Path) -> None:
         """
@@ -91,11 +96,13 @@ class FileHandler:
         """Load and validate an existing policies.json"""
         if not policies_path.is_file():
             secho(f"{policies_path} not found", fg=colors.RED)
+            self.write_logs()
             sys.exit(1)
         try:
             file: PoliciesFile = PoliciesFile(**json.loads(policies_path.read_text()))
         except ValueError as e:
             secho(e, fg=colors.RED)
+            self.write_logs()
             sys.exit(1)
 
         self.policies = file.policies
@@ -200,37 +207,63 @@ class FileHandler:
                     secho(f"You find the file with the log in {t_sfinfo.filename.parent}")
 
     def inspect(self) -> None:
+        """
+        Probe all active files and write a dated report JSON without modifying any files.
+        Deletes the policies file so the report is not conflated with a processing run.
+        """
         self.fp.LOGJSON = self.fp.TMP_DIR / f"{datetime.now(UTC).strftime('%y%m%d')}_report.json"
         self.fp.POLJSON.unlink(missing_ok=True)
+        active = [s for s in self.stack if not (s.status.removed or s.dest)]
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Probing the files ...", total=None)
-            for sfinfo in self.stack:
-                if not (sfinfo.status.removed or sfinfo.dest):
-                    inspect_file(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE)
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                list(
+                    executor.map(
+                        lambda sfinfo: inspect_file(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE),
+                        active,
+                    )
+                )
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
 
     def assert_integrity(self) -> None:
+        """Probe all active files: remove corrupt ones and rename files with extension mismatches."""
+        active = [s for s in self.stack if not (s.status.removed or s.dest)]
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Probing the files ...", total=None)
-            for sfinfo in self.stack:
-                if not (sfinfo.status.removed or sfinfo.dest):
-                    assert_file_integrity(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE)
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                list(
+                    executor.map(
+                        lambda sfinfo: assert_file_integrity(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE),
+                        active,
+                    )
+                )
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
 
-    def _silenty_reencode(self, root_folder: Path, to_csv: bool) -> None:
+    def _silently_reencode(self, root_folder: Path) -> None:
+        """
+        Silently convert and clean up files that were flagged for re-encoding during integrity check
+        (e.g. non-intra slices in IDR NAL units) without producing console output.
+        Called when -i is used without -a.
+        """
         self.mode.QUIET = True
         self.mode.REMOVEORIGINAL = True
         self.convert()
-        self.remove_tmp(root_folder, to_csv)
+        self.remove_tmp(root_folder)
 
     def apply_policies(self) -> None:
+        """Evaluate the policy for every active file and mark those that need conversion as pending."""
+        active = [s for s in self.stack if not (s.status.removed or s.dest)]
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Applying policies ...")
-            for sfinfo in self.stack:
-                if not (sfinfo.status.removed or sfinfo.dest):
-                    apply_policy(sfinfo, self.policies, self.log_tables, self.mode.STRICT)
+            prog.add_task(description="Applying policies ...", total=None)
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                list(
+                    executor.map(
+                        lambda sfinfo: apply_policy(sfinfo, self.policies, self.log_tables, self.mode.STRICT),
+                        active,
+                    )
+                )
 
     def convert(self) -> None:
         """Convert files whose metadata status pending is True"""
@@ -241,36 +274,44 @@ class FileHandler:
             print_msg("There was nothing to convert", self.mode.QUIET)
             return
 
+        def _convert_one(sfinfo: SfInfo) -> None:
+            is_soffice = self.policies[sfinfo.processed_as].bin == Bin.SOFFICE  # type: ignore[index]
+            ctx = self._soffice_lock if is_soffice else nullcontext()
+            with ctx:
+                conv_sfinfo, cmd = convert_file(sfinfo, self.policies)
+            if conv_sfinfo:
+                msg = f"converted -> {sfinfo.tdir.stem}/{conv_sfinfo.filename.parent.name}/{conv_sfinfo.filename.name}"
+                sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
+                conv_sfinfo.root_folder = sfinfo.root_folder
+                with self._stack_lock:
+                    self.stack.append(conv_sfinfo)
+            else:
+                lmsg = sfinfo.processing_logs.pop()
+                lmsg.msg += f". cmd={cmd} "
+                self.log_tables.processing_error_add(lmsg, sfinfo)
+
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Converting ...", total=None)
-            for sfinfo in pending:
-                conv_sfinfo, cmd = convert_file(sfinfo, self.policies)
-                if conv_sfinfo:
-                    msg = f"converted -> {sfinfo.tdir.stem}/{conv_sfinfo.filename.parent.name}/{conv_sfinfo.filename.name}"
-                    sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
-                    conv_sfinfo.root_folder = sfinfo.root_folder
-                    self.stack.append(conv_sfinfo)
-                else:
-                    lmsg = sfinfo.processing_logs.pop()
-                    lmsg.msg += f". cmd={cmd} "
-                    self.log_tables.processing_errors.append((lmsg, sfinfo))
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                list(executor.map(_convert_one, pending))
 
-    def remove_tmp(self, root_folder: Path, to_csv: bool = False) -> None:
+    def remove_tmp(self, root_folder: Path) -> None:
+        """Move converted files from the tmp dir to their destinations and clean up empty tmp folders."""
         # move converted files from the working dir to its destination
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Moving files ...", total=None)
-            write_logs = move_tmp(self.stack, self.policies, self.log_tables, self.mode.REMOVEORIGINAL)
+            files_moved = move_tmp(self.stack, self.policies, self.log_tables, self.mode.REMOVEORIGINAL)
 
         # remove empty folders in working dir
         if self.fp.TMP_DIR.is_dir():
             for path, _, _ in os.walk(self.fp.TMP_DIR, topdown=False):
                 if len(os.listdir(path)) == 0:  # noqa: PTH208
                     Path(path).rmdir()
-        if write_logs:
+        if files_moved:
             print_msg(f"\nMoved the files from {self.fp.TMP_DIR.stem} to {root_folder.stem} ...", self.mode.QUIET)
-            self.write_logs(to_csv=to_csv)
 
     def write_logs(self, to_csv: bool = False) -> None:
+        """Write the run state to _log.json and optionally export a CSV alongside it."""
         logoutput = LogOutput(files=self.stack, errors=self.log_tables.dump_errors(), duplicates=self.ba.duplicates)
         self.fp.LOGJSON.write_text(logoutput.model_dump_json(indent=4, exclude_none=True))
 
@@ -281,8 +322,6 @@ class FileHandler:
                 w = csv.DictWriter(f, CSVFIELDS)
                 w.writeheader()
                 [w.writerow(sfinfo2csv(el)) for el in self.stack]
-
-        sys.exit(0)
 
     # default run, has a typer interface for the params in identify.py
     def run(
@@ -324,7 +363,7 @@ class FileHandler:
             self.assert_integrity()
             if not apply:
                 # this triggers -qarx (to catch fixes with reencoding)
-                self._silenty_reencode(root_folder, to_csv)
+                self._silently_reencode(root_folder)
         # policies testing
         if test_puid:
             self._test_policies(puid=test_puid)
@@ -338,6 +377,5 @@ class FileHandler:
             self.convert()
         # remove tmp files
         if remove_tmp:
-            self.remove_tmp(root_folder, to_csv)
-        # write logs (if not called within remove_tmp)
+            self.remove_tmp(root_folder)
         self.write_logs(to_csv=to_csv)

@@ -7,6 +7,13 @@ from fileidentification.wrappers.ffmpeg import ffmpeg_media_info
 
 
 def apply_policy(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, strict: bool) -> None:
+    """
+    Decide what to do with the file based on its policy entry.
+    Sets sfinfo.status.pending=True if the file needs conversion.
+    In strict mode, files with no policy entry are moved to _REMOVED; otherwise they are skipped with a log entry.
+    Files marked accepted=True are also checked for invalid A/V streams (fmt/199, fmt/569) and flagged for
+    re-encoding if needed.
+    """
     puid = sfinfo.processed_as
     if not puid:
         return
@@ -44,8 +51,10 @@ def _has_invalid_streams(sfinfo: SfInfo, puid: str) -> bool:
         # only the video codec has to be ffv1 -> return false as soon as any stream is ffv1
         return all(stream["codec_name"] not in ["ffv1"] for stream in streams)  # type: ignore[index]
     if puid in ["fmt/199"]:
-        # video codec has to be h264, audio codec aac -> return true if any stream does not match
+        # video codec has to be h264, audio codec aac -> return true if any a/v stream does not match
         for stream in streams:
+            if stream["codec_type"] not in ["video", "audio"]:  # type: ignore[index]
+                continue
             if stream["codec_name"] not in ["h264", "aac"]:  # type: ignore[index]
                 return True
     return False

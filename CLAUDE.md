@@ -2,131 +2,109 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Overview
 
-This is a Python CLI tool for file format identification, file error testing, and bulk file conversion
-designed for digital preservation workflows.
-It wraps around several external programs (siegfried/pygfried, ffmpeg, imagemagick, LibreOffice)
-to provide comprehensive file processing capabilities.
+A Python CLI for file format identification and bulk conversion, designed for digital preservation workflows. It wraps [pygfried](https://pypi.org/project/pygfried/) (siegfried), ffmpeg, imagemagick, and LibreOffice to identify file formats via PRONOM UIDs (PUIDs) and convert files according to JSON policy files.
 
-## Development Commands
+## Commands
 
-### Package Management
+All commands use `uv`. Install dependencies with:
+```bash
+uv sync --no-group dev   # production
+uv sync                  # with dev tools (ruff, mypy)
+```
 
-- **Install dependencies**: `uv sync`
-- **Run the main script**: `uv run identify.py [path] [options]`
-- **Update signatures**: `uv sync --extra update_fmt && uv run update.py`
+**Run the CLI:**
+```bash
+uv run identify.py path/to/directory         # identify + generate policies
+uv run identify.py path/to/directory -iar    # identify, assert integrity, apply, remove tmp
+uv run identify.py --help
+```
 
-### Code Quality
+**Lint and type check:**
+```bash
+just check          # runs lint + typecheck
+just lint           # ruff check
+just format         # ruff format
+just typecheck      # mypy (strict mode)
+```
 
-- **Lint with ruff**: `uv run ruff check .`
-- **Format with ruff**: `uv run ruff format .`
-- **Type check with mypy**: `uv run mypy .`
+Or directly:
+```bash
+uv run ruff check .
+uv run ruff format .
+uv run mypy .
+```
 
-### Policy Testing
+**Update PUID definitions** (fetches from nationalarchives.gov.uk):
+```bash
+uv sync --extra update_fmt && uv run update.py
+```
 
-If the user edited auto-generated policies, the outcome of the policies can be tested using the `-t` flag:
-
-- **Test conversion policies**: `uv run identify.py path/to/directory -t`
-- **Test specific policy**: `uv run identify.py path/to/directory -tf fmt/XXX`
-
-### Docker
-
-- **Build manually**: `docker build -t fileidentification .`
-- **execute bash script**: `fidr.sh path/to/directory [options]`
+**Docker:**
+```bash
+just dockerise      # build image + link fidr.sh to PATH
+just dasch          # DaSCH-specific: use dasch_policies.json as default, then dockerise
+```
 
 ## Architecture
 
-### Core Components
-
-1. **CLI Entry Point** (`identify.py`)
-   - Main Typer-based CLI with extensive flag options
-   - Orchestrates the FileHandler workflow
-
-2. **FileHandler** (`fileidentification/filehandling.py`)
-   - Central orchestrator class that manages the entire workflow
-   - Generates policies
-   - Handles file identification, error testing, policy application, and conversion
-   - Manages temporary directories and file movements
-
-3. **Models** (`fileidentification/definitions/models.py`)
-   - **SfInfo**: Core file information model (from siegfried output)
-   - **PolicyParams**: File conversion policy specifications
-   - **LogMsg/LogOutput/LogTables**: Logging and error tracking models
-
-4. **Wrappers** (`fileidentification/wrappers`):
-   - ffmpeg (`fileidentification/wrappers/ffmpeg.py`): Audio/video file testing
-   - ImageMagick (`fileidentification/wrappers/imagemagick.py`): Image file testing
-   - converter (`fileidentification/wrappers/converter.py`): file conversion
-
 ### Data Flow
 
-1. **File Identification**: Uses pygfried (siegfried) to identify file formats by PRONOM PUID
-2. **Policy Generation**: Creates JSON policies mapping PUIDs to conversion specifications
-3. **Inspection**: Uses ffmpeg/imagemagick to test files on errors, warnings
-4. **Conversion**: Applies policies using appropriate tools (ffmpeg, imagemagick, LibreOffice)
-5. **Cleanup**: Manages temporary files and moves converted files to final locations
+1. `identify.py` — Typer CLI entrypoint; collects all flags and delegates to `FileHandler.run()`
+2. `FileHandler` (`fileidentification/filehandling.py`) — main orchestrator class; holds the processing state (`stack`, `policies`, `ba`, `log_tables`, `fp`, `mode`)
+3. Files are scanned with pygfried → each file becomes an `SfInfo` object in `self.stack`
+4. Policies (JSON keyed by PUID) are loaded or generated → `self.policies`
+5. Tasks (integrity check, apply policies, convert, move) operate on the stack in sequence
 
-### Key File Structures
+### Key Models (`fileidentification/definitions/models.py`)
 
-- **Policies JSON**: Maps PRONOM PUIDs to conversion specifications
-  with fields like `bin`, `accepted`, `target_container`, `processing_args`
-- **Log JSON**: Tracks all file operations and modifications
-- **Default Policies**: Located in `fileidentification/definitions/default_policies.json`
+- **`SfInfo`** — primary metadata object per file; wraps siegfried output and accumulates processing logs, status, warnings, and derived file info. The `processed_as` field holds the matched PUID.
+- **`PolicyParams`** — one policy entry: `bin` (ffmpeg/magick/soffice), `accepted`, `target_container`, `processing_args`, `expected` (list of PUIDs to verify output), `remove_original`
+- **`BasicAnalytics`** — groups `SfInfo` objects by PUID and tracks duplicates (by MD5)
+- **`LogTables`** — accumulates diagnostics and processing errors during a run. Thread-safe: `diagnostics_add` and `processing_error_add` both hold an internal `threading.Lock`.
+- **`Mode`** — flags: `REMOVEORIGINAL`, `VERBOSE`, `STRICT`, `QUIET`
+- **`FilePaths`** — resolved paths for `TMP_DIR`, `POLJSON` (`_policies.json`), `LOGJSON` (`_log.json`)
 
+### Task Modules (`fileidentification/tasks/`)
 
-### External Dependencies
+| Module | Responsibility |
+|---|---|
+| `inspection.py` | `inspect_file` / `assert_file_integrity` — probes files via ffmpeg/magick, detects corruption and extension mismatches |
+| `policies.py` | `apply_policy` — marks `SfInfo.status.pending = True` for files that need conversion |
+| `conversion.py` | `convert_file` — runs the converter, then re-identifies output with pygfried to verify |
+| `os_tasks.py` | `move_tmp`, `set_filepaths` — filesystem operations, moving converted files to destination |
+| `console_output.py` | Rich/typer formatted console output (tables, diagnostics) |
 
-The project requires these external programs for full functionality:
-- **siegfried** (via pygfried): File format identification
-- **ffmpeg**: Audio/video processing and testing
-- **imagemagick**: Image processing and testing
-- **LibreOffice**: Document conversion
-- **ghostscript**: PDF processing support
+### Wrappers (`fileidentification/wrappers/`)
 
-## Common Workflow Patterns
+- `converter.py` — builds and runs shell commands for ffmpeg/magick/soffice; each conversion writes to a working subdirectory `__fileidentification/<filename>_<md5[:6]>/`
+- `ffmpeg.py` / `imagemagick.py` — media info extraction helpers
 
-### Full Processing Pipeline
+### Definitions (`fileidentification/definitions/`)
 
-```bash
-uv run identify.py path/to/directory -iar
-```
+- `fmt2ext.json` — maps PUID → `{name, extensions[]}`, used for display and blank policy generation; regenerated by `update.py`
+- `default_policies.json` — default conversion rules applied when generating policies
+- `settings.py` — constants, enums (`Bin`, `FDMsg`, `FPMsg`, etc.), paths, and `MAX_WORKERS`
 
-- `-i`: inspect the files
-- `-a`: apply conversion policies
-- `-r`: remove temporary files and finalize
+### Concurrency
 
-### Policy Development
+`inspect`, `assert_integrity`, `apply_policies`, and `convert` in `FileHandler` all run file processing in parallel using `ThreadPoolExecutor`. The work is subprocess-bound (ffprobe, magick, ffmpeg, soffice), so threading is effective. `MAX_WORKERS` in `settings.py` controls the pool size (default: 4).
 
-1. Generate policies: `uv run identify.py path/to/directory`
-2. Edit the generated `*_policies.json` file
-3. Test policies: `uv run identify.py path/to/directory -t`
-4. Apply: `uv run identify.py path/to/directory -ar`
+Thread-safety notes:
+- Each `SfInfo` is owned by exactly one worker — no locking needed on the object itself.
+- `LogTables` uses an internal lock for `diagnostics_add` and `processing_error_add`; always use these methods rather than appending to `processing_errors` directly.
+- `FileHandler._stack_lock` protects `self.stack.append` in `convert` (converted `SfInfo` objects appended from workers).
+- `os_tasks.remove` uses `mkdir(exist_ok=True)` to avoid races when multiple files in the same subdirectory are removed concurrently.
 
-### Available Additional Options
+### Policies Directory (`policies/`)
 
-- `-v`: catch more warnings on video and image files during the tests.
+Contains alternative policy sets (e.g. `dasch_policies.json`). `just setdasch` copies one to `default_policies.json`.
 
-- `-x`: move the parents of the converted files to the TMP/_REMOVED folder. When used in generating policies, it sets remove_original in the policies to true (default false).
+### Temporary Files
 
-- `-p path/to/policies.json`: load a custom policies json file instead of the default policies
-
-- `-e`: append file types found in the directory to the given policies if they are missing in it.
-
-- `-s`: move the files that are not listed in the policies to the folder _REMOVED . When used in generating policies, it does not add blank policies for formats that are not mentioned in `DEFAULTPOLICIES` .
-
-- `-b`: create blank policies based on the files types encountered in the given directory.
-
-- `-q`: just print errors
-
-- `--csv`: get an additional output as csv aside from the log.json
-
-- `--convert`: re-convert the files that failed during file conversion
-
-## Important Notes
-
-- The codebase follows PRONOM PUID standards for file format identification
-- Policies are defined using PRONOM unique identifiers (PUIDs) as keys
-- The tool supports both direct execution and Docker containerization
-- All file operations are logged extensively in JSON format
-- Temporary files are managed in structured `_TMP` directories
+During processing, `__fileidentification/` is created inside the target directory (or a custom `--tmp-dir`):
+- `_policies.json` — generated/loaded policies
+- `_log.json` — cumulative log of all processing (appended across runs)
+- `_REMOVED/` — corrupt or removed files
+- `<filename>_<md5[:6]>/` — per-file conversion working directories with converted file and `<stem>.log`

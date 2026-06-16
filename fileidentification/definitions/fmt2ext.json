@@ -1886,7 +1886,7 @@
         ]
     },
     "x-fmt/302": {
-        "name": "Adobe FrameMaker Document",
+        "name": "Adobe Framemaker Document",
         "file_extensions": [
             "fm"
         ]
@@ -2589,14 +2589,16 @@
         "name": "Extensible Hypertext Markup Language",
         "file_extensions": [
             "htm",
-            "html"
+            "html",
+            "xhtml"
         ]
     },
     "fmt/103": {
         "name": "Extensible Hypertext Markup Language",
         "file_extensions": [
             "htm",
-            "html"
+            "html",
+            "xhtml"
         ]
     },
     "fmt/96": {
@@ -2855,7 +2857,7 @@
         "file_extensions": []
     },
     "fmt/61": {
-        "name": "Microsoft Excel 97 Workbook (xls)",
+        "name": "Microsoft Excel 97-2003 Workbook (xls)",
         "file_extensions": [
             "xls",
             "xlw"
@@ -2863,10 +2865,7 @@
     },
     "fmt/62": {
         "name": "Microsoft Excel 2000-2003 Workbook (xls)",
-        "file_extensions": [
-            "xls",
-            "xlw"
-        ]
+        "file_extensions": []
     },
     "x-fmt/392": {
         "name": "JP2 (JPEG 2000 part 1)",
@@ -4018,6 +4017,7 @@
             "f4a",
             "f4v",
             "m4a",
+            "m4b",
             "m4v",
             "mp4"
         ]
@@ -4457,11 +4457,15 @@
     },
     "fmt/280": {
         "name": "LaTeX (Master document)",
-        "file_extensions": []
+        "file_extensions": [
+            "tex"
+        ]
     },
     "fmt/281": {
         "name": "LaTeX (Subdocument)",
-        "file_extensions": []
+        "file_extensions": [
+            "tex"
+        ]
     },
     "fmt/282": {
         "name": "netCDF-3 Classic",
@@ -9283,7 +9287,7 @@
         "file_extensions": []
     },
     "fmt/1046": {
-        "name": "Draco 1",
+        "name": "Draco",
         "file_extensions": [
             "drc"
         ]
@@ -15769,7 +15773,229 @@
     "fmt/2068": {
         "name": "Macintosh File System",
         "file_extensions": [
+            "DSK",
+            "IMG",
             "mfs"
+        ]
+    },
+    "fmt/2069": {
+        "name": "Draco",
+        "file_extensions": [
+            "bin",
+            "drc"
+        ]
+    },
+    "fmt/2070": {
+        "name": "Autodesk ReCap RCS Indexed Point Cloud Data",
+        "file_extensions": [
+            "rcs"
+        ]
+    },
+    "fmt/2071": {
+        "name": "SuperCard Pro Image File",
+        "file_extensions": [
+            "scp"
+        ]
+    },
+    "fmt/2072": {
+        "name": "Weaving Information File (WIF)",
+        "file_extensions": [
+            "wif"
+        ]
+    },
+    "fmt/2073": {
+        "name": "Tilt Brush",
+        "file_extensions": [
+            "tilt"
+        ]
+    },
+    "fmt/2074": {
+        "name": "MRtrix File Format",
+        "file_extensions": [
+            "mif"
+        ]
+    },
+    "fmt/2075": {
+        "name": "ACE",
+        "file_extensions": [
+            "ace"
+        ]
+    },
+    "fmt/2076": {
+        "name": "ACE",
+        "file_extensions": [
+            "ace"
+        ]
+    },
+    "fmt/2077": {
+        "name": "Common Ground Digital Paper",
+        "file_extensions": [
+            "dp"
+        ]
+    },
+    "fmt/2078": {
+        "name": "Common Ground Digital Paper",
+        "file_extensions": [
+            "dp"
+        ]
+    },
+    "fmt/2079": {
+        "name": "Common Ground Digital Paper",
+        "file_extensions": [
+            "dp"
+        ]
+    },
+    "fmt/2080": {
+        "name": "xdomea",
+        "file_extensions": [
+            "xml"
+        ]
+    },
+    "fmt/2081": {
+        "name": "xdomea",
+        "file_extensions": [
+            "xml"
+        ]
+    },
+    "fmt/2082": {
+        "name": "3DM 6",
+        "file_extensions": [
+            "3dm"
+        ]
+    },
+    "fmt/2083": {
+        "name": "3DM 7",
+        "file_extensions": [
+            "3dm"
+        ]
+    },
+    "fmt/2084": {
+        "name": "3DM 8",
+        "file_extensions": [
+            "3dm"
+        ]
+    },
+    "fmt/2085": {
+        "name": "FieldWorks Language Explorer FWData XML",
+        "file_extensions": [
+            "fwdata"
+        ]
+    },
+    "fmt/2086": {
+        "name": "FieldWorks Language Explorer FWBackup",
+        "file_extensions": [
+            "fwbackup"
+        ]
+    },
+    "fmt/2087": {
+        "name": "Final Cut Pro Project File",
+        "file_extensions": [
+            "fcp"
+        ]
+    },
+    "fmt/2088": {
+        "name": "Final Cut Pro XML Interchange Format",
+        "file_extensions": [
+            "xml"
+        ]
+    },
+    "fmt/2089": {
+        "name": "FCPXML Interchange Format",
+        "file_extensions": [
+            "fcpxml"
+        ]
+    },
+    "fmt/2090": {
+        "name": "Kodak DCS RAW Image",
+        "file_extensions": [
+            "tif",
+            "tiff"
+        ]
+    },
+    "fmt/2091": {
+        "name": "Kodak DCS RAW Image",
+        "file_extensions": [
+            "tif",
+            "tiff"
+        ]
+    },
+    "fmt/2092": {
+        "name": "Canadian Avalanche Association MarkUp Language",
+        "file_extensions": [
+            "caaml"
+        ]
+    },
+    "fmt/2093": {
+        "name": "ROS Bag Format",
+        "file_extensions": [
+            "bag"
+        ]
+    },
+    "fmt/2094": {
+        "name": "M4A Audio",
+        "file_extensions": [
+            "m4a",
+            "m4b"
+        ]
+    },
+    "fmt/2095": {
+        "name": "Hasselblad FFF Raw Image",
+        "file_extensions": [
+            "fff"
+        ]
+    },
+    "fmt/2096": {
+        "name": "GGML Universal File (GGUF)",
+        "file_extensions": [
+            "gguf"
+        ]
+    },
+    "fmt/2097": {
+        "name": "GGML Universal File (GGUF)",
+        "file_extensions": [
+            "gguf"
+        ]
+    },
+    "fmt/2098": {
+        "name": "GGML Universal File (GGUF)",
+        "file_extensions": [
+            "gguf"
+        ]
+    },
+    "fmt/2099": {
+        "name": "iZotope RX Document",
+        "file_extensions": [
+            "rxdoc"
+        ]
+    },
+    "fmt/2100": {
+        "name": "Visualization Toolkit",
+        "file_extensions": [
+            "vtk"
+        ]
+    },
+    "fmt/2101": {
+        "name": "ChemStation Gas Chromatography/Mass Spectrum (GC/MS) Data File",
+        "file_extensions": [
+            "ms"
+        ]
+    },
+    "fmt/2102": {
+        "name": "BioSemi Data Format",
+        "file_extensions": [
+            "bdf"
+        ]
+    },
+    "fmt/2103": {
+        "name": "Discus Project",
+        "file_extensions": [
+            "cdl"
+        ]
+    },
+    "fmt/2104": {
+        "name": "Discus Project File",
+        "file_extensions": [
+            "cd4"
         ]
     }
 }
