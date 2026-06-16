@@ -119,7 +119,7 @@ def main(
             inspect=inspect,
         )
     except Exception:
-        if fh.stack and fh.fp.LOGJSON != Path():
+        if fh.stack and Path() != fh.fp.LOGJSON:
             fh.write_logs()
         raise
 

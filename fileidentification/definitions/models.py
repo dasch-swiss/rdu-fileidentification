@@ -128,11 +128,13 @@ class LogTables(BaseModel):
 
     def dump_errors(self) -> list[SfInfo] | None:
         """Flush processing_errors into their SfInfo.processing_logs and return the affected SfInfo objects."""
-        if self.processing_errors:
-            for el in self.processing_errors:
-                el[1].processing_logs.append(el[0])
-            return [el[1] for el in self.processing_errors]
-        return None
+        if not self.processing_errors:
+            return None
+        for el in self.processing_errors:
+            el[1].processing_logs.append(el[0])
+        result = [el[1] for el in self.processing_errors]
+        self.processing_errors.clear()
+        return result
 
 
 class BasicAnalytics(BaseModel):

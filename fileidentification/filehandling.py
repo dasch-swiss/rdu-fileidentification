@@ -96,11 +96,13 @@ class FileHandler:
         """Load and validate an existing policies.json"""
         if not policies_path.is_file():
             secho(f"{policies_path} not found", fg=colors.RED)
+            self.write_logs()
             sys.exit(1)
         try:
             file: PoliciesFile = PoliciesFile(**json.loads(policies_path.read_text()))
         except ValueError as e:
             secho(e, fg=colors.RED)
+            self.write_logs()
             sys.exit(1)
 
         self.policies = file.policies
@@ -250,7 +252,7 @@ class FileHandler:
         """Evaluate the policy for every active file and mark those that need conversion as pending."""
         active = [s for s in self.stack if not (s.status.removed or s.dest)]
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Applying policies ...")
+            prog.add_task(description="Applying policies ...", total=None)
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 list(executor.map(
                     lambda sfinfo: apply_policy(sfinfo, self.policies, self.log_tables, self.mode.STRICT),
