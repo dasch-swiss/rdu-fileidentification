@@ -41,7 +41,14 @@ def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, str]:
         #     cmd_list = ["inkscape", f"--export-filename={str(target)}", *shlex.split(args.processing_args), str(sfinfo.path)]
         case Bin.SOFFICE:
             soffice_filter = f"pdf{PDFSETTINGS}" if args.target_container == "pdf" else args.target_container
-            cmd_list = [str(SOFFICE), *shlex.split(args.processing_args), soffice_filter, str(sfinfo.path), "--outdir", str(wdir)]
+            cmd_list = [
+                str(SOFFICE),
+                *shlex.split(args.processing_args),
+                soffice_filter,
+                str(sfinfo.path),
+                "--outdir",
+                str(wdir),
+            ]
             res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
             logtext = res.stdout + res.stderr
 

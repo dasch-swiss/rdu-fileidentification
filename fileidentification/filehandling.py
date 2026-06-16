@@ -217,10 +217,12 @@ class FileHandler:
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Probing the files ...", total=None)
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(executor.map(
-                    lambda sfinfo: inspect_file(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE),
-                    active,
-                ))
+                list(
+                    executor.map(
+                        lambda sfinfo: inspect_file(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE),
+                        active,
+                    )
+                )
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
 
@@ -230,10 +232,12 @@ class FileHandler:
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Probing the files ...", total=None)
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(executor.map(
-                    lambda sfinfo: assert_file_integrity(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE),
-                    active,
-                ))
+                list(
+                    executor.map(
+                        lambda sfinfo: assert_file_integrity(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE),
+                        active,
+                    )
+                )
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
 
@@ -254,10 +258,12 @@ class FileHandler:
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Applying policies ...", total=None)
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(executor.map(
-                    lambda sfinfo: apply_policy(sfinfo, self.policies, self.log_tables, self.mode.STRICT),
-                    active,
-                ))
+                list(
+                    executor.map(
+                        lambda sfinfo: apply_policy(sfinfo, self.policies, self.log_tables, self.mode.STRICT),
+                        active,
+                    )
+                )
 
     def convert(self) -> None:
         """Convert files whose metadata status pending is True"""
