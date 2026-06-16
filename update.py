@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-import requests  # type: ignore[import-untyped]
+import requests
 import typer
 from bs4 import BeautifulSoup
 from lxml import etree, objectify  # type: ignore[import-untyped]
