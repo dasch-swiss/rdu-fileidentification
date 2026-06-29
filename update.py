@@ -4,7 +4,7 @@ from pathlib import Path
 import requests
 import typer
 from bs4 import BeautifulSoup
-from lxml import etree, objectify  # type: ignore[import-untyped]
+from lxml import etree  # type: ignore[import-untyped]
 from typer import colors, secho
 
 from fileidentification.definitions.settings import FMTJSN, DroidSigURL
@@ -21,31 +21,28 @@ def write_fmt2ext(link: str) -> None:
         raise typer.Exit(1)
     xml_filename.write_text(res.content.decode("utf-8"))
 
-    # open XML file and strip namespaces, delete the xml
     tree = etree.parse(xml_filename)
     xml_filename.unlink()
     root = tree.getroot()
-    for elem in root.getiterator():
-        if not hasattr(elem.tag, "find"):
-            continue
-        i = elem.tag.find("}")
-        if i >= 0:
-            elem.tag = elem.tag[i + 1 :]
-    objectify.deannotate(root, cleanup_namespaces=True)
 
     # parse XML and write json
     puids: dict[str, dict[str, str | list[str]]] = {}
+    ns = "{http://www.nationalarchives.gov.uk/pronom/SignatureFile}"
 
-    for target in root.findall(".//FileFormat"):
+    for target in root.findall(f".//{ns}FileFormat"):
         format_info: dict[str, str | list[str]] = {}
         file_extensions: list[str] = []
 
         puid = target.attrib["PUID"]
 
-        if target.attrib["Name"]:
+        if "Name" in target.attrib:
             format_info["name"] = target.attrib["Name"]
+        if "MIMEType" in target.attrib:
+            format_info["mime"] = target.attrib["MIMEType"]
+            if puid == "fmt/199":  # restrict mime to video in mp4 for fallback
+                format_info["mime"] = "video/mp4"
 
-        file_extensions.extend([extens.text for extens in target.findall(".//Extension")])
+        file_extensions.extend([extens.text for extens in target.findall(f".//{ns}Extension")])
 
         format_info["file_extensions"] = file_extensions
 
@@ -53,7 +50,7 @@ def write_fmt2ext(link: str) -> None:
 
     FMTJSN.write_text(json.dumps(puids, indent=4, ensure_ascii=False))
     secho(
-        f"extensions and names updated to {link[-8:-4]} in {FMTJSN}",
+        f"extensions, mimetypes and names updated to {link[-8:-4]} in {FMTJSN}",
         fg=colors.GREEN,
     )
 

@@ -1,6 +1,7 @@
 {
     "x-fmt/1": {
         "name": "Microsoft Word for Macintosh Document",
+        "mime": "application/msword",
         "file_extensions": [
             "mcw"
         ]
@@ -51,6 +52,7 @@
     },
     "x-fmt/10": {
         "name": "dBASE Database",
+        "mime": "application/dbase",
         "file_extensions": [
             "dbf"
         ]
@@ -67,6 +69,7 @@
     },
     "x-fmt/13": {
         "name": "Tab-separated Values",
+        "mime": "text/tab-separated-values",
         "file_extensions": [
             "tab",
             "tsv"
@@ -74,24 +77,29 @@
     },
     "x-fmt/14": {
         "name": "Macintosh Text File",
+        "mime": "text/plain",
         "file_extensions": []
     },
     "x-fmt/15": {
         "name": "MS-DOS Text File",
+        "mime": "text/plain",
         "file_extensions": []
     },
     "x-fmt/16": {
         "name": "Unicode Text File",
+        "mime": "text/plain",
         "file_extensions": []
     },
     "x-fmt/17": {
         "name": "Microsoft Excel Template",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xlt"
         ]
     },
     "x-fmt/18": {
         "name": "Comma Separated Values",
+        "mime": "text/csv",
         "file_extensions": [
             "csv"
         ]
@@ -104,18 +112,21 @@
     },
     "x-fmt/20": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai"
         ]
     },
     "x-fmt/21": {
         "name": "7-bit ANSI Text",
+        "mime": "text/plain",
         "file_extensions": [
             "ans"
         ]
     },
     "x-fmt/22": {
         "name": "7-bit ASCII Text",
+        "mime": "text/plain",
         "file_extensions": [
             "asc"
         ]
@@ -248,6 +259,7 @@
     },
     "x-fmt/44": {
         "name": "WordPerfect for MS-DOS/Windows Document",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": [
             "doc",
             "w60",
@@ -284,6 +296,7 @@
     },
     "x-fmt/49": {
         "name": "AutoCAD Design Web Format",
+        "mime": "application/dwf, application/x-dwf, drawing/x-dwf, image/vnd.dwf, image/x-dwf, model/vnd.dwf",
         "file_extensions": [
             "dwf"
         ]
@@ -308,6 +321,7 @@
     },
     "fmt/122": {
         "name": "Encapsulated PostScript File Format",
+        "mime": "application/postscript",
         "file_extensions": [
             "eps",
             "epsf"
@@ -334,6 +348,7 @@
     },
     "x-fmt/56": {
         "name": "Kodak FlashPix Image",
+        "mime": "image/vnd.fpx",
         "file_extensions": [
             "fpx"
         ]
@@ -382,12 +397,14 @@
     },
     "x-fmt/64": {
         "name": "Microsoft Word for Macintosh Document",
+        "mime": "application/msword",
         "file_extensions": [
             "mcw"
         ]
     },
     "x-fmt/65": {
         "name": "Microsoft Word for Macintosh Document",
+        "mime": "application/msword",
         "file_extensions": [
             "mcw"
         ]
@@ -480,6 +497,7 @@
     },
     "x-fmt/80": {
         "name": "Macintosh PICT Image",
+        "mime": "image/x-pict",
         "file_extensions": [
             "pct",
             "pict"
@@ -523,24 +541,28 @@
     },
     "x-fmt/87": {
         "name": "Microsoft Powerpoint Presentation Show",
+        "mime": "application/vnd.ms-powerpoint",
         "file_extensions": [
             "pps"
         ]
     },
     "x-fmt/88": {
         "name": "Microsoft PowerPoint Presentation",
+        "mime": "application/vnd.ms-powerpoint",
         "file_extensions": [
             "ppt"
         ]
     },
     "fmt/125": {
         "name": "Microsoft Powerpoint Presentation",
+        "mime": "application/vnd.ms-powerpoint",
         "file_extensions": [
             "ppt"
         ]
     },
     "fmt/126": {
         "name": "Microsoft Powerpoint Presentation",
+        "mime": "application/vnd.ms-powerpoint",
         "file_extensions": [
             "ppt"
         ]
@@ -559,12 +581,14 @@
     },
     "x-fmt/91": {
         "name": "Postscript",
+        "mime": "application/postscript",
         "file_extensions": [
             "ps"
         ]
     },
     "x-fmt/92": {
         "name": "Adobe Photoshop",
+        "mime": "image/vnd.adobe.photoshop",
         "file_extensions": [
             "pdd",
             "psd"
@@ -645,6 +669,7 @@
     },
     "x-fmt/105": {
         "name": "AutoCAD Slide",
+        "mime": "application/sld, application/x-sld, image/x-sld",
         "file_extensions": [
             "sld"
         ]
@@ -669,16 +694,19 @@
     },
     "x-fmt/109": {
         "name": "Scalable Vector Graphics Compressed",
+        "mime": "image/svg+xml",
         "file_extensions": [
             "svgz"
         ]
     },
     "x-fmt/110": {
         "name": "Fixed Width Values Text File",
+        "mime": "text/plain",
         "file_extensions": []
     },
     "x-fmt/111": {
         "name": "Plain Text File",
+        "mime": "text/plain",
         "file_extensions": [
             "txt"
         ]
@@ -691,6 +719,7 @@
     },
     "x-fmt/113": {
         "name": "Microsoft Visio Drawing",
+        "mime": "application/vnd.visio",
         "file_extensions": [
             "vsd",
             "vss",
@@ -699,6 +728,7 @@
     },
     "x-fmt/114": {
         "name": "Lotus 1-2-3 Worksheet",
+        "mime": "application/vnd.lotus-1-2-3, application/x-123",
         "file_extensions": [
             "wk1",
             "wk2"
@@ -706,18 +736,21 @@
     },
     "x-fmt/115": {
         "name": "Lotus 1-2-3 Worksheet",
+        "mime": "application/lotus123, application/vnd.lotus-1-2-3",
         "file_extensions": [
             "wk3"
         ]
     },
     "x-fmt/116": {
         "name": "Lotus 1-2-3 Worksheet",
+        "mime": "application/lotus123, application/vnd.lotus-1-2-3",
         "file_extensions": [
             "wk4"
         ]
     },
     "x-fmt/117": {
         "name": "Lotus 1-2-3 Worksheet",
+        "mime": "application/vnd.lotus-1-2-3, application/x-123",
         "file_extensions": [
             "wks"
         ]
@@ -728,6 +761,7 @@
     },
     "x-fmt/119": {
         "name": "Windows Metafile Image",
+        "mime": "image/wmf",
         "file_extensions": [
             "wmf"
         ]
@@ -752,6 +786,7 @@
     },
     "x-fmt/123": {
         "name": "Microsoft Excel Macro",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xla",
             "xlm"
@@ -794,6 +829,7 @@
     },
     "x-fmt/130": {
         "name": "MS-DOS Text File with line breaks",
+        "mime": "text/plain",
         "file_extensions": []
     },
     "x-fmt/131": {
@@ -826,6 +862,7 @@
     },
     "x-fmt/136": {
         "name": "Audio Interchange File Format (compressed)",
+        "mime": "audio/x-aiff",
         "file_extensions": [
             "aifc"
         ]
@@ -844,12 +881,14 @@
     },
     "x-fmt/139": {
         "name": "NeXT/Sun sound",
+        "mime": "audio/basic",
         "file_extensions": [
             "au"
         ]
     },
     "x-fmt/140": {
         "name": "Silicon Graphics Image",
+        "mime": "image/x-sgi-bw",
         "file_extensions": [
             "bw",
             "rgb"
@@ -863,6 +902,7 @@
     },
     "x-fmt/142": {
         "name": "Computer Graphics Metafile ASCII",
+        "mime": "image/cgm",
         "file_extensions": [
             "cgm"
         ]
@@ -922,12 +962,14 @@
     },
     "x-fmt/152": {
         "name": "Digital Video",
+        "mime": "video/dv",
         "file_extensions": [
             "dv"
         ]
     },
     "x-fmt/153": {
         "name": "Microsoft Windows Enhanced Metafile",
+        "mime": "image/emf",
         "file_extensions": [
             "emf"
         ]
@@ -958,6 +1000,7 @@
     },
     "x-fmt/158": {
         "name": "Initial Graphics Exchange Specification (IGES)",
+        "mime": "model/iges",
         "file_extensions": [
             "iges",
             "igs"
@@ -971,6 +1014,7 @@
     },
     "x-fmt/160": {
         "name": "Java Servlet Page",
+        "mime": "text/html",
         "file_extensions": [
             "jsp"
         ]
@@ -983,6 +1027,7 @@
     },
     "x-fmt/162": {
         "name": "Adobe FrameMaker Interchange Format",
+        "mime": "application/vnd.mif",
         "file_extensions": [
             "mif"
         ]
@@ -995,6 +1040,7 @@
     },
     "x-fmt/164": {
         "name": "Portable Bitmap Image - ASCII",
+        "mime": "image/x-portable-bitmap",
         "file_extensions": [
             "pbm"
         ]
@@ -1029,6 +1075,7 @@
     },
     "x-fmt/169": {
         "name": "PHP Script Page",
+        "mime": "text/html",
         "file_extensions": [
             "php"
         ]
@@ -1053,6 +1100,7 @@
     },
     "x-fmt/173": {
         "name": "PageMaker PC Document",
+        "mime": "application/vnd.pagemaker",
         "file_extensions": [
             "pm5",
             "pt5"
@@ -1060,6 +1108,7 @@
     },
     "x-fmt/174": {
         "name": "PageMaker PC Document",
+        "mime": "application/vnd.pagemaker",
         "file_extensions": [
             "pm6",
             "pt6"
@@ -1085,6 +1134,7 @@
     },
     "x-fmt/178": {
         "name": "Portable Pixel Map - ASCII",
+        "mime": "image/x-portable-pixmap",
         "file_extensions": [
             "ppm"
         ]
@@ -1103,6 +1153,7 @@
     },
     "x-fmt/181": {
         "name": "PageMaker PC Document",
+        "mime": "application/vnd.pagemaker",
         "file_extensions": [
             "p65",
             "pmd",
@@ -1112,6 +1163,7 @@
     },
     "x-fmt/182": {
         "name": "QuarkXPress Data File",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qcd",
             "qpt",
@@ -1126,12 +1178,14 @@
     },
     "x-fmt/183": {
         "name": "RealAudio Metafile",
+        "mime": "audio/vnd.rn-realaudio, audio/x-pn-realaudio",
         "file_extensions": [
             "ram"
         ]
     },
     "x-fmt/184": {
         "name": "Sun Raster Image",
+        "mime": "image/x-sun-raster",
         "file_extensions": [
             "ras",
             "sun"
@@ -1167,6 +1221,7 @@
     },
     "x-fmt/190": {
         "name": "RealMedia",
+        "mime": "application/vnd.rn-realmedia",
         "file_extensions": [
             "rm",
             "rmvb"
@@ -1174,6 +1229,7 @@
     },
     "x-fmt/191": {
         "name": "AMI Professional Document",
+        "mime": "application/vnd.lotus-wordpro",
         "file_extensions": [
             "sam"
         ]
@@ -1196,6 +1252,7 @@
     },
     "x-fmt/195": {
         "name": "Standard Generalized Markup Language",
+        "mime": "text/sgml",
         "file_extensions": [
             "sgm",
             "sgml"
@@ -1244,6 +1301,7 @@
     },
     "x-fmt/203": {
         "name": "WordPerfect for Windows Document",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": [
             "w52",
             "wp",
@@ -1274,12 +1332,14 @@
     },
     "x-fmt/207": {
         "name": "X-Windows Bitmap Image",
+        "mime": "image/x-xbitmap",
         "file_extensions": [
             "xbm"
         ]
     },
     "x-fmt/208": {
         "name": "X-Windows Pixmap Image",
+        "mime": "image/x-xpixmap",
         "file_extensions": [
             "xpm"
         ]
@@ -1346,6 +1406,7 @@
     },
     "x-fmt/219": {
         "name": "Internet Archive",
+        "mime": "application/x-internet-archive",
         "file_extensions": [
             "arc"
         ]
@@ -1364,6 +1425,7 @@
     },
     "x-fmt/222": {
         "name": "CD Audio",
+        "mime": "application/x-cdf",
         "file_extensions": [
             "cda"
         ]
@@ -1376,6 +1438,7 @@
     },
     "x-fmt/224": {
         "name": "Cascading Style Sheet",
+        "mime": "text/css",
         "file_extensions": [
             "css"
         ]
@@ -1415,6 +1478,7 @@
     },
     "x-fmt/227": {
         "name": "Geography Markup Language",
+        "mime": "application/gml+xml",
         "file_extensions": [
             "gml"
         ]
@@ -1433,6 +1497,7 @@
     },
     "x-fmt/230": {
         "name": "MIDI Audio",
+        "mime": "audio/midi",
         "file_extensions": [
             "mid",
             "midi"
@@ -1446,6 +1511,7 @@
     },
     "x-fmt/232": {
         "name": "Microsoft Project Export File",
+        "mime": "application/x-project",
         "file_extensions": [
             "mpx"
         ]
@@ -1470,6 +1536,7 @@
     },
     "fmt/124": {
         "name": "Encapsulated PostScript File Format",
+        "mime": "application/postscript",
         "file_extensions": [
             "eps",
             "epsf",
@@ -1478,6 +1545,7 @@
     },
     "fmt/123": {
         "name": "Encapsulated PostScript File Format",
+        "mime": "application/postscript",
         "file_extensions": [
             "eps",
             "epsf"
@@ -1536,18 +1604,21 @@
     },
     "x-fmt/243": {
         "name": "Microsoft Project",
+        "mime": "application/vnd.ms-project",
         "file_extensions": [
             "mpp"
         ]
     },
     "x-fmt/244": {
         "name": "Microsoft Project",
+        "mime": "application/vnd.ms-project",
         "file_extensions": [
             "mpp"
         ]
     },
     "x-fmt/245": {
         "name": "Microsoft Project",
+        "mime": "application/vnd.ms-project",
         "file_extensions": [
             "mpp"
         ]
@@ -1558,12 +1629,14 @@
     },
     "x-fmt/247": {
         "name": "Microsoft Project",
+        "mime": "application/vnd.ms-project",
         "file_extensions": [
             "mpp"
         ]
     },
     "x-fmt/248": {
         "name": "Microsoft Outlook Personal Folders (ANSI)",
+        "mime": "application/vnd.ms-outlook",
         "file_extensions": [
             "pst"
         ]
@@ -1584,42 +1657,49 @@
     },
     "x-fmt/252": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "x-fmt/253": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "x-fmt/254": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "x-fmt/255": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "x-fmt/256": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "x-fmt/257": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "x-fmt/258": {
         "name": "Microsoft Visio Drawing",
+        "mime": "application/vnd.visio",
         "file_extensions": [
             "vsd",
             "vss",
@@ -1653,24 +1733,28 @@
     },
     "x-fmt/263": {
         "name": "ZIP Format",
+        "mime": "application/zip",
         "file_extensions": [
             "zip"
         ]
     },
     "x-fmt/264": {
         "name": "RAR Archive",
+        "mime": "application/vnd.rar",
         "file_extensions": [
             "rar"
         ]
     },
     "x-fmt/265": {
         "name": "Tape Archive Format",
+        "mime": "application/x-tar",
         "file_extensions": [
             "tar"
         ]
     },
     "x-fmt/266": {
         "name": "GZIP Format",
+        "mime": "application/gzip",
         "file_extensions": [
             "gz",
             "z"
@@ -1684,6 +1768,7 @@
     },
     "x-fmt/268": {
         "name": "BZIP2 Compressed Archive",
+        "mime": "application/x-bzip2",
         "file_extensions": [
             "bz2"
         ]
@@ -1696,6 +1781,7 @@
     },
     "x-fmt/270": {
         "name": "OS/2 Bitmap",
+        "mime": "image/bmp",
         "file_extensions": [
             "bmp"
         ]
@@ -1718,36 +1804,42 @@
     },
     "x-fmt/274": {
         "name": "Microsoft Word for MS-DOS Document",
+        "mime": "application/msword",
         "file_extensions": [
             "doc"
         ]
     },
     "x-fmt/275": {
         "name": "Microsoft Word for MS-DOS Document",
+        "mime": "application/msword",
         "file_extensions": [
             "doc"
         ]
     },
     "x-fmt/276": {
         "name": "Microsoft Word for MS-DOS Document",
+        "mime": "application/msword",
         "file_extensions": [
             "doc"
         ]
     },
     "x-fmt/277": {
         "name": "Real Video",
+        "mime": "video/vnd.rn-realvideo",
         "file_extensions": [
             "rv"
         ]
     },
     "x-fmt/278": {
         "name": "RealAudio",
+        "mime": "audio/vnd.rn-realaudio",
         "file_extensions": [
             "ra"
         ]
     },
     "x-fmt/279": {
         "name": "MPEG 1/2 Audio Layer 3 Streaming",
+        "mime": "audio/mpeg",
         "file_extensions": [
             "m3u",
             "m3u8"
@@ -1755,24 +1847,28 @@
     },
     "x-fmt/280": {
         "name": "XML Schema Definition",
+        "mime": "application/xml",
         "file_extensions": [
             "xsd"
         ]
     },
     "x-fmt/281": {
         "name": "Extensible Stylesheet Language",
+        "mime": "application/xml",
         "file_extensions": [
             "xsl"
         ]
     },
     "x-fmt/282": {
         "name": "8-bit ANSI Text",
+        "mime": "text/plain",
         "file_extensions": [
             "ans"
         ]
     },
     "x-fmt/283": {
         "name": "8-bit ASCII Text",
+        "mime": "text/plain",
         "file_extensions": [
             "asc"
         ]
@@ -1791,6 +1887,7 @@
     },
     "x-fmt/286": {
         "name": "DEC Data Exchange File",
+        "mime": "application/dec-dx.",
         "file_extensions": [
             "dx"
         ]
@@ -1829,6 +1926,7 @@
     },
     "x-fmt/293": {
         "name": "Hewlett Packard Graphics Language",
+        "mime": "application/vnd.hp-HPGL",
         "file_extensions": [
             "hpgl"
         ]
@@ -1868,12 +1966,14 @@
     },
     "x-fmt/299": {
         "name": "X-Windows Bitmap Image",
+        "mime": "image/x-xbitmap",
         "file_extensions": [
             "xbm"
         ]
     },
     "x-fmt/300": {
         "name": "X-Windows Screen Dump File",
+        "mime": "image/x-xwindowdump",
         "file_extensions": [
             "xdm",
             "xwd"
@@ -1887,6 +1987,7 @@
     },
     "x-fmt/302": {
         "name": "Adobe Framemaker Document",
+        "mime": "application/vnd.framemaker",
         "file_extensions": [
             "fm"
         ]
@@ -1991,6 +2092,7 @@
     },
     "x-fmt/318": {
         "name": "FileMaker Pro Database",
+        "mime": "application/x-filemaker",
         "file_extensions": [
             "fm",
             "fmp",
@@ -2090,24 +2192,28 @@
     },
     "x-fmt/333": {
         "name": "Lotus Approach View File",
+        "mime": "application/vnd.lotus-approach",
         "file_extensions": [
             "apr"
         ]
     },
     "x-fmt/334": {
         "name": "Lotus Approach View File",
+        "mime": "application/vnd.lotus-approach",
         "file_extensions": [
             "apt"
         ]
     },
     "x-fmt/335": {
         "name": "Lotus Freelance Smartmaster Graphics",
+        "mime": "application/vnd.lotus-freelance",
         "file_extensions": [
             "mas"
         ]
     },
     "x-fmt/336": {
         "name": "Lotus Notes Database",
+        "mime": "application/vnd.lotus-notes",
         "file_extensions": [
             "ns2",
             "nsf"
@@ -2115,6 +2221,7 @@
     },
     "x-fmt/337": {
         "name": "Lotus Notes Database",
+        "mime": "application/vnd.lotus-notes",
         "file_extensions": [
             "ns3",
             "nsf"
@@ -2122,6 +2229,7 @@
     },
     "x-fmt/338": {
         "name": "Lotus Notes Database",
+        "mime": "application/vnd.lotus-notes",
         "file_extensions": [
             "ns4",
             "nsf"
@@ -2135,12 +2243,14 @@
     },
     "x-fmt/340": {
         "name": "Lotus WordPro Document",
+        "mime": "application/lwp, application/vnd.lotus-wordpro",
         "file_extensions": [
             "lwp"
         ]
     },
     "x-fmt/341": {
         "name": "Macromedia Director",
+        "mime": "application/x-director",
         "file_extensions": [
             "dir",
             "dxr"
@@ -2189,6 +2299,7 @@
     },
     "x-fmt/348": {
         "name": "Multipage Zsoft Paintbrush Bitmap Graphics",
+        "mime": "image/x-dcx",
         "file_extensions": [
             "dcx"
         ]
@@ -2213,6 +2324,7 @@
     },
     "x-fmt/352": {
         "name": "PageMaker PC Document",
+        "mime": "application/vnd.pagemaker",
         "file_extensions": [
             "pm4",
             "pt4"
@@ -2290,12 +2402,14 @@
     },
     "x-fmt/365": {
         "name": "TeX Binary File",
+        "mime": "application/x-dvi",
         "file_extensions": [
             "dvi"
         ]
     },
     "fmt/160": {
         "name": "TeX/LaTeX Device Independent Document",
+        "mime": "application/x-dvi",
         "file_extensions": [
             "dvi"
         ]
@@ -2414,54 +2528,63 @@
     },
     "fmt/14": {
         "name": "Acrobat PDF 1.0 - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/15": {
         "name": "Acrobat PDF 1.1 - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/16": {
         "name": "Acrobat PDF 1.2 - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/17": {
         "name": "Acrobat PDF 1.3 - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/18": {
         "name": "Acrobat PDF 1.4 - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/19": {
         "name": "Acrobat PDF 1.5 - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/3": {
         "name": "Graphics Interchange Format",
+        "mime": "image/gif",
         "file_extensions": [
             "gif"
         ]
     },
     "fmt/4": {
         "name": "Graphics Interchange Format",
+        "mime": "image/gif",
         "file_extensions": [
             "gif"
         ]
     },
     "fmt/86": {
         "name": "PCX",
+        "mime": "image/vnd.zbrush.pcx",
         "file_extensions": [
             "pcc",
             "pcx"
@@ -2469,6 +2592,7 @@
     },
     "fmt/87": {
         "name": "PCX",
+        "mime": "image/vnd.zbrush.pcx",
         "file_extensions": [
             "pcc",
             "pcx"
@@ -2476,6 +2600,7 @@
     },
     "fmt/88": {
         "name": "PCX",
+        "mime": "image/vnd.zbrush.pcx",
         "file_extensions": [
             "pcc",
             "pcx"
@@ -2483,6 +2608,7 @@
     },
     "fmt/89": {
         "name": "PCX",
+        "mime": "image/vnd.zbrush.pcx",
         "file_extensions": [
             "pcc",
             "pcx"
@@ -2490,6 +2616,7 @@
     },
     "fmt/90": {
         "name": "PCX",
+        "mime": "image/vnd.zbrush.pcx",
         "file_extensions": [
             "pcc",
             "pcx"
@@ -2497,6 +2624,7 @@
     },
     "fmt/45": {
         "name": "Rich Text Format",
+        "mime": "application/rtf, text/rtf",
         "file_extensions": [
             "rtf"
         ]
@@ -2519,6 +2647,7 @@
     },
     "fmt/50": {
         "name": "Rich Text Format",
+        "mime": "application/rtf, text/rtf",
         "file_extensions": [
             "rtf"
         ]
@@ -2529,36 +2658,42 @@
     },
     "fmt/52": {
         "name": "Rich Text Format",
+        "mime": "application/rtf, text/rtf",
         "file_extensions": [
             "rtf"
         ]
     },
     "fmt/91": {
         "name": "Scalable Vector Graphics",
+        "mime": "image/svg+xml",
         "file_extensions": [
             "svg"
         ]
     },
     "fmt/92": {
         "name": "Scalable Vector Graphics",
+        "mime": "image/svg+xml",
         "file_extensions": [
             "svg"
         ]
     },
     "fmt/20": {
         "name": "Acrobat PDF 1.6 - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/101": {
         "name": "Extensible Markup Language",
+        "mime": "application/xml, text/xml",
         "file_extensions": [
             "xml"
         ]
     },
     "fmt/97": {
         "name": "Hypertext Markup Language",
+        "mime": "text/html",
         "file_extensions": [
             "htm",
             "html"
@@ -2566,6 +2701,7 @@
     },
     "fmt/98": {
         "name": "Hypertext Markup Language",
+        "mime": "text/html",
         "file_extensions": [
             "htm",
             "html"
@@ -2573,6 +2709,7 @@
     },
     "fmt/99": {
         "name": "Hypertext Markup Language",
+        "mime": "text/html",
         "file_extensions": [
             "htm",
             "html"
@@ -2580,6 +2717,7 @@
     },
     "fmt/100": {
         "name": "Hypertext Markup Language",
+        "mime": "text/html",
         "file_extensions": [
             "htm",
             "html"
@@ -2587,6 +2725,7 @@
     },
     "fmt/102": {
         "name": "Extensible Hypertext Markup Language",
+        "mime": "application/xhtml+xml",
         "file_extensions": [
             "htm",
             "html",
@@ -2595,6 +2734,7 @@
     },
     "fmt/103": {
         "name": "Extensible Hypertext Markup Language",
+        "mime": "application/xhtml+xml",
         "file_extensions": [
             "htm",
             "html",
@@ -2603,6 +2743,7 @@
     },
     "fmt/96": {
         "name": "Hypertext Markup Language",
+        "mime": "text/html",
         "file_extensions": [
             "htm",
             "html"
@@ -2610,78 +2751,91 @@
     },
     "fmt/104": {
         "name": "Macromedia Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/105": {
         "name": "Macromedia Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/106": {
         "name": "Macromedia Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/107": {
         "name": "Macromedia Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/108": {
         "name": "Macromedia Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/109": {
         "name": "Macromedia Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/110": {
         "name": "Macromedia Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "x-fmt/382": {
         "name": "Macromedia FLV",
+        "mime": "video/x-flv",
         "file_extensions": [
             "flv"
         ]
     },
     "fmt/6": {
         "name": "Waveform Audio",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "fmt/5": {
         "name": "Audio/Video Interleaved Format",
+        "mime": "video/x-msvideo",
         "file_extensions": [
             "avi"
         ]
     },
     "fmt/2": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "x-fmt/383": {
         "name": "Flexible Image Transport System",
+        "mime": "application/fits, image/fits",
         "file_extensions": [
             "fits"
         ]
     },
     "x-fmt/384": {
         "name": "Quicktime",
+        "mime": "video/quicktime",
         "file_extensions": [
             "mov",
             "qtm"
@@ -2689,6 +2843,7 @@
     },
     "x-fmt/385": {
         "name": "MPEG-1 Program Stream",
+        "mime": "video/mpeg",
         "file_extensions": [
             "mpeg",
             "mpg"
@@ -2696,6 +2851,7 @@
     },
     "x-fmt/386": {
         "name": "MPEG-2 Program Stream",
+        "mime": "video/mpeg",
         "file_extensions": [
             "mod",
             "mpeg",
@@ -2704,36 +2860,42 @@
     },
     "fmt/93": {
         "name": "Virtual Reality Modeling Language",
+        "mime": "model/vrml",
         "file_extensions": [
             "wrl"
         ]
     },
     "fmt/94": {
         "name": "Virtual Reality Modeling Language",
+        "mime": "model/vrml",
         "file_extensions": [
             "wrl"
         ]
     },
     "fmt/11": {
         "name": "Portable Network Graphics",
+        "mime": "image/png",
         "file_extensions": [
             "png"
         ]
     },
     "fmt/12": {
         "name": "Portable Network Graphics",
+        "mime": "image/png",
         "file_extensions": [
             "png"
         ]
     },
     "fmt/13": {
         "name": "Portable Network Graphics",
+        "mime": "image/png",
         "file_extensions": [
             "png"
         ]
     },
     "fmt/42": {
         "name": "JPEG File Interchange Format",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jfi",
             "jfif",
@@ -2745,6 +2907,7 @@
     },
     "fmt/43": {
         "name": "JPEG File Interchange Format",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jfi",
             "jfif",
@@ -2756,6 +2919,7 @@
     },
     "fmt/44": {
         "name": "JPEG File Interchange Format",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jfi",
             "jfif",
@@ -2767,6 +2931,7 @@
     },
     "fmt/41": {
         "name": "Raw JPEG Stream",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jfi",
             "jfif",
@@ -2778,6 +2943,7 @@
     },
     "fmt/112": {
         "name": "Still Picture Interchange File Format",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jpg",
             "spf"
@@ -2785,6 +2951,7 @@
     },
     "x-fmt/387": {
         "name": "Exchangeable Image File Format (Uncompressed)",
+        "mime": "image/tiff",
         "file_extensions": [
             "tif",
             "tiff"
@@ -2792,6 +2959,7 @@
     },
     "x-fmt/388": {
         "name": "Exchangeable Image File Format (Uncompressed)",
+        "mime": "image/tiff",
         "file_extensions": [
             "tif",
             "tiff"
@@ -2799,12 +2967,14 @@
     },
     "x-fmt/389": {
         "name": "Exchangeable Image File Format (Audio)",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "x-fmt/390": {
         "name": "Exchangeable Image File Format (Compressed)",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jpeg",
             "jpg"
@@ -2812,6 +2982,7 @@
     },
     "x-fmt/391": {
         "name": "Exchangeable Image File Format (Compressed)",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jpeg",
             "jpg"
@@ -2819,34 +2990,40 @@
     },
     "fmt/113": {
         "name": "Still Picture Interchange File Format",
+        "mime": "image/jpeg",
         "file_extensions": []
     },
     "fmt/55": {
         "name": "Microsoft Excel 2.x Worksheet (xls)",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xls"
         ]
     },
     "fmt/56": {
         "name": "Microsoft Excel 3.0 Worksheet (xls)",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xls"
         ]
     },
     "fmt/57": {
         "name": "Microsoft Excel 4.0 Worksheet (xls)",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xls"
         ]
     },
     "fmt/58": {
         "name": "Microsoft Excel 4.0 Workbook (xls)",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xlw"
         ]
     },
     "fmt/59": {
         "name": "Microsoft Excel 5.0/95 Workbook (xls)",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xls",
             "xlw"
@@ -2858,6 +3035,7 @@
     },
     "fmt/61": {
         "name": "Microsoft Excel 97-2003 Workbook (xls)",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xls",
             "xlw"
@@ -2869,24 +3047,28 @@
     },
     "x-fmt/392": {
         "name": "JP2 (JPEG 2000 part 1)",
+        "mime": "image/jp2",
         "file_extensions": [
             "jp2"
         ]
     },
     "fmt/134": {
         "name": "MPEG 1/2 Audio Layer 3",
+        "mime": "audio/mpeg",
         "file_extensions": [
             "mp3"
         ]
     },
     "fmt/39": {
         "name": "Microsoft Word Document",
+        "mime": "application/msword",
         "file_extensions": [
             "doc"
         ]
     },
     "fmt/40": {
         "name": "Microsoft Word Document",
+        "mime": "application/msword",
         "file_extensions": [
             "doc",
             "wbk"
@@ -2894,12 +3076,14 @@
     },
     "fmt/131": {
         "name": "Advanced Systems Format",
+        "mime": "application/vnd.ms-asf",
         "file_extensions": [
             "asf"
         ]
     },
     "fmt/132": {
         "name": "Windows Media Audio",
+        "mime": "audio/x-ms-wma",
         "file_extensions": [
             "asf",
             "wma"
@@ -2907,6 +3091,7 @@
     },
     "fmt/133": {
         "name": "Windows Media Video",
+        "mime": "video/x-ms-wmv",
         "file_extensions": [
             "asf",
             "wmv"
@@ -2914,198 +3099,231 @@
     },
     "fmt/21": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/22": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/23": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/24": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/25": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/26": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/27": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/28": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/29": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/30": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/31": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/32": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/33": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/34": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/35": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/36": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/64": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/65": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/66": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/67": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/68": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/69": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/70": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/71": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/72": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/73": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/74": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/75": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/76": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/77": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/78": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/79": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/114": {
         "name": "Windows Bitmap",
+        "mime": "image/bmp",
         "file_extensions": [
             "bmp",
             "ddb"
@@ -3113,6 +3331,7 @@
     },
     "fmt/115": {
         "name": "Windows Bitmap",
+        "mime": "image/bmp",
         "file_extensions": [
             "bmp",
             "dib"
@@ -3120,6 +3339,7 @@
     },
     "fmt/116": {
         "name": "Windows Bitmap",
+        "mime": "image/bmp",
         "file_extensions": [
             "bmp",
             "dib"
@@ -3127,6 +3347,7 @@
     },
     "fmt/117": {
         "name": "Windows Bitmap",
+        "mime": "image/bmp",
         "file_extensions": [
             "bmp",
             "dib"
@@ -3134,6 +3355,7 @@
     },
     "fmt/118": {
         "name": "Windows Bitmap",
+        "mime": "image/bmp",
         "file_extensions": [
             "bmp",
             "dib"
@@ -3141,6 +3363,7 @@
     },
     "fmt/119": {
         "name": "Windows Bitmap",
+        "mime": "image/bmp",
         "file_extensions": [
             "bmp",
             "dib"
@@ -3148,24 +3371,28 @@
     },
     "fmt/37": {
         "name": "Microsoft Word for Windows Document",
+        "mime": "application/msword",
         "file_extensions": [
             "doc"
         ]
     },
     "fmt/38": {
         "name": "Microsoft Word for Windows Document",
+        "mime": "application/msword",
         "file_extensions": [
             "doc"
         ]
     },
     "fmt/1": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "x-fmt/393": {
         "name": "WordPerfect for MS-DOS Document",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": [
             "doc",
             "w50",
@@ -3176,6 +3403,7 @@
     },
     "x-fmt/394": {
         "name": "WordPerfect for MS-DOS/Windows Document",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": [
             "doc",
             "w51",
@@ -3192,78 +3420,91 @@
     },
     "fmt/80": {
         "name": "Drawing Interchange File Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/81": {
         "name": "Drawing Interchange File Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/82": {
         "name": "Drawing Interchange File Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/83": {
         "name": "Drawing Interchange File Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/84": {
         "name": "Drawing Interchange File Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/85": {
         "name": "Drawing Interchange File Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/128": {
         "name": "OpenOffice Writer",
+        "mime": "application/vnd.sun.xml.writer",
         "file_extensions": [
             "sxw"
         ]
     },
     "fmt/129": {
         "name": "OpenOffice Calc",
+        "mime": "application/vnd.sun.xml.calc",
         "file_extensions": [
             "sxc"
         ]
     },
     "fmt/130": {
         "name": "OpenOffice Impress",
+        "mime": "application/vnd.sun.xml.impress",
         "file_extensions": [
             "sxi"
         ]
     },
     "fmt/127": {
         "name": "OpenOffice Draw",
+        "mime": "application/vnd.sun.xml.draw",
         "file_extensions": [
             "sxd"
         ]
     },
     "x-fmt/396": {
         "name": "Exchangeable Image File Format (Audio)",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "x-fmt/397": {
         "name": "Exchangeable Image File Format (Audio)",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "x-fmt/398": {
         "name": "Exchangeable Image File Format (Compressed)",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jpeg",
             "jpg"
@@ -3271,6 +3512,7 @@
     },
     "x-fmt/399": {
         "name": "Exchangeable Image File Format (Uncompressed)",
+        "mime": "image/tiff",
         "file_extensions": [
             "tif",
             "tiff"
@@ -3278,18 +3520,21 @@
     },
     "fmt/53": {
         "name": "Rich Text Format",
+        "mime": "application/rtf, text/rtf",
         "file_extensions": [
             "rtf"
         ]
     },
     "x-fmt/400": {
         "name": "StarOffice Writer",
+        "mime": "application/vnd.stardivision.writer",
         "file_extensions": [
             "sdw"
         ]
     },
     "x-fmt/401": {
         "name": "StarOffice Draw",
+        "mime": "application/vnd.stardivision.draw",
         "file_extensions": [
             "sda"
         ]
@@ -3318,6 +3563,7 @@
     },
     "fmt/63": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
@@ -3328,36 +3574,42 @@
     },
     "fmt/121": {
         "name": "DROID Signature File Format",
+        "mime": "text/xml",
         "file_extensions": [
             "xml"
         ]
     },
     "fmt/120": {
         "name": "DROID File Collection File Format",
+        "mime": "text/xml",
         "file_extensions": [
             "xml"
         ]
     },
     "fmt/95": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "x-fmt/406": {
         "name": "PostScript",
+        "mime": "application/postscript",
         "file_extensions": [
             "ps"
         ]
     },
     "x-fmt/407": {
         "name": "PostScript",
+        "mime": "application/postscript",
         "file_extensions": [
             "ps"
         ]
     },
     "x-fmt/408": {
         "name": "PostScript",
+        "mime": "application/postscript",
         "file_extensions": [
             "ps"
         ]
@@ -3376,6 +3628,7 @@
     },
     "x-fmt/411": {
         "name": "Windows Portable Executable",
+        "mime": "application/vnd.microsoft.portable-executable",
         "file_extensions": [
             "dll",
             "exe",
@@ -3384,6 +3637,7 @@
     },
     "x-fmt/412": {
         "name": "Java Archive Format",
+        "mime": "application/java-archive",
         "file_extensions": [
             "jar"
         ]
@@ -3394,6 +3648,7 @@
     },
     "fmt/136": {
         "name": "OpenDocument Text",
+        "mime": "application/vnd.oasis.opendocument.text",
         "file_extensions": [
             "odt",
             "ott"
@@ -3401,6 +3656,7 @@
     },
     "fmt/137": {
         "name": "OpenDocument Spreadsheet",
+        "mime": "application/vnd.oasis.opendocument.spreadsheet",
         "file_extensions": [
             "ods",
             "ots"
@@ -3408,6 +3664,7 @@
     },
     "fmt/138": {
         "name": "OpenDocument Presentation",
+        "mime": "application/vnd.oasis.opendocument.presentation",
         "file_extensions": [
             "odp",
             "otp"
@@ -3415,6 +3672,7 @@
     },
     "fmt/139": {
         "name": "OpenDocument Graphics",
+        "mime": "application/vnd.oasis.opendocument.graphics",
         "file_extensions": [
             "odg",
             "otg"
@@ -3428,6 +3686,7 @@
     },
     "fmt/141": {
         "name": "Waveform Audio (PCMWAVEFORMAT)",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav",
             "wave"
@@ -3435,6 +3694,7 @@
     },
     "fmt/142": {
         "name": "Waveform Audio (WAVEFORMATEX)",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav",
             "wave"
@@ -3442,6 +3702,7 @@
     },
     "fmt/143": {
         "name": "Waveform Audio (WAVEFORMATEXTENSIBLE)",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav",
             "wave"
@@ -3449,30 +3710,35 @@
     },
     "fmt/144": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange 1:1999",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/145": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange 1:2001",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/146": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange 1a:2003",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/147": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange 2:2003",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/148": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange 3:2003",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
@@ -3489,6 +3755,7 @@
     },
     "fmt/151": {
         "name": "JPX (JPEG 2000 part 2)",
+        "mime": "image/jpx",
         "file_extensions": [
             "jpf",
             "jpx"
@@ -3496,6 +3763,7 @@
     },
     "fmt/152": {
         "name": "Digital Negative Format (DNG)",
+        "mime": "image/dng, image/tiff",
         "file_extensions": [
             "dng",
             "tif",
@@ -3504,6 +3772,7 @@
     },
     "fmt/153": {
         "name": "Tagged Image File Format for Image Technology (TIFF/IT)",
+        "mime": "image/tiff",
         "file_extensions": [
             "tif",
             "tiff"
@@ -3511,6 +3780,7 @@
     },
     "fmt/154": {
         "name": "Tagged Image File Format for Electronic Photography (TIFF/EP)",
+        "mime": "image/tiff",
         "file_extensions": [
             "tif",
             "tiff"
@@ -3518,6 +3788,7 @@
     },
     "fmt/155": {
         "name": "Geographic Tagged Image File Format (GeoTIFF)",
+        "mime": "image/tiff",
         "file_extensions": [
             "cog",
             "tif",
@@ -3526,6 +3797,7 @@
     },
     "fmt/156": {
         "name": "Tagged Image File Format for Internet Fax (TIFF-FX)",
+        "mime": "image/tiff",
         "file_extensions": [
             "tfx",
             "tif",
@@ -3540,6 +3812,7 @@
     },
     "x-fmt/414": {
         "name": "Windows Cabinet File",
+        "mime": "application/vnd.ms-cab-compressed",
         "file_extensions": [
             "cab"
         ]
@@ -3552,6 +3825,7 @@
     },
     "x-fmt/416": {
         "name": "BinHex Binary Text",
+        "mime": "application/mac-binhex40",
         "file_extensions": [
             "hqx"
         ]
@@ -3564,6 +3838,7 @@
     },
     "x-fmt/418": {
         "name": "Icon file format",
+        "mime": "image/vnd.microsoft.icon, image/x-icon",
         "file_extensions": [
             "ico"
         ]
@@ -3577,6 +3852,7 @@
     },
     "x-fmt/420": {
         "name": "Windows Setup File",
+        "mime": "application/inf",
         "file_extensions": [
             "inf"
         ]
@@ -3595,6 +3871,7 @@
     },
     "x-fmt/423": {
         "name": "JavaScript file",
+        "mime": "application/javascript",
         "file_extensions": [
             "js"
         ]
@@ -3631,18 +3908,21 @@
     },
     "fmt/157": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange 1a:2001",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/158": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange 3:2002",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "x-fmt/429": {
         "name": "MHTML",
+        "mime": "multipart/related",
         "file_extensions": [
             "mht",
             "mhtml"
@@ -3650,6 +3930,7 @@
     },
     "x-fmt/430": {
         "name": "Microsoft Outlook Email Message",
+        "mime": "application/vnd.ms-outlook",
         "file_extensions": [
             "msg",
             "oft"
@@ -3718,60 +3999,70 @@
     },
     "x-fmt/441": {
         "name": "AutoCAD Database File Locking Information",
+        "mime": "application/octet-stream",
         "file_extensions": [
             "dwl"
         ]
     },
     "x-fmt/442": {
         "name": "form*Z Project File",
+        "mime": "application/octet-stream",
         "file_extensions": [
             "fmz"
         ]
     },
     "x-fmt/443": {
         "name": "Revit Family File",
+        "mime": "application/octet-stream",
         "file_extensions": [
             "rfa"
         ]
     },
     "x-fmt/444": {
         "name": "Revit Family Template",
+        "mime": "application/octet-stream",
         "file_extensions": [
             "rft"
         ]
     },
     "x-fmt/445": {
         "name": "Revit Template",
+        "mime": "application/octet-stream",
         "file_extensions": [
             "rte"
         ]
     },
     "x-fmt/446": {
         "name": "Revit External Group",
+        "mime": "application/octet-stream",
         "file_extensions": [
             "rvg"
         ]
     },
     "x-fmt/447": {
         "name": "Revit Project",
+        "mime": "application/octet-stream",
         "file_extensions": [
             "rvt"
         ]
     },
     "x-fmt/448": {
         "name": "Revit Workspace",
+        "mime": "application/octet-stream",
         "file_extensions": [
             "rws"
         ]
     },
     "x-fmt/449": {
         "name": "Steel Detailing Neutral Format",
+        "mime": "text/plain",
         "file_extensions": [
             "sdn"
         ]
     },
     "x-fmt/450": {
         "name": "Adobe InDesign Document",
+        "mime": "application/octet-stream",
         "file_extensions": [
             "ind",
             "indd",
@@ -3791,18 +4082,21 @@
     },
     "x-fmt/453": {
         "name": "TrueType Font",
+        "mime": "font/ttf",
         "file_extensions": [
             "ttf"
         ]
     },
     "x-fmt/454": {
         "name": "Microsoft Internet Shortcut",
+        "mime": "text/plain",
         "file_extensions": [
             "url"
         ]
     },
     "x-fmt/455": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
@@ -3843,6 +4137,7 @@
     },
     "fmt/179": {
         "name": "Microsoft PowerPoint for Macintosh",
+        "mime": "application/vnd.ms-powerpoint",
         "file_extensions": [
             "ppt"
         ]
@@ -3853,6 +4148,7 @@
     },
     "fmt/181": {
         "name": "Microsoft PowerPoint for Macintosh",
+        "mime": "application/vnd.ms-powerpoint",
         "file_extensions": [
             "ppt"
         ]
@@ -3955,6 +4251,7 @@
     },
     "fmt/190": {
         "name": "Adobe FrameMaker Document",
+        "mime": "application/vnd.framemaker",
         "file_extensions": [
             "fm"
         ]
@@ -4005,6 +4302,7 @@
     },
     "fmt/198": {
         "name": "MPEG Audio Stream Layer II",
+        "mime": "audio/mpeg",
         "file_extensions": [
             "mp2",
             "mpa",
@@ -4013,6 +4311,7 @@
     },
     "fmt/199": {
         "name": "MPEG-4 Media File",
+        "mime": "video/mp4",
         "file_extensions": [
             "f4a",
             "f4v",
@@ -4024,12 +4323,14 @@
     },
     "fmt/200": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
     },
     "fmt/201": {
         "name": "Mathematica Notebook",
+        "mime": "application/mathematica",
         "file_extensions": [
             "nb"
         ]
@@ -4043,6 +4344,7 @@
     },
     "fmt/203": {
         "name": "Ogg Vorbis Codec Compressed Multimedia File",
+        "mime": "audio/ogg",
         "file_extensions": [
             "ogg"
         ]
@@ -4110,18 +4412,21 @@
     },
     "fmt/214": {
         "name": "Microsoft Excel for Windows",
+        "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "file_extensions": [
             "xlsx"
         ]
     },
     "fmt/215": {
         "name": "Microsoft Powerpoint for Windows",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         "file_extensions": [
             "pptx"
         ]
     },
     "fmt/216": {
         "name": "Microsoft Visio XML Drawing",
+        "mime": "application/vnd.visio",
         "file_extensions": [
             "vdx"
         ]
@@ -4268,6 +4573,7 @@
     },
     "fmt/244": {
         "name": "Keyhole Markup Language (XML)",
+        "mime": "application/vnd.google-earth.kml+xml",
         "file_extensions": [
             "kml"
         ]
@@ -4320,6 +4626,7 @@
     },
     "fmt/255": {
         "name": "DjVu File Format",
+        "mime": "image/vnd.djvu, image/x-djvu",
         "file_extensions": [
             "djv",
             "djvu"
@@ -4433,6 +4740,7 @@
     },
     "fmt/276": {
         "name": "Acrobat PDF 1.7 - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
@@ -4445,12 +4753,14 @@
     },
     "fmt/278": {
         "name": "Internet Message Format",
+        "mime": "message/rfc822",
         "file_extensions": [
             "eml"
         ]
     },
     "fmt/279": {
         "name": "FLAC (Free Lossless Audio Codec)",
+        "mime": "audio/flac",
         "file_extensions": [
             "flac"
         ]
@@ -4469,6 +4779,7 @@
     },
     "fmt/282": {
         "name": "netCDF-3 Classic",
+        "mime": "application/netcdf, application/x-netcdf",
         "file_extensions": [
             "cdf",
             "nc"
@@ -4476,6 +4787,7 @@
     },
     "fmt/283": {
         "name": "netCDF-3 64-bit",
+        "mime": "application/netcdf, application/x-netcdf",
         "file_extensions": [
             "cdf",
             "nc"
@@ -4519,12 +4831,14 @@
     },
     "fmt/289": {
         "name": "WARC",
+        "mime": "application/warc",
         "file_extensions": [
             "warc"
         ]
     },
     "fmt/290": {
         "name": "OpenDocument Text",
+        "mime": "application/vnd.oasis.opendocument.text",
         "file_extensions": [
             "odt",
             "ott"
@@ -4532,6 +4846,7 @@
     },
     "fmt/291": {
         "name": "OpenDocument Text",
+        "mime": "application/vnd.oasis.opendocument.text",
         "file_extensions": [
             "odt",
             "ott"
@@ -4539,6 +4854,7 @@
     },
     "fmt/292": {
         "name": "OpenDocument Presentation",
+        "mime": "application/vnd.oasis.opendocument.presentation",
         "file_extensions": [
             "odp",
             "otp"
@@ -4546,6 +4862,7 @@
     },
     "fmt/293": {
         "name": "OpenDocument Presentation",
+        "mime": "application/vnd.oasis.opendocument.presentation",
         "file_extensions": [
             "odp",
             "otp"
@@ -4553,6 +4870,7 @@
     },
     "fmt/294": {
         "name": "OpenDocument Spreadsheet",
+        "mime": "application/vnd.oasis.opendocument.spreadsheet",
         "file_extensions": [
             "ods",
             "ots"
@@ -4560,6 +4878,7 @@
     },
     "fmt/295": {
         "name": "OpenDocument Spreadsheet",
+        "mime": "application/vnd.oasis.opendocument.spreadsheet",
         "file_extensions": [
             "ods",
             "ots"
@@ -4567,6 +4886,7 @@
     },
     "fmt/296": {
         "name": "OpenDocument Graphics",
+        "mime": "application/vnd.oasis.opendocument.graphics",
         "file_extensions": [
             "odg",
             "otg"
@@ -4574,6 +4894,7 @@
     },
     "fmt/297": {
         "name": "OpenDocument Graphics",
+        "mime": "application/vnd.oasis.opendocument.graphics",
         "file_extensions": [
             "odg",
             "otg"
@@ -4599,42 +4920,49 @@
     },
     "fmt/301": {
         "name": "Computer Graphics Metafile ASCII",
+        "mime": "image/cgm",
         "file_extensions": [
             "cgm"
         ]
     },
     "fmt/302": {
         "name": "Computer Graphics Metafile ASCII",
+        "mime": "image/cgm",
         "file_extensions": [
             "cgm"
         ]
     },
     "fmt/303": {
         "name": "Computer Graphics Metafile (Binary)",
+        "mime": "image/cgm; version=1",
         "file_extensions": [
             "cgm"
         ]
     },
     "fmt/304": {
         "name": "Computer Graphics Metafile (Binary)",
+        "mime": "image/cgm; version=2",
         "file_extensions": [
             "cgm"
         ]
     },
     "fmt/305": {
         "name": "Computer Graphics Metafile (Binary)",
+        "mime": "image/cgm; version=3",
         "file_extensions": [
             "cgm"
         ]
     },
     "fmt/306": {
         "name": "Computer Graphics Metafile (Binary)",
+        "mime": "image/cgm; version=4",
         "file_extensions": [
             "cgm"
         ]
     },
     "fmt/307": {
         "name": "Quicken Interchange Format",
+        "mime": "application/qif",
         "file_extensions": [
             "qif"
         ]
@@ -4647,6 +4975,7 @@
     },
     "fmt/309": {
         "name": "Open Financial Exchange",
+        "mime": "application/x-ofx",
         "file_extensions": [
             "ofx",
             "qfx"
@@ -4654,6 +4983,7 @@
     },
     "fmt/310": {
         "name": "Open Financial Exchange",
+        "mime": "application/x-ofx",
         "file_extensions": [
             "ofx",
             "qfx"
@@ -4661,6 +4991,7 @@
     },
     "fmt/311": {
         "name": "Open Financial Exchange",
+        "mime": "application/x-ofx",
         "file_extensions": [
             "ofx",
             "qfx"
@@ -4668,6 +4999,7 @@
     },
     "fmt/312": {
         "name": "Open Financial Exchange",
+        "mime": "application/x-ofx",
         "file_extensions": [
             "ofx",
             "qfx"
@@ -4675,6 +5007,7 @@
     },
     "fmt/313": {
         "name": "Open Financial Exchange",
+        "mime": "application/x-ofx",
         "file_extensions": [
             "ofx",
             "qfx"
@@ -4682,6 +5015,7 @@
     },
     "fmt/314": {
         "name": "Play SID Audio",
+        "mime": "audio/prs.sid",
         "file_extensions": [
             "psid",
             "sid"
@@ -4689,6 +5023,7 @@
     },
     "fmt/315": {
         "name": "Play SID Audio",
+        "mime": "audio/prs.sid",
         "file_extensions": [
             "psid",
             "sid"
@@ -4696,12 +5031,14 @@
     },
     "fmt/316": {
         "name": "Real SID Audio",
+        "mime": "audio/prs.sid",
         "file_extensions": [
             "sid"
         ]
     },
     "fmt/317": {
         "name": "Macromedia Director",
+        "mime": "application/x-director",
         "file_extensions": [
             "dir",
             "dxr"
@@ -4709,6 +5046,7 @@
     },
     "fmt/318": {
         "name": "Secure DjVU",
+        "mime": "image/vnd.djvu, image/x-djvu",
         "file_extensions": [
             "djv",
             "djvu"
@@ -4741,12 +5079,14 @@
     },
     "fmt/323": {
         "name": "Extended Module Audio File",
+        "mime": "audio/xm",
         "file_extensions": [
             "xm"
         ]
     },
     "fmt/324": {
         "name": "EndNote Style File",
+        "mime": "application/x-endnote-style",
         "file_extensions": [
             "ens"
         ]
@@ -4759,6 +5099,7 @@
     },
     "fmt/326": {
         "name": "EndNote Connection File",
+        "mime": "application/x-endnote-connect, application/x-endnote-connection",
         "file_extensions": [
             "enz"
         ]
@@ -4771,6 +5112,7 @@
     },
     "fmt/328": {
         "name": "EndNote Import File",
+        "mime": "application/x-endnote-refer",
         "file_extensions": [
             "enr",
             "enw"
@@ -4778,6 +5120,7 @@
     },
     "fmt/329": {
         "name": "Shell Archive Format",
+        "mime": "application/x-sh, application/x-shar",
         "file_extensions": [
             "shar"
         ]
@@ -4827,6 +5170,7 @@
     },
     "fmt/337": {
         "name": "MJ2 (Motion JPEG 2000)",
+        "mime": "video/mj2",
         "file_extensions": [
             "mj2",
             "mjp2"
@@ -4848,12 +5192,14 @@
     },
     "fmt/340": {
         "name": "Lotus WordPro Document",
+        "mime": "application/lwp, application/vnd.lotus-wordpro",
         "file_extensions": [
             "lwp"
         ]
     },
     "fmt/341": {
         "name": "Macintosh PICT Image",
+        "mime": "image/x-pict",
         "file_extensions": [
             "pct",
             "pic",
@@ -4862,36 +5208,42 @@
     },
     "fmt/342": {
         "name": "Microsoft Project Export File",
+        "mime": "application/x-project",
         "file_extensions": [
             "mpx"
         ]
     },
     "fmt/343": {
         "name": "Microsoft Project Export File",
+        "mime": "application/x-project",
         "file_extensions": [
             "mpx"
         ]
     },
     "fmt/344": {
         "name": "Microsoft Windows Enhanced Metafile",
+        "mime": "image/emf",
         "file_extensions": [
             "emf"
         ]
     },
     "fmt/345": {
         "name": "Microsoft Windows Enhanced Metafile",
+        "mime": "image/emf",
         "file_extensions": [
             "emf"
         ]
     },
     "fmt/346": {
         "name": "Microsoft Word for Macintosh Document",
+        "mime": "application/msword",
         "file_extensions": [
             "mcw"
         ]
     },
     "fmt/347": {
         "name": "MPEG 1/2 Audio Layer I",
+        "mime": "audio/mpeg",
         "file_extensions": [
             "mp1"
         ]
@@ -4928,6 +5280,7 @@
     },
     "fmt/353": {
         "name": "Tagged Image File Format",
+        "mime": "image/tiff",
         "file_extensions": [
             "tif",
             "tiff"
@@ -4935,24 +5288,28 @@
     },
     "fmt/354": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/355": {
         "name": "Rich Text Format",
+        "mime": "application/rtf, text/rtf",
         "file_extensions": [
             "rtf"
         ]
     },
     "fmt/356": {
         "name": "Adaptive Multi-Rate Audio",
+        "mime": "audio/amr",
         "file_extensions": [
             "amr"
         ]
     },
     "fmt/357": {
         "name": "3GPP Audio/Video File",
+        "mime": "audio/3gpp, video/3gpp",
         "file_extensions": [
             "3gp",
             "3gpp"
@@ -4996,18 +5353,21 @@
     },
     "fmt/364": {
         "name": "National Imagery Transmission Format",
+        "mime": "application/vnd.nitf",
         "file_extensions": [
             "ntf"
         ]
     },
     "fmt/365": {
         "name": "National Imagery Transmission Format",
+        "mime": "application/vnd.nitf",
         "file_extensions": [
             "ntf"
         ]
     },
     "fmt/366": {
         "name": "National Imagery Transmission Format",
+        "mime": "application/vnd.nitf",
         "file_extensions": [
             "ntf"
         ]
@@ -5093,6 +5453,7 @@
     },
     "fmt/378": {
         "name": "Chemical Draw Exchange Format",
+        "mime": "chemical/x-cdx",
         "file_extensions": [
             "cdx"
         ]
@@ -5137,6 +5498,7 @@
     },
     "fmt/385": {
         "name": "Microsoft Windows Cursor",
+        "mime": "image/x-win-bitmap",
         "file_extensions": [
             "cur"
         ]
@@ -5149,12 +5511,14 @@
     },
     "fmt/387": {
         "name": "VCalendar format",
+        "mime": "text/x-vCalendar",
         "file_extensions": [
             "vcs"
         ]
     },
     "fmt/388": {
         "name": "Internet Calendar and Scheduling format",
+        "mime": "text/calendar",
         "file_extensions": [
             "ics"
         ]
@@ -5197,6 +5561,7 @@
     },
     "fmt/395": {
         "name": "vCard",
+        "mime": "text/vcard",
         "file_extensions": [
             "vcard",
             "vcf"
@@ -5303,12 +5668,14 @@
     },
     "fmt/411": {
         "name": "RAR Archive",
+        "mime": "application/vnd.rar",
         "file_extensions": [
             "rar"
         ]
     },
     "fmt/412": {
         "name": "Microsoft Word for Windows",
+        "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "file_extensions": [
             "docx",
             "wbk"
@@ -5341,36 +5708,42 @@
     },
     "fmt/417": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai"
         ]
     },
     "fmt/418": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai"
         ]
     },
     "fmt/419": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai"
         ]
     },
     "fmt/420": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai"
         ]
     },
     "fmt/421": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai"
         ]
     },
     "fmt/422": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "eps"
@@ -5378,6 +5751,7 @@
     },
     "fmt/423": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai"
         ]
@@ -5438,36 +5812,42 @@
     },
     "fmt/433": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/434": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/435": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/436": {
         "name": "Digital Negative Format (DNG)",
+        "mime": "image/dng, image/tiff",
         "file_extensions": [
             "dng"
         ]
     },
     "fmt/437": {
         "name": "Digital Negative Format (DNG)",
+        "mime": "image/dng",
         "file_extensions": [
             "dng"
         ]
     },
     "fmt/438": {
         "name": "Digital Negative Format (DNG)",
+        "mime": "image/dng, image/tiff",
         "file_extensions": [
             "dng"
         ]
@@ -5480,6 +5860,7 @@
     },
     "fmt/440": {
         "name": "Microsoft Project",
+        "mime": "application/vnd.ms-project",
         "file_extensions": [
             "mpp"
         ]
@@ -5492,12 +5873,14 @@
     },
     "fmt/442": {
         "name": "Microsoft Visio (generic)",
+        "mime": "application/vnd.visio",
         "file_extensions": [
             "vsd"
         ]
     },
     "fmt/443": {
         "name": "Microsoft Visio Drawing",
+        "mime": "application/vnd.visio",
         "file_extensions": [
             "vsd"
         ]
@@ -5510,6 +5893,7 @@
     },
     "fmt/445": {
         "name": "Microsoft Excel Macro-Enabled",
+        "mime": "application/vnd.ms-excel.sheet.macroEnabled.12",
         "file_extensions": [
             "xlsm"
         ]
@@ -5540,12 +5924,14 @@
     },
     "fmt/450": {
         "name": "VectorWorks",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "vwx"
         ]
     },
     "fmt/451": {
         "name": "VectorWorks",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "vwx"
         ]
@@ -5619,6 +6005,7 @@
     },
     "fmt/463": {
         "name": "JPM (JPEG 2000 part 6)",
+        "mime": "image/jpm",
         "file_extensions": [
             "jpm"
         ]
@@ -5670,6 +6057,7 @@
     },
     "fmt/471": {
         "name": "Hypertext Markup Language",
+        "mime": "text/html",
         "file_extensions": [
             "htm",
             "html"
@@ -5703,48 +6091,56 @@
     },
     "fmt/476": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/477": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/478": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/479": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/480": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/481": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/482": {
         "name": "Apple iBook format",
+        "mime": "application/x-ibooks+zip",
         "file_extensions": [
             "ibooks"
         ]
     },
     "fmt/483": {
         "name": "ePub Format",
+        "mime": "application/epub+zip",
         "file_extensions": [
             "epub"
         ]
@@ -5769,42 +6165,49 @@
     },
     "fmt/487": {
         "name": "Macro Enabled Microsoft Powerpoint",
+        "mime": "application/vnd.ms-powerpoint.presentation.macroEnabled.12",
         "file_extensions": [
             "pptm"
         ]
     },
     "fmt/488": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange PDF/X-4",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/489": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange PDF/X-4p",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/490": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange PDF/X-5g",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/491": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange PDF/X-5pg",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/492": {
         "name": "Acrobat PDF/X - Portable Document Format - Exchange PDF/X-5n",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/493": {
         "name": "Acrobat PDF/E - Portable Document Format for Engineering PDF/E-1",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
@@ -5831,6 +6234,7 @@
     },
     "fmt/497": {
         "name": "Wireless Bitmap",
+        "mime": "image/vnd-wap-wbmp",
         "file_extensions": [
             "wbmp"
         ]
@@ -5843,6 +6247,7 @@
     },
     "fmt/499": {
         "name": "VivoActive",
+        "mime": "video/vnd-vivo",
         "file_extensions": [
             "viv"
         ]
@@ -5855,6 +6260,7 @@
     },
     "fmt/501": {
         "name": "PostScript",
+        "mime": "application/postscript",
         "file_extensions": [
             "ps"
         ]
@@ -5867,6 +6273,7 @@
     },
     "fmt/503": {
         "name": "AppleDouble Resource Fork",
+        "mime": "multipart/appledouble",
         "file_extensions": []
     },
     "fmt/504": {
@@ -5877,18 +6284,21 @@
     },
     "fmt/505": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/506": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/507": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
@@ -5967,6 +6377,7 @@
     },
     "fmt/520": {
         "name": "OpenType Font File",
+        "mime": "font/otf",
         "file_extensions": [
             "otf"
         ]
@@ -5985,12 +6396,14 @@
     },
     "fmt/523": {
         "name": "Macro enabled Microsoft Word Document OOXML",
+        "mime": "application/vnd.ms-word.document.macroEnabled.12",
         "file_extensions": [
             "docm"
         ]
     },
     "fmt/524": {
         "name": "Microsoft Office Theme",
+        "mime": "application/vnd.ms-officetheme",
         "file_extensions": [
             "thmx"
         ]
@@ -6009,18 +6422,21 @@
     },
     "fmt/527": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "fmt/528": {
         "name": "Multiple-image Network Graphics",
+        "mime": "video/x-mng",
         "file_extensions": [
             "mng"
         ]
     },
     "fmt/529": {
         "name": "JPEG Network Graphics",
+        "mime": "image/x-jng",
         "file_extensions": [
             "jng"
         ]
@@ -6034,54 +6450,63 @@
     },
     "fmt/531": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
     },
     "fmt/532": {
         "name": "Drawing Interchange File Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/533": {
         "name": "Adobe FrameMaker Document",
+        "mime": "application/vnd.framemaker",
         "file_extensions": [
             "fm"
         ]
     },
     "fmt/534": {
         "name": "Adobe FrameMaker Document",
+        "mime": "application/vnd.framemaker",
         "file_extensions": [
             "fm"
         ]
     },
     "fmt/535": {
         "name": "Adobe FrameMaker Document",
+        "mime": "application/vnd.framemaker",
         "file_extensions": [
             "fm"
         ]
     },
     "fmt/536": {
         "name": "Adobe FrameMaker Document",
+        "mime": "application/vnd.framemaker",
         "file_extensions": [
             "fm"
         ]
     },
     "fmt/537": {
         "name": "Adobe FrameMaker Document",
+        "mime": "application/vnd.framemaker",
         "file_extensions": [
             "fm"
         ]
     },
     "fmt/538": {
         "name": "Adobe FrameMaker Document",
+        "mime": "application/vnd.framemaker",
         "file_extensions": [
             "fm"
         ]
     },
     "fmt/539": {
         "name": "Adobe FrameMaker Document",
+        "mime": "application/vnd.framemaker",
         "file_extensions": [
             "fm"
         ]
@@ -6176,30 +6601,35 @@
     },
     "fmt/553": {
         "name": "Microsoft Excel Chart",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xlc"
         ]
     },
     "fmt/554": {
         "name": "Microsoft Excel Chart",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xlc"
         ]
     },
     "fmt/555": {
         "name": "Microsoft Excel Macro",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xlm"
         ]
     },
     "fmt/556": {
         "name": "Microsoft Excel Macro",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xlm"
         ]
     },
     "fmt/557": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "eps"
@@ -6207,6 +6637,7 @@
     },
     "fmt/558": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "pdf"
@@ -6214,6 +6645,7 @@
     },
     "fmt/559": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "pdf"
@@ -6221,6 +6653,7 @@
     },
     "fmt/560": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "pdf"
@@ -6228,6 +6661,7 @@
     },
     "fmt/561": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "pdf"
@@ -6235,6 +6669,7 @@
     },
     "fmt/562": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "pdf"
@@ -6242,6 +6677,7 @@
     },
     "fmt/563": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "pdf"
@@ -6249,6 +6685,7 @@
     },
     "fmt/564": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "pdf"
@@ -6256,6 +6693,7 @@
     },
     "fmt/565": {
         "name": "Adobe Illustrator",
+        "mime": "application/postscript",
         "file_extensions": [
             "ai",
             "pdf"
@@ -6263,18 +6701,21 @@
     },
     "fmt/566": {
         "name": "WebP",
+        "mime": "image/webp",
         "file_extensions": [
             "webp"
         ]
     },
     "fmt/567": {
         "name": "WebP",
+        "mime": "image/webp",
         "file_extensions": [
             "webp"
         ]
     },
     "fmt/568": {
         "name": "WebP",
+        "mime": "image/webp",
         "file_extensions": [
             "webp"
         ]
@@ -6308,12 +6749,14 @@
     },
     "fmt/573": {
         "name": "WebM",
+        "mime": "video/webm",
         "file_extensions": [
             "webm"
         ]
     },
     "fmt/574": {
         "name": "Digital Imaging and Communications in Medicine File Format",
+        "mime": "application/dicom",
         "file_extensions": [
             "dcm"
         ]
@@ -6411,12 +6854,14 @@
     },
     "fmt/589": {
         "name": "Windows Media Playlist",
+        "mime": "application/vnd.ms-wpl",
         "file_extensions": [
             "wpl"
         ]
     },
     "fmt/590": {
         "name": "JPEG Extended Range",
+        "mime": "image/jxr",
         "file_extensions": [
             "jxr",
             "wdp"
@@ -6424,6 +6869,7 @@
     },
     "fmt/591": {
         "name": "Radiance RGBE Image Format",
+        "mime": "image/vnd.radiance",
         "file_extensions": [
             "hdr",
             "pic",
@@ -6445,12 +6891,14 @@
     },
     "fmt/594": {
         "name": "Microsoft PhotoDraw",
+        "mime": "image/vnd.mix",
         "file_extensions": [
             "mix"
         ]
     },
     "fmt/595": {
         "name": "Microsoft Excel Non-XML Binary Workbook",
+        "mime": "application/vnd.ms-excel.sheet.binary.macroEnabled.12",
         "file_extensions": [
             "xlsb"
         ]
@@ -6464,18 +6912,21 @@
     },
     "fmt/597": {
         "name": "Microsoft Word Template",
+        "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
         "file_extensions": [
             "dotx"
         ]
     },
     "fmt/598": {
         "name": "Microsoft Excel Template",
+        "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.template",
         "file_extensions": [
             "xltx"
         ]
     },
     "fmt/599": {
         "name": "Microsoft Word Macro-Enabled Document Template",
+        "mime": "application/vnd.ms-word.template.macroEnabled.12",
         "file_extensions": [
             "dotm"
         ]
@@ -6540,6 +6991,7 @@
     },
     "fmt/609": {
         "name": "Microsoft Word (Generic)",
+        "mime": "application/msword",
         "file_extensions": [
             "doc"
         ]
@@ -6566,6 +7018,7 @@
     },
     "fmt/613": {
         "name": "RAR Archive",
+        "mime": "application/vnd.rar",
         "file_extensions": [
             "rar"
         ]
@@ -6585,42 +7038,49 @@
     },
     "fmt/616": {
         "name": "Web Open Font Format",
+        "mime": "font/woff",
         "file_extensions": [
             "woff"
         ]
     },
     "fmt/617": {
         "name": "GeoGebra",
+        "mime": "application/vnd.geogebra.file",
         "file_extensions": [
             "ggb"
         ]
     },
     "fmt/618": {
         "name": "GeoGebra",
+        "mime": "application/vnd.geogebra.file",
         "file_extensions": [
             "geo"
         ]
     },
     "fmt/619": {
         "name": "GeoGebra",
+        "mime": "application/vnd.geogebra.file",
         "file_extensions": [
             "ggb"
         ]
     },
     "fmt/620": {
         "name": "GeoGebra",
+        "mime": "application/vnd.geogebra.file",
         "file_extensions": [
             "ggb"
         ]
     },
     "fmt/621": {
         "name": "GeoGebra",
+        "mime": "application/vnd.geogebra.file",
         "file_extensions": [
             "ggb"
         ]
     },
     "fmt/622": {
         "name": "GeoGebra",
+        "mime": "application/vnd.geogebra.file",
         "file_extensions": [
             "ggb"
         ]
@@ -6639,6 +7099,7 @@
     },
     "fmt/639": {
         "name": "Stuffit Archive File",
+        "mime": "application/x-stuffit",
         "file_extensions": [
             "sit"
         ]
@@ -6661,48 +7122,56 @@
     },
     "fmt/627": {
         "name": "Microsoft Excel Macro-Enabled Template",
+        "mime": "application/vnd.ms-excel.template.macroEnabled.12",
         "file_extensions": [
             "xltm"
         ]
     },
     "fmt/628": {
         "name": "Microsoft Excel Macro-Enabled Add-In",
+        "mime": "application/vnd.ms-excel.addin.macroEnabled.12",
         "file_extensions": [
             "xlam"
         ]
     },
     "fmt/629": {
         "name": "Microsoft PowerPoint Show",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
         "file_extensions": [
             "ppsx"
         ]
     },
     "fmt/630": {
         "name": "Microsoft PowerPoint Macro-Enabled Show",
+        "mime": "application/vnd.ms-powerpoint.slideshow.macroEnabled.12",
         "file_extensions": [
             "ppsm"
         ]
     },
     "fmt/631": {
         "name": "Microsoft PowerPoint Template",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.template",
         "file_extensions": [
             "potx"
         ]
     },
     "fmt/632": {
         "name": "Microsoft PowerPoint Macro-Enabled Template",
+        "mime": "application/vnd.ms-powerpoint.template.macroEnabled.12",
         "file_extensions": [
             "potm"
         ]
     },
     "fmt/633": {
         "name": "Microsoft PowerPoint Macro-Enabled Add-In",
+        "mime": "application/vnd.ms-powerpoint.addin.macroEnabled.12",
         "file_extensions": [
             "ppam"
         ]
     },
     "fmt/634": {
         "name": "Microsoft Compiled HTML Help",
+        "mime": "application/vnd.ms-htmlhelp",
         "file_extensions": [
             "chm",
             "chw"
@@ -6716,12 +7185,14 @@
     },
     "fmt/636": {
         "name": "Microsoft PowerPoint Macro-Enabled Slide",
+        "mime": "application/vnd.ms-powerpoint.slide.macroEnabled.12",
         "file_extensions": [
             "sldm"
         ]
     },
     "fmt/637": {
         "name": "Microsoft OneNote",
+        "mime": "application/msonenote",
         "file_extensions": [
             "one"
         ]
@@ -6754,6 +7225,7 @@
     },
     "fmt/643": {
         "name": "ASTM E57 3D File Format",
+        "mime": "model/e57",
         "file_extensions": [
             "e57"
         ]
@@ -6766,6 +7238,7 @@
     },
     "fmt/645": {
         "name": "Exchangeable Image File Format (Compressed)",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jpeg",
             "jpg"
@@ -6799,6 +7272,7 @@
     },
     "fmt/650": {
         "name": "QuarkXPress Report File",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qxp report",
             "qxp%20report",
@@ -6807,6 +7281,7 @@
     },
     "fmt/651": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -6815,6 +7290,7 @@
     },
     "fmt/652": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -6847,6 +7323,7 @@
     },
     "fmt/657": {
         "name": "Open XML Paper Specification",
+        "mime": "application/oxps",
         "file_extensions": [
             "oxps",
             "xps"
@@ -6888,6 +7365,7 @@
     },
     "fmt/664": {
         "name": "Gerber Format",
+        "mime": "application/vnd.gerber",
         "file_extensions": [
             "gbr"
         ]
@@ -6925,6 +7403,7 @@
     },
     "fmt/670": {
         "name": "PKCS #7 Cryptographic Message File",
+        "mime": "application/pkcs7-mime, application/pkcs7-signature",
         "file_extensions": [
             "p7b",
             "p7m",
@@ -6999,6 +7478,7 @@
     },
     "fmt/682": {
         "name": "Thumbs DB file",
+        "mime": "application/vnd.microsoft.windows.thumbnail-cache",
         "file_extensions": [
             "db"
         ]
@@ -7011,12 +7491,14 @@
     },
     "fmt/684": {
         "name": "Vectorworks",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "vwx"
         ]
     },
     "fmt/685": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -7025,6 +7507,7 @@
     },
     "fmt/686": {
         "name": "Vectorworks",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "vwx"
         ]
@@ -7129,42 +7612,49 @@
     },
     "fmt/703": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "fmt/704": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "fmt/705": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "fmt/706": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "fmt/707": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "fmt/708": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
     },
     "fmt/709": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "rf64",
             "wav"
@@ -7172,6 +7662,7 @@
     },
     "fmt/710": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "rf64",
             "wav"
@@ -7179,6 +7670,7 @@
     },
     "fmt/711": {
         "name": "Broadcast WAVE",
+        "mime": "audio/x-wav",
         "file_extensions": [
             "wav"
         ]
@@ -7236,6 +7728,7 @@
     },
     "fmt/720": {
         "name": "MBOX",
+        "mime": "application/mbox",
         "file_extensions": [
             "mbox"
         ]
@@ -7260,12 +7753,14 @@
     },
     "fmt/724": {
         "name": "Keyhole Markup Language (Container)",
+        "mime": "application/vnd.google-earth.kmz",
         "file_extensions": [
             "kmz"
         ]
     },
     "fmt/725": {
         "name": "Microsoft Project",
+        "mime": "application/vnd.ms-project",
         "file_extensions": [
             "mpp"
         ]
@@ -7291,6 +7786,7 @@
     },
     "fmt/729": {
         "name": "SQLite Database File Format",
+        "mime": "application/x-sqlite3",
         "file_extensions": [
             "db",
             "db3",
@@ -7300,6 +7796,7 @@
     },
     "fmt/730": {
         "name": "Digital Negative Format (DNG)",
+        "mime": "image/dng, image/tiff",
         "file_extensions": [
             "dng"
         ]
@@ -7312,6 +7809,7 @@
     },
     "fmt/732": {
         "name": "Bink Video Format",
+        "mime": "video/vnd.radgamettools.bink",
         "file_extensions": [
             "bik2",
             "bk2"
@@ -7331,6 +7829,7 @@
     },
     "fmt/735": {
         "name": "Dolby Digital AC-3",
+        "mime": "audio/ac3",
         "file_extensions": [
             "ac3"
         ]
@@ -7445,6 +7944,7 @@
     },
     "fmt/754": {
         "name": "Microsoft Word Document (Password Protected)",
+        "mime": "application/msword",
         "file_extensions": [
             "doc",
             "wbk"
@@ -7452,6 +7952,7 @@
     },
     "fmt/755": {
         "name": "Microsoft Word Document Template (Password Protected)",
+        "mime": "application/msword",
         "file_extensions": [
             "dot"
         ]
@@ -7464,120 +7965,140 @@
     },
     "fmt/757": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/758": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/759": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/760": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/761": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/762": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/763": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/764": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/765": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/766": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/767": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/768": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/769": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/770": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/771": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/772": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/773": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/774": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/775": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
     },
     "fmt/776": {
         "name": "Adobe Flash",
+        "mime": "application/x-shockwave-flash",
         "file_extensions": [
             "swf"
         ]
@@ -7596,6 +8117,7 @@
     },
     "fmt/779": {
         "name": "pcap Packet Capture",
+        "mime": "application/vnd.tcpdump.pcap",
         "file_extensions": [
             "cap",
             "dmp",
@@ -7604,6 +8126,7 @@
     },
     "fmt/780": {
         "name": "pcap Next Generation Packet Capture",
+        "mime": "application/vnd.tcpdump.pcap",
         "file_extensions": [
             "pcapng"
         ]
@@ -7622,54 +8145,63 @@
     },
     "fmt/783": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
     },
     "fmt/784": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
     },
     "fmt/785": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
     },
     "fmt/786": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
     },
     "fmt/787": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
     },
     "fmt/788": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
     },
     "fmt/789": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
     },
     "fmt/790": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
     },
     "fmt/791": {
         "name": "Material Exchange Format",
+        "mime": "application/mxf",
         "file_extensions": [
             "mxf"
         ]
@@ -7726,6 +8258,7 @@
     },
     "fmt/800": {
         "name": "CSV Schema",
+        "mime": "text/csv-schema",
         "file_extensions": [
             "csvs"
         ]
@@ -7744,6 +8277,7 @@
     },
     "fmt/803": {
         "name": "Encase Image File/Expert Witness Compression File",
+        "mime": "application/encase",
         "file_extensions": [
             "e01"
         ]
@@ -7832,6 +8366,7 @@
     },
     "fmt/817": {
         "name": "JSON Data Interchange Format",
+        "mime": "application/json",
         "file_extensions": [
             "json"
         ]
@@ -7912,6 +8447,7 @@
     },
     "fmt/829": {
         "name": "3MF 3D Manufacturing Format",
+        "mime": "application/vnd.ms-3mfdocument",
         "file_extensions": [
             "3mf"
         ]
@@ -8178,36 +8714,42 @@
     },
     "fmt/871": {
         "name": "Adobe Content Server Message File",
+        "mime": "application/vnd.adobe.adept+xml",
         "file_extensions": [
             "acsm"
         ]
     },
     "fmt/872": {
         "name": "Free Lossless Image Format (FLIF)",
+        "mime": "image/flif",
         "file_extensions": [
             "flif"
         ]
     },
     "fmt/873": {
         "name": "Notation3",
+        "mime": "text/n3",
         "file_extensions": [
             "n3"
         ]
     },
     "fmt/874": {
         "name": "Turtle",
+        "mime": "text/turtle",
         "file_extensions": [
             "ttl"
         ]
     },
     "fmt/875": {
         "name": "RDF/XML",
+        "mime": "application/rdf+xml",
         "file_extensions": [
             "rdf"
         ]
     },
     "fmt/876": {
         "name": "Pagemaker Document (Generic)",
+        "mime": "application/vnd.pagemaker",
         "file_extensions": [
             "p65",
             "pmd",
@@ -8244,6 +8786,7 @@
     },
     "fmt/881": {
         "name": "Microsoft Document Imaging File Format",
+        "mime": "image/vnd.ms-modi",
         "file_extensions": [
             "mdi"
         ]
@@ -8312,6 +8855,7 @@
     },
     "fmt/892": {
         "name": "Compound WordPerfect for Windows Document",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": [
             "doc",
             "w60",
@@ -8340,6 +8884,7 @@
     },
     "fmt/896": {
         "name": "MusicXML",
+        "mime": "application/vnd.recordare.musicxml+xml",
         "file_extensions": [
             "musicxml",
             "xml"
@@ -8347,6 +8892,7 @@
     },
     "fmt/897": {
         "name": "Compressed MusicXML",
+        "mime": "application/vnd.recordare.musicxml",
         "file_extensions": [
             "mxl"
         ]
@@ -8359,6 +8905,7 @@
     },
     "fmt/899": {
         "name": "Windows Portable Executable",
+        "mime": "application/vnd.microsoft.portable-executable",
         "file_extensions": [
             "dll",
             "exe",
@@ -8367,6 +8914,7 @@
     },
     "fmt/900": {
         "name": "Windows Portable Executable",
+        "mime": "application/vnd.microsoft.portable-executable",
         "file_extensions": [
             "dll",
             "exe",
@@ -8526,36 +9074,42 @@
     },
     "fmt/924": {
         "name": "Microsoft Visio Drawing",
+        "mime": "application/vnd.ms-visio.drawing.main+xml",
         "file_extensions": [
             "vsdx"
         ]
     },
     "fmt/925": {
         "name": "Microsoft Visio Stencil",
+        "mime": "application/vnd.ms-visio.stencil.main+xml",
         "file_extensions": [
             "vssx"
         ]
     },
     "fmt/926": {
         "name": "Microsoft Visio Template",
+        "mime": "application/vnd.ms-visio.template.main+xml",
         "file_extensions": [
             "vstx"
         ]
     },
     "fmt/927": {
         "name": "Microsoft Visio Macro-Enabled Drawing",
+        "mime": "application/vnd.ms-visio.drawing.macroEnabled.main+xml",
         "file_extensions": [
             "vsdm"
         ]
     },
     "fmt/928": {
         "name": "Microsoft Visio Macro-Enabled Stencil",
+        "mime": "application/vnd.ms-visio.stencil.macroEnabled.main+xml",
         "file_extensions": [
             "vssm"
         ]
     },
     "fmt/929": {
         "name": "Microsoft Visio Macro-Enabled Template",
+        "mime": "application/vnd.ms-visio.template.macroEnabled.main+xml",
         "file_extensions": [
             "vstm"
         ]
@@ -8581,18 +9135,21 @@
     },
     "fmt/933": {
         "name": "Simple Vector Format",
+        "mime": "image/vnd-svf",
         "file_extensions": [
             "svf"
         ]
     },
     "fmt/934": {
         "name": "Simple Vector Format",
+        "mime": "image/vnd-svf",
         "file_extensions": [
             "svf"
         ]
     },
     "fmt/935": {
         "name": "Animated Portable Network Graphics",
+        "mime": "image/apng",
         "file_extensions": [
             "apng",
             "png"
@@ -8600,12 +9157,14 @@
     },
     "fmt/936": {
         "name": "Microsoft Picture It! Image File",
+        "mime": "image/vnd.mix",
         "file_extensions": [
             "mix"
         ]
     },
     "fmt/937": {
         "name": "Adobe Air",
+        "mime": "application/vnd.adobe.air-application-installer-package+zip",
         "file_extensions": [
             "air"
         ]
@@ -8636,18 +9195,21 @@
     },
     "fmt/942": {
         "name": "Adobe Air",
+        "mime": "application/vnd.adobe.air-application-installer-package+zip",
         "file_extensions": [
             "air"
         ]
     },
     "fmt/943": {
         "name": "Adobe Air",
+        "mime": "application/vnd.adobe.air-application-installer-package+zip",
         "file_extensions": [
             "air"
         ]
     },
     "fmt/944": {
         "name": "Ogg Multimedia Container",
+        "mime": "application/ogg",
         "file_extensions": [
             "ogg",
             "ogv",
@@ -8657,6 +9219,7 @@
     },
     "fmt/945": {
         "name": "Ogg Theora Video",
+        "mime": "video/ogg",
         "file_extensions": [
             "ogg",
             "ogv"
@@ -8664,6 +9227,7 @@
     },
     "fmt/946": {
         "name": "Ogg Opus Codec Compressed Multimedia File",
+        "mime": "audio/ogg, audio/opus",
         "file_extensions": [
             "ogg",
             "opus"
@@ -8671,12 +9235,14 @@
     },
     "fmt/947": {
         "name": "Ogg FLAC Compressed Multimedia File",
+        "mime": "audio/ogg",
         "file_extensions": [
             "ogg"
         ]
     },
     "fmt/948": {
         "name": "Ogg Speex Codec Multimedia File",
+        "mime": "audio/ogg, audio/speex",
         "file_extensions": [
             "ogg",
             "spx"
@@ -8684,6 +9250,7 @@
     },
     "fmt/949": {
         "name": "WordPerfect",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": [
             "wp4",
             "wpd"
@@ -8691,6 +9258,7 @@
     },
     "fmt/950": {
         "name": "MIME Email",
+        "mime": "message/rfc822",
         "file_extensions": [
             "eml"
         ]
@@ -8704,24 +9272,28 @@
     },
     "fmt/952": {
         "name": "True Audio",
+        "mime": "audio/tta",
         "file_extensions": [
             "tta"
         ]
     },
     "fmt/953": {
         "name": "True Audio",
+        "mime": "audio/tta",
         "file_extensions": [
             "tta"
         ]
     },
     "fmt/954": {
         "name": "Adaptive Multi-Rate Wideband Audio",
+        "mime": "audio/amr-wb",
         "file_extensions": [
             "awb"
         ]
     },
     "fmt/955": {
         "name": "Downloadable Sounds Audio",
+        "mime": "audio/dls",
         "file_extensions": [
             "dls"
         ]
@@ -8765,12 +9337,14 @@
     },
     "fmt/961": {
         "name": "Mobile eXtensible Music Format",
+        "mime": "audio/mobile-xmf",
         "file_extensions": [
             "mxmf"
         ]
     },
     "fmt/962": {
         "name": "QCP Audio File Format",
+        "mime": "audio/qcelp",
         "file_extensions": [
             "qcp"
         ]
@@ -8795,28 +9369,33 @@
     },
     "fmt/966": {
         "name": "AppleDouble Resource Fork",
+        "mime": "multipart/appledouble",
         "file_extensions": []
     },
     "fmt/967": {
         "name": "AppleSingle",
+        "mime": "application/applefile",
         "file_extensions": [
             "as"
         ]
     },
     "fmt/968": {
         "name": "AppleSingle",
+        "mime": "application/applefile",
         "file_extensions": [
             "as"
         ]
     },
     "fmt/969": {
         "name": "Rich Text Format",
+        "mime": "application/rtf",
         "file_extensions": [
             "rtf"
         ]
     },
     "fmt/970": {
         "name": "Khronos Texture File",
+        "mime": "image/ktx",
         "file_extensions": [
             "ktx"
         ]
@@ -8829,18 +9408,21 @@
     },
     "fmt/972": {
         "name": "Dolby MLP Lossless Audio",
+        "mime": "audio/vnd.dolby.mlp",
         "file_extensions": [
             "mlp"
         ]
     },
     "fmt/973": {
         "name": "DTS Coherent Acoustics (DCA) Audio",
+        "mime": "audio/vnd.dts",
         "file_extensions": [
             "dts"
         ]
     },
     "fmt/974": {
         "name": "Notation Interchange File Format",
+        "mime": "application/vnd.music-niff",
         "file_extensions": [
             "nif"
         ]
@@ -8912,6 +9494,7 @@
     },
     "fmt/985": {
         "name": "Valve Texture Format",
+        "mime": "image/vnd.valve.source.texture",
         "file_extensions": [
             "vtf"
         ]
@@ -8976,6 +9559,7 @@
     },
     "fmt/996": {
         "name": "Adobe Photoshop Large Document Format",
+        "mime": "image/vnd.adobe.photoshop",
         "file_extensions": [
             "psb"
         ]
@@ -8988,12 +9572,14 @@
     },
     "fmt/998": {
         "name": "OpenRaster Image Format",
+        "mime": "image/openraster",
         "file_extensions": [
             "ora"
         ]
     },
     "fmt/999": {
         "name": "Krita Document Format",
+        "mime": "application/x-krita",
         "file_extensions": [
             "kra"
         ]
@@ -9006,6 +9592,7 @@
     },
     "fmt/1001": {
         "name": "OpenEXR",
+        "mime": "image/x-exr",
         "file_extensions": [
             "exr"
         ]
@@ -9294,6 +9881,7 @@
     },
     "fmt/1047": {
         "name": "Geography Markup Language",
+        "mime": "application/gml+xml",
         "file_extensions": [
             "gml"
         ]
@@ -9440,6 +10028,7 @@
     },
     "fmt/1071": {
         "name": "Apple Disk Image",
+        "mime": "application/x-apple-diskimage",
         "file_extensions": [
             "dmg"
         ]
@@ -9570,6 +10159,7 @@
     },
     "fmt/1091": {
         "name": "Scribus Document",
+        "mime": "application/vnd.scribus",
         "file_extensions": [
             "scd",
             "sla"
@@ -9632,6 +10222,7 @@
     },
     "fmt/1101": {
         "name": "High Efficiency Image File Format",
+        "mime": "image/heif",
         "file_extensions": [
             "heic"
         ]
@@ -9806,6 +10397,7 @@
     },
     "fmt/1129": {
         "name": "PDF 2.0 - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
@@ -9850,18 +10442,21 @@
     },
     "fmt/1136": {
         "name": "MiniCAD",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "mcd"
         ]
     },
     "fmt/1137": {
         "name": "MiniCAD",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "mcd"
         ]
     },
     "fmt/1138": {
         "name": "MiniCAD/VectorWorks",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "mcd",
             "vwx"
@@ -9869,24 +10464,28 @@
     },
     "fmt/1139": {
         "name": "VectorWorks",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "vwx"
         ]
     },
     "fmt/1140": {
         "name": "VectorWorks",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "vwx"
         ]
     },
     "fmt/1141": {
         "name": "VectorWorks",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "vwx"
         ]
     },
     "fmt/1142": {
         "name": "VectorWorks Plugin or Script",
+        "mime": "application/vnd.vectorworks",
         "file_extensions": [
             "vsm",
             "vso",
@@ -9932,6 +10531,7 @@
     },
     "fmt/1149": {
         "name": "Markdown",
+        "mime": "text/markdown",
         "file_extensions": [
             "markdown",
             "md"
@@ -10071,6 +10671,7 @@
     },
     "fmt/1172": {
         "name": "Web Open Font Format",
+        "mime": "font/woff2",
         "file_extensions": [
             "woff2"
         ]
@@ -10084,6 +10685,7 @@
     },
     "fmt/1174": {
         "name": "Hewlett Packard Graphics Language",
+        "mime": "application/vnd.hp-HPGL",
         "file_extensions": [
             "000"
         ]
@@ -10106,6 +10708,7 @@
     },
     "fmt/1178": {
         "name": "Synthetic Music Mobile Application Format",
+        "mime": "application/vnd.yamaha.smaf-audio",
         "file_extensions": [
             "mmf"
         ]
@@ -10142,6 +10745,7 @@
     },
     "fmt/1184": {
         "name": "InDesign Markup Language Package",
+        "mime": "application/vnd.adobe.indesign-idml-package",
         "file_extensions": [
             "idml"
         ]
@@ -10289,6 +10893,7 @@
     },
     "fmt/1209": {
         "name": "COLLADA Digital Asset Exchange (DAE)",
+        "mime": "model/vnd.collada+xml",
         "file_extensions": [
             "dae"
         ]
@@ -10340,6 +10945,7 @@
     },
     "fmt/1216": {
         "name": "Lotus Freelance Show",
+        "mime": "application/vnd.lotus-freelance",
         "file_extensions": [
             "prz"
         ]
@@ -10358,20 +10964,24 @@
     },
     "fmt/1219": {
         "name": "Gnumeric",
+        "mime": "application/x-gnumeric",
         "file_extensions": [
             "gnumeric"
         ]
     },
     "fmt/1220": {
         "name": "WordPerfect for Macintosh Document",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": []
     },
     "fmt/1221": {
         "name": "WordPerfect for Macintosh Document",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": []
     },
     "fmt/1222": {
         "name": "WordPerfect for Macintosh Document",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": []
     },
     "fmt/1223": {
@@ -10445,6 +11055,7 @@
     },
     "fmt/1234": {
         "name": "Smacker Video",
+        "mime": "video/vnd.radgamettools.smacker",
         "file_extensions": [
             "smk"
         ]
@@ -10487,66 +11098,77 @@
     },
     "fmt/1241": {
         "name": "FO File",
+        "mime": " application/vnd.software602.filler.form+xml",
         "file_extensions": [
             "fo"
         ]
     },
     "fmt/1242": {
         "name": "ZFO (Form) File",
+        "mime": "application/vnd.software602.filler.form-xml-zip",
         "file_extensions": [
             "zfo"
         ]
     },
     "fmt/1243": {
         "name": "ZFO (Message) File",
+        "mime": "application/vnd.software602.filler.form-xml-zip",
         "file_extensions": [
             "zfo"
         ]
     },
     "fmt/1244": {
         "name": "ZFO (Sent Message) File",
+        "mime": "application/vnd.software602.filler.form-xml-zip",
         "file_extensions": [
             "zfo"
         ]
     },
     "fmt/1245": {
         "name": "ZFO (Proof of Delivery) File",
+        "mime": "application/vnd.software602.filler.form-xml-zip",
         "file_extensions": [
             "zfo"
         ]
     },
     "fmt/1246": {
         "name": "SOSI",
+        "mime": "text/vnd.sosi",
         "file_extensions": [
             "sos"
         ]
     },
     "fmt/1247": {
         "name": "SOSI",
+        "mime": "text/vnd.sosi",
         "file_extensions": [
             "sos"
         ]
     },
     "fmt/1248": {
         "name": "SOSI",
+        "mime": "text/vnd.sosi",
         "file_extensions": [
             "sos"
         ]
     },
     "fmt/1249": {
         "name": "SOSI",
+        "mime": "text/vnd.sosi",
         "file_extensions": [
             "sos"
         ]
     },
     "fmt/1250": {
         "name": "SOSI",
+        "mime": "text/vnd.sosi",
         "file_extensions": [
             "sos"
         ]
     },
     "fmt/1251": {
         "name": "Electronically Certified Document (EDOC)",
+        "mime": "application/vnd.etsi.asic-e+zip",
         "file_extensions": [
             "edoc"
         ]
@@ -10745,6 +11367,7 @@
     },
     "fmt/1281": {
         "name": "WARC",
+        "mime": "application/warc",
         "file_extensions": [
             "warc"
         ]
@@ -10948,6 +11571,7 @@
     },
     "fmt/1311": {
         "name": "Tweet JSON",
+        "mime": "application/json",
         "file_extensions": [
             "json"
         ]
@@ -10966,24 +11590,28 @@
     },
     "fmt/1314": {
         "name": "GL Transmission Format (Text)",
+        "mime": "application/json",
         "file_extensions": [
             "gltf"
         ]
     },
     "fmt/1315": {
         "name": "GL Transmission Format (Text)",
+        "mime": "application/json",
         "file_extensions": [
             "gltf"
         ]
     },
     "fmt/1316": {
         "name": "GL Transmission Format (Binary)",
+        "mime": "model/gltf-binary",
         "file_extensions": [
             "glb"
         ]
     },
     "fmt/1317": {
         "name": "QuarkXPress Document",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qwd",
             "qxd",
@@ -10992,6 +11620,7 @@
     },
     "fmt/1318": {
         "name": "QuarkXPress Document",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qwd",
             "qxd",
@@ -11000,6 +11629,7 @@
     },
     "fmt/1319": {
         "name": "QuarkXPress Document",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qwd",
             "qxd",
@@ -11008,6 +11638,7 @@
     },
     "fmt/1320": {
         "name": "QuarkXPress Document",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qwd",
             "qxd",
@@ -11016,6 +11647,7 @@
     },
     "fmt/1321": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11024,6 +11656,7 @@
     },
     "fmt/1322": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11032,6 +11665,7 @@
     },
     "fmt/1323": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11040,6 +11674,7 @@
     },
     "fmt/1324": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11048,6 +11683,7 @@
     },
     "fmt/1325": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11056,6 +11692,7 @@
     },
     "fmt/1326": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11064,6 +11701,7 @@
     },
     "fmt/1327": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11072,6 +11710,7 @@
     },
     "fmt/1328": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11149,12 +11788,14 @@
     },
     "fmt/1340": {
         "name": "BDOC",
+        "mime": "application/vnd.bdoc-1.0",
         "file_extensions": [
             "bdoc"
         ]
     },
     "fmt/1341": {
         "name": "Associated Signature Container Simple (ASiC-S)",
+        "mime": "application/vnd.etsi.asic-s+zip",
         "file_extensions": [
             "asics",
             "scs"
@@ -11162,6 +11803,7 @@
     },
     "fmt/1342": {
         "name": "BDOC",
+        "mime": "application/vnd.etsi.asic-e+zip",
         "file_extensions": [
             "asice",
             "bdoc"
@@ -11252,6 +11894,7 @@
     },
     "fmt/1355": {
         "name": "WARC",
+        "mime": "application/warc",
         "file_extensions": [
             "warc"
         ]
@@ -11324,6 +11967,7 @@
     },
     "fmt/1367": {
         "name": "GeoJSON",
+        "mime": "application/geo+json",
         "file_extensions": [
             "geojson"
         ]
@@ -11412,18 +12056,21 @@
     },
     "fmt/1382": {
         "name": "Embedded OpenType (EOT) File Format",
+        "mime": "application/vnd.ms-fontobject",
         "file_extensions": [
             "eot"
         ]
     },
     "fmt/1383": {
         "name": "Embedded OpenType (EOT) File Format",
+        "mime": "application/vnd.ms-fontobject",
         "file_extensions": [
             "eot"
         ]
     },
     "fmt/1384": {
         "name": "Embedded OpenType (EOT) File Format",
+        "mime": "application/vnd.ms-fontobject",
         "file_extensions": [
             "eot"
         ]
@@ -11455,42 +12102,49 @@
     },
     "fmt/1389": {
         "name": "Drawing Interchange Format (ASCII)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/1390": {
         "name": "Drawing Interchange Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/1391": {
         "name": "Drawing Interchange Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/1392": {
         "name": "Drawing Interchange Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/1393": {
         "name": "Drawing Interchange Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/1394": {
         "name": "Drawing Interchange Format (Binary)",
+        "mime": "image/vnd.dxf",
         "file_extensions": [
             "dxf"
         ]
     },
     "fmt/1395": {
         "name": "AutoCAD Drawing",
+        "mime": "image/vnd.dwg",
         "file_extensions": [
             "dwg"
         ]
@@ -11519,6 +12173,7 @@
     },
     "fmt/1400": {
         "name": "Ichitaro Document",
+        "mime": "application/x-js-taro",
         "file_extensions": [
             "$td",
             "jtd",
@@ -11679,6 +12334,7 @@
     },
     "fmt/1424": {
         "name": "WordPerfect Encrypted Document",
+        "mime": "application/vnd.wordperfect",
         "file_extensions": [
             "wp"
         ]
@@ -11779,14 +12435,17 @@
     },
     "fmt/1442": {
         "name": "QuarkXPress Document",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": []
     },
     "fmt/1443": {
         "name": "QuarkXPress Document",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": []
     },
     "fmt/1444": {
         "name": "QuarkXPress Document",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qwd",
             "qxd",
@@ -11795,6 +12454,7 @@
     },
     "fmt/1445": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11803,6 +12463,7 @@
     },
     "fmt/1446": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -11837,18 +12498,21 @@
     },
     "fmt/1452": {
         "name": "Lotus 1-2-3 Worksheet",
+        "mime": "application/vnd.lotus-1-2-3, application/x-123",
         "file_extensions": [
             "123"
         ]
     },
     "fmt/1453": {
         "name": "Lotus 1-2-3 Worksheet",
+        "mime": "application/vnd.lotus-1-2-3, application/x-123",
         "file_extensions": [
             "123"
         ]
     },
     "fmt/1454": {
         "name": "Web Video Text Tracks (WebVTT) Format",
+        "mime": "text/vtt",
         "file_extensions": [
             "vtt"
         ]
@@ -11881,12 +12545,14 @@
     },
     "fmt/1459": {
         "name": "Stuffit Archive File",
+        "mime": "application/x-stuffit",
         "file_extensions": [
             "sit"
         ]
     },
     "fmt/1460": {
         "name": "Stuffit Archive File",
+        "mime": "application/x-stuffit",
         "file_extensions": [
             "sit"
         ]
@@ -11966,6 +12632,7 @@
     },
     "fmt/1472": {
         "name": "Magic Shadow Archiver Disk Image File",
+        "mime": "application/vnd.msa-disk-image",
         "file_extensions": [
             "msa"
         ]
@@ -11978,6 +12645,7 @@
     },
     "fmt/1474": {
         "name": "TEI P4 XML - Single Text File",
+        "mime": "application/tei+xml",
         "file_extensions": [
             "odd",
             "tei",
@@ -11986,6 +12654,7 @@
     },
     "fmt/1475": {
         "name": "TEI P4 XML - Corpus File",
+        "mime": "application/tei+xml",
         "file_extensions": [
             "odd",
             "tei",
@@ -11994,6 +12663,7 @@
     },
     "fmt/1476": {
         "name": "TEI P5 - Single Text File",
+        "mime": "application/tei+xml",
         "file_extensions": [
             "odd",
             "tei",
@@ -12002,6 +12672,7 @@
     },
     "fmt/1477": {
         "name": "TEI P5 XML - Corpus File",
+        "mime": "application/tei+xml",
         "file_extensions": [
             "odd",
             "tei",
@@ -12014,12 +12685,14 @@
     },
     "fmt/1479": {
         "name": "XIFF (Xerox Image File Format)",
+        "mime": "image/vnd.xiff",
         "file_extensions": [
             "xif"
         ]
     },
     "fmt/1480": {
         "name": "XIFF (Xerox Image File Format)",
+        "mime": "image/vnd.xiff",
         "file_extensions": [
             "xif"
         ]
@@ -12045,12 +12718,14 @@
     },
     "fmt/1484": {
         "name": "JPEG XL Codestream",
+        "mime": "image/jxl",
         "file_extensions": [
             "jxl"
         ]
     },
     "fmt/1485": {
         "name": "JPEG XL",
+        "mime": "image/jxl",
         "file_extensions": [
             "jxl"
         ]
@@ -12107,6 +12782,7 @@
     },
     "fmt/1494": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -12115,6 +12791,7 @@
     },
     "fmt/1495": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -12147,12 +12824,14 @@
     },
     "fmt/1500": {
         "name": "Adobe Acrobat Forms Data Format",
+        "mime": "application/vnd.fdf",
         "file_extensions": [
             "fdf"
         ]
     },
     "fmt/1501": {
         "name": "XML Forms Data Format",
+        "mime": "application/vnd.adobe.xfdf",
         "file_extensions": [
             "xfdf"
         ]
@@ -12189,6 +12868,7 @@
     },
     "fmt/1507": {
         "name": "Exchangeable Image File Format (Compressed)",
+        "mime": "image/jpeg",
         "file_extensions": [
             "jpeg",
             "jpg"
@@ -12196,6 +12876,7 @@
     },
     "fmt/1508": {
         "name": "Microsoft Visio Drawing",
+        "mime": "application/vnd.visio",
         "file_extensions": [
             "vsd",
             "vss",
@@ -12204,6 +12885,7 @@
     },
     "fmt/1509": {
         "name": "Microsoft Visio Drawing",
+        "mime": "application/vnd.visio",
         "file_extensions": [
             "vsd",
             "vss",
@@ -12212,6 +12894,7 @@
     },
     "fmt/1510": {
         "name": "Microsoft Visio Drawing",
+        "mime": "application/vnd.visio",
         "file_extensions": [
             "vsd",
             "vss",
@@ -12221,36 +12904,42 @@
     },
     "fmt/1511": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "fmt/1512": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "fmt/1513": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "fmt/1514": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "fmt/1515": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
     },
     "fmt/1516": {
         "name": "Microsoft Publisher",
+        "mime": "application/x-mspublisher",
         "file_extensions": [
             "pub"
         ]
@@ -12449,6 +13138,7 @@
     },
     "fmt/1543": {
         "name": "ELAN Annotation File",
+        "mime": "application/eaf+xml",
         "file_extensions": [
             "eaf"
         ]
@@ -12576,6 +13266,7 @@
     },
     "fmt/1564": {
         "name": "Associated Signature Container Extended (ASiC-E)",
+        "mime": "application/vnd.etsi.asic-e+zip",
         "file_extensions": [
             "asice",
             "sce"
@@ -12905,6 +13596,7 @@
     },
     "fmt/1618": {
         "name": "SGML/XML Entity File",
+        "mime": "application/xml-external-parsed-entity",
         "file_extensions": [
             "ent"
         ]
@@ -13110,6 +13802,7 @@
     },
     "fmt/1648": {
         "name": "Crystal Reports File",
+        "mime": "application/x-rpt",
         "file_extensions": [
             "rpt"
         ]
@@ -13377,32 +14070,38 @@
     },
     "fmt/1686": {
         "name": "PageMaker Mac Document",
+        "mime": "application/vnd.pagemaker",
         "file_extensions": []
     },
     "fmt/1687": {
         "name": "PageMaker Mac Document",
+        "mime": "application/vnd.pagemaker",
         "file_extensions": []
     },
     "fmt/1688": {
         "name": "Microsoft Word for MS-DOS Document",
+        "mime": "application/msword",
         "file_extensions": [
             "doc"
         ]
     },
     "fmt/1689": {
         "name": "Microsoft Word for MS-DOS Glossary File",
+        "mime": "application/msword",
         "file_extensions": [
             "gly"
         ]
     },
     "fmt/1690": {
         "name": "Microsoft Word for MS-DOS Style Sheet File",
+        "mime": "application/msword",
         "file_extensions": [
             "sty"
         ]
     },
     "fmt/1691": {
         "name": "Microsoft Word for MS-DOS Printer Description File",
+        "mime": "application/msword",
         "file_extensions": [
             "prd"
         ]
@@ -13461,6 +14160,7 @@
     },
     "fmt/1700": {
         "name": "OGC GeoPackage",
+        "mime": "application/geopackage+sqlite3",
         "file_extensions": [
             "gpkg"
         ]
@@ -13568,12 +14268,14 @@
     },
     "fmt/1717": {
         "name": "Time Stamp Token",
+        "mime": "application/vnd.etsi.timestamp-token",
         "file_extensions": [
             "tst"
         ]
     },
     "fmt/1718": {
         "name": "PageMaker Mac Document",
+        "mime": "application/vnd.pagemaker",
         "file_extensions": [
             "p65",
             "pmd",
@@ -13583,6 +14285,7 @@
     },
     "fmt/1719": {
         "name": "PageMaker Mac Document",
+        "mime": "application/vnd.pagemaker",
         "file_extensions": [
             "pm6",
             "pt6"
@@ -13697,6 +14400,7 @@
     },
     "fmt/1737": {
         "name": "Flow Cytometry Standard File",
+        "mime": " application/vnd.isac.fcs",
         "file_extensions": [
             "fcs"
         ]
@@ -13772,12 +14476,14 @@
     },
     "fmt/1747": {
         "name": "Microsoft PowerPoint Presentation",
+        "mime": "application/vnd.ms-PowerPoint",
         "file_extensions": [
             "ppt"
         ]
     },
     "fmt/1748": {
         "name": "Microsoft PowerPoint Presentation",
+        "mime": "application/vnd.ms-PowerPoint",
         "file_extensions": [
             "ppt"
         ]
@@ -13802,30 +14508,35 @@
     },
     "fmt/1752": {
         "name": "OpenDocument Database Format",
+        "mime": "application/vnd.oasis.opendocument.base",
         "file_extensions": [
             "odb"
         ]
     },
     "fmt/1753": {
         "name": "OpenDocument Graphics",
+        "mime": "application/vnd.oasis.opendocument.graphics",
         "file_extensions": [
             "odg"
         ]
     },
     "fmt/1754": {
         "name": "OpenDocument Presentation",
+        "mime": "application/vnd.oasis.opendocument.presentation",
         "file_extensions": [
             "odp"
         ]
     },
     "fmt/1755": {
         "name": "OpenDocument Spreadsheet",
+        "mime": "application/vnd.oasis.opendocument.spreadsheet",
         "file_extensions": [
             "ods"
         ]
     },
     "fmt/1756": {
         "name": "OpenDocument Text",
+        "mime": "application/vnd.oasis.opendocument.text",
         "file_extensions": [
             "odt"
         ]
@@ -13951,6 +14662,7 @@
     },
     "fmt/1776": {
         "name": "Extensible Markup Language",
+        "mime": "application/xml, text/xml",
         "file_extensions": [
             "xml"
         ]
@@ -13981,6 +14693,7 @@
     },
     "fmt/1781": {
         "name": "Pentax PEF Image File",
+        "mime": "image/dng",
         "file_extensions": [
             "pef"
         ]
@@ -14064,6 +14777,7 @@
     },
     "fmt/1794": {
         "name": "JPEG 2000 Codestream",
+        "mime": "image/jp2",
         "file_extensions": [
             "j2c",
             "j2k",
@@ -14079,6 +14793,7 @@
     },
     "fmt/1796": {
         "name": "Wireless Markup Language (WML) Document",
+        "mime": "text/vnd.wap.wml",
         "file_extensions": [
             "wml"
         ]
@@ -14091,6 +14806,7 @@
     },
     "fmt/1798": {
         "name": "CHAT Transcription Format",
+        "mime": "text/x-chat",
         "file_extensions": [
             "cha"
         ]
@@ -14109,6 +14825,7 @@
     },
     "fmt/1801": {
         "name": "Praat TextGrid",
+        "mime": "text/praat-textgrid",
         "file_extensions": [
             "textgrid"
         ]
@@ -14181,6 +14898,7 @@
     },
     "fmt/1812": {
         "name": "Audio Data Transport Stream",
+        "mime": "audio/aac, audio/vnd.dlna.adts",
         "file_extensions": [
             "aac",
             "adts"
@@ -14272,18 +14990,21 @@
     },
     "fmt/1827": {
         "name": "DOCX Strict OOXML Document",
+        "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "file_extensions": [
             "docx"
         ]
     },
     "fmt/1828": {
         "name": "XLSX Strict OOXML Spreadsheet",
+        "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "file_extensions": [
             "xlsx"
         ]
     },
     "fmt/1829": {
         "name": "PPTX Strict OOXML Presentation",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         "file_extensions": [
             "pptx"
         ]
@@ -14351,18 +15072,21 @@
     },
     "fmt/1840": {
         "name": "WACZ",
+        "mime": "application/x-wacz",
         "file_extensions": [
             "wacz"
         ]
     },
     "fmt/1841": {
         "name": "Digital Negative Format (DNG)",
+        "mime": "image/dng, image/tiff",
         "file_extensions": [
             "dng"
         ]
     },
     "fmt/1842": {
         "name": "Digital Negative Format (DNG)",
+        "mime": "image/dng, image/tiff",
         "file_extensions": [
             "dng"
         ]
@@ -14461,12 +15185,14 @@
     },
     "fmt/1858": {
         "name": "Microsoft Excel Workspace File",
+        "mime": "application/vnd.ms-excel",
         "file_extensions": [
             "xlw"
         ]
     },
     "fmt/1859": {
         "name": "Adobe Air",
+        "mime": "application/vnd.adobe.air-application-installer-package+zip",
         "file_extensions": [
             "air"
         ]
@@ -14512,12 +15238,14 @@
     },
     "fmt/1866": {
         "name": "Microsoft Powerpoint for Macintosh",
+        "mime": "application/vnd.ms-PowerPoint",
         "file_extensions": [
             "ppt"
         ]
     },
     "fmt/1867": {
         "name": "Microsoft Powerpoint for Macintosh",
+        "mime": "application/vnd.ms-PowerPoint",
         "file_extensions": [
             "ppt"
         ]
@@ -14592,6 +15320,7 @@
     },
     "fmt/1879": {
         "name": "vCard",
+        "mime": "text/vcard",
         "file_extensions": [
             "vcard",
             "vcf"
@@ -14599,6 +15328,7 @@
     },
     "fmt/1880": {
         "name": "vCard",
+        "mime": "text/vcard",
         "file_extensions": [
             "vcard",
             "vcf"
@@ -14606,6 +15336,7 @@
     },
     "fmt/1881": {
         "name": "vCard",
+        "mime": "text/vcard",
         "file_extensions": [
             "vcard",
             "vcf"
@@ -14631,6 +15362,7 @@
     },
     "fmt/1884": {
         "name": "Encapsulated PostScript File Format",
+        "mime": "application/postscript",
         "file_extensions": [
             "eps",
             "epsf"
@@ -14714,6 +15446,7 @@
     },
     "fmt/1899": {
         "name": "RIS Citation",
+        "mime": "application/x-research-info-systems",
         "file_extensions": [
             "ris"
         ]
@@ -14781,18 +15514,21 @@
     },
     "fmt/1910": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/1911": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/1912": {
         "name": "Acrobat PDF/A - Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
@@ -14962,6 +15698,7 @@
     },
     "fmt/1938": {
         "name": "Lotus Screencam Data File",
+        "mime": "application/vnd.lotus-screencam",
         "file_extensions": [
             "scm"
         ]
@@ -14996,6 +15733,7 @@
     },
     "fmt/1943": {
         "name": "Digital Negative Format (DNG)",
+        "mime": "image/dng",
         "file_extensions": [
             "dng"
         ]
@@ -15127,6 +15865,7 @@
     },
     "fmt/1964": {
         "name": "JPH (JPEG 2000 part 15)",
+        "mime": "image/jph",
         "file_extensions": [
             "jph"
         ]
@@ -15194,12 +15933,14 @@
     },
     "fmt/1974": {
         "name": "Finale Notation File",
+        "mime": "application/vnd.makemusic.notation",
         "file_extensions": [
             "musx"
         ]
     },
     "fmt/1975": {
         "name": "ICC Profile",
+        "mime": "application/vnd.iccprofile",
         "file_extensions": [
             "icc",
             "icm"
@@ -15207,6 +15948,7 @@
     },
     "fmt/1976": {
         "name": "ICC Profile",
+        "mime": "application/vnd.iccprofile",
         "file_extensions": [
             "icc",
             "icm"
@@ -15214,6 +15956,7 @@
     },
     "fmt/1977": {
         "name": "ICC Profile",
+        "mime": "application/vnd.iccprofile",
         "file_extensions": [
             "icc",
             "icm"
@@ -15221,96 +15964,112 @@
     },
     "fmt/1978": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1979": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1980": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1981": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1982": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1983": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1984": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1985": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1986": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1987": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1988": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1989": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1990": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1991": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1992": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
     },
     "fmt/1993": {
         "name": "Sibelius Score",
+        "mime": "application/x-sibelius-score",
         "file_extensions": [
             "sib"
         ]
@@ -15387,12 +16146,14 @@
     },
     "fmt/2005": {
         "name": "Compressed MusicXML",
+        "mime": "application/vnd.recordare.musicxml",
         "file_extensions": [
             "mxl"
         ]
     },
     "fmt/2006": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -15401,6 +16162,7 @@
     },
     "fmt/2007": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -15409,6 +16171,7 @@
     },
     "fmt/2008": {
         "name": "QuarkXPress Project",
+        "mime": "application/vnd.Quark.QuarkXPress",
         "file_extensions": [
             "qpt",
             "qwd",
@@ -15465,12 +16228,14 @@
     },
     "fmt/2017": {
         "name": "GraphPad Prism",
+        "mime": "application/x-graphpad-prism-pzfx",
         "file_extensions": [
             "pzfx"
         ]
     },
     "fmt/2018": {
         "name": "Sony OpenMG Audio",
+        "mime": "audio/ATRAC-ADVANCED-LOSSLESS",
         "file_extensions": [
             "oma"
         ]
@@ -15525,6 +16290,7 @@
     },
     "fmt/2027": {
         "name": "Microsoft Project",
+        "mime": "application/vnd.ms-project",
         "file_extensions": [
             "mpp"
         ]
@@ -15628,30 +16394,35 @@
     },
     "fmt/2044": {
         "name": "OpenDocument Text",
+        "mime": "application/vnd.oasis.opendocument.text",
         "file_extensions": [
             "odt"
         ]
     },
     "fmt/2045": {
         "name": "OpenDocument Spreadsheet",
+        "mime": "application/vnd.oasis.opendocument.spreadsheet",
         "file_extensions": [
             "ods"
         ]
     },
     "fmt/2046": {
         "name": "OpenDocument Presentation",
+        "mime": "application/vnd.oasis.opendocument.presentation",
         "file_extensions": [
             "odp"
         ]
     },
     "fmt/2047": {
         "name": "OpenDocument Database",
+        "mime": "application/vnd.oasis.opendocument.base",
         "file_extensions": [
             "odb"
         ]
     },
     "fmt/2048": {
         "name": "OpenDocument Graphics",
+        "mime": "application/vnd.oasis.opendocument.graphics",
         "file_extensions": [
             "odg"
         ]
@@ -15664,12 +16435,14 @@
     },
     "fmt/2050": {
         "name": "PDF/UA Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
     },
     "fmt/2052": {
         "name": "PDF/UA Portable Document Format",
+        "mime": "application/pdf",
         "file_extensions": [
             "pdf"
         ]
@@ -15682,6 +16455,7 @@
     },
     "fmt/2053": {
         "name": "Apache Arrow IPC Format",
+        "mime": "vnd.apache.arrow.file",
         "file_extensions": [
             "arrow"
         ]
@@ -15754,6 +16528,7 @@
     },
     "fmt/2065": {
         "name": "TOML",
+        "mime": "application/toml",
         "file_extensions": [
             "toml"
         ]
@@ -15817,12 +16592,14 @@
     },
     "fmt/2075": {
         "name": "ACE",
+        "mime": "application/x-ace-compressed",
         "file_extensions": [
             "ace"
         ]
     },
     "fmt/2076": {
         "name": "ACE",
+        "mime": "application/x-ace-compressed",
         "file_extensions": [
             "ace"
         ]
@@ -15921,6 +16698,7 @@
     },
     "fmt/2092": {
         "name": "Canadian Avalanche Association MarkUp Language",
+        "mime": "application/xml",
         "file_extensions": [
             "caaml"
         ]
@@ -15933,6 +16711,7 @@
     },
     "fmt/2094": {
         "name": "M4A Audio",
+        "mime": "audio/mp4",
         "file_extensions": [
             "m4a",
             "m4b"
