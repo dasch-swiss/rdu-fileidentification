@@ -44,6 +44,12 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verb
             pbin = Bin.MAGICK if mime == "image" else Bin.FFMPEG
             msgm = f"bin not specified in policies, using {pbin} according to the file mimetype for probing"
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msgm))
+    if pbin == "" and "mime" in FMT2EXT[sfinfo.processed_as]:  # noqa: SIM102
+        if FMT2EXT[sfinfo.processed_as]["mime"].split("/")[0] in ["image", "audio", "video"]:
+            mime = FMT2EXT[sfinfo.processed_as]["mime"].split("/")[0]
+            pbin = Bin.MAGICK if mime == "image" else Bin.FFMPEG
+            msgm = f"bin not specified in policies, using {pbin} according to the file mimetype for probing"
+            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msgm))
     # check if the file throws any error, warnings while open/processing it with the respective bin
     if _has_error(sfinfo, pbin, log_tables, verbose):
         return FDMsg.ERROR
