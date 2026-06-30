@@ -1,0 +1,55 @@
+---
+
+name: Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+        shell: bash
+      - name: Run unit tests
+        run: uv run pytest -m "not docker"
+        shell: bash
+
+  docker-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+        shell: bash
+      - name: Build the fileidentification image
+        run: docker build -t fileidentification .
+        shell: bash
+      # FIDR_NO_BUILD: the image was built in the step above; fail loudly
+      # instead of silently rebuilding inside the test session.
+      - name: Run docker end-to-end tests
+        run: uv run pytest -m docker
+        shell: bash
+        env:
+          FIDR_NO_BUILD: "1"

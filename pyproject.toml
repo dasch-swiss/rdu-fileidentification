@@ -26,6 +26,13 @@ build-backend = "hatchling.build"
 dev = [
     "mypy>=1.18.1",
     "ruff>=0.13.0",
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "docker: end-to-end tests that build/run the fileidentification Docker image and CLI against files in testdata (deselect with '-m \"not docker\"').",
 ]
 
 [tool.mypy]
@@ -83,4 +90,16 @@ ignore = [
     "TD002",    # missing-todo-author
     "TD003",    # missing-todo-link
     "TID252",   # banned-module-level-imports
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "D213",     # docstring style, not relevant for test docstrings
+    "D401",     # imperative-mood docstrings, not relevant for tests
+    "PLC0415",  # local imports inside test functions are fine
+    "PT018",    # composite asserts are readable enough in tests
+    "S108",     # hardcoded /tmp paths in tests are pure path-logic, not real temp files
+    "S607",     # docker/bash are invoked by name (on PATH) on purpose in the docker tests
+    "SIM300",   # `actual == expected` reads naturally in assertions
+    "SLF001",   # tests deliberately exercise private helpers (_verify, _silently_reencode)
 ]
