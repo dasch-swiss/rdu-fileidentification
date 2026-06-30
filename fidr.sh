@@ -39,5 +39,12 @@ while [ $# -gt 0 ]; do
     fi
 done
 
+# allocate a TTY by default (nicer interactive output); set FIDR_NO_TTY=1 to
+# disable it for headless/non-interactive use (e.g. CI, automated tests)
+tty_opt=()
+if [ -z "${FIDR_NO_TTY:-}" ]; then
+    tty_opt+=("-t")
+fi
+
 # run the command
-docker run --rm "${add_volumes[@]}" -t fileidentification "${params[@]}" "$input_dir"
+docker run --rm "${add_volumes[@]}" "${tty_opt[@]}" fileidentification "${params[@]}" "$input_dir"

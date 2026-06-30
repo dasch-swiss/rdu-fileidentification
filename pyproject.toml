@@ -32,7 +32,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-    "e2e: end-to-end tests that run the real ffmpeg/imagemagick/soffice/pygfried tooling against files in testdata (deselect with '-m \"not e2e\"').",
+    "docker: end-to-end tests that build/run the fileidentification Docker image and CLI against files in testdata (deselect with '-m \"not docker\"').",
 ]
 
 [tool.mypy]
@@ -99,6 +99,7 @@ ignore = [
     "PLC0415",  # local imports inside test functions are fine
     "PT018",    # composite asserts are readable enough in tests
     "S108",     # hardcoded /tmp paths in tests are pure path-logic, not real temp files
+    "S607",     # docker/bash are invoked by name (on PATH) on purpose in the docker tests
     "SIM300",   # `actual == expected` reads naturally in assertions
     "SLF001",   # tests deliberately exercise private helpers (_verify, _silently_reencode)
 ]
