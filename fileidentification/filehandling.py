@@ -74,7 +74,7 @@ class FileHandler:
                 self.stack.extend(
                     [
                         SfInfo(**pygfried.identify(f"{f}", detailed=True)["files"][0])  # type: ignore[arg-type]
-                        for f in root_folder.glob("**/*")
+                        for f in sorted(root_folder.glob("**/*"))
                         if f.is_file()
                     ]
                 )

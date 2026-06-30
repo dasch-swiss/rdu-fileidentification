@@ -132,7 +132,7 @@ class LogTables(BaseModel):
             return None
         for el in self.processing_errors:
             el[1].processing_logs.append(el[0])
-        result = [el[1] for el in self.processing_errors]
+        result = sorted((el[1] for el in self.processing_errors), key=lambda s: s.filename)
         self.processing_errors.clear()
         return result
 
