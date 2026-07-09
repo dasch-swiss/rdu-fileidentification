@@ -8,37 +8,9 @@ Tests are split in two groups:
   ``testdata/``. Run only the fast ones with ``pytest -m "not docker"``.
 """
 
-import shutil
 from pathlib import Path
 
-import pytest
-
 from fileidentification.definitions.models import SfInfo
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-TESTDATA = REPO_ROOT / "testdata"
-
-
-@pytest.fixture
-def testdata_dir() -> Path:
-    """Absolute path to the repo's testdata directory (read-only — never mutate it)."""
-    return TESTDATA
-
-
-@pytest.fixture
-def sample_files(tmp_path: Path) -> Path:
-    """A fresh, writable copy of a small subset of testdata for destructive tests.
-
-    Returns the directory holding the copies. Each test gets its own tmp dir, so
-    files may be renamed/removed/converted without touching the originals.
-    """
-    dst = tmp_path / "sample"
-    dst.mkdir()
-    for name in ("SampleJPGImage.jpg", "file-sample_100kB.pdf", "corrupt.mp4"):
-        src = TESTDATA / name
-        if src.is_file():
-            shutil.copy2(src, dst / name)
-    return dst
 
 
 def make_sfinfo(
