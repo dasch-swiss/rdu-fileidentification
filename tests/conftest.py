@@ -9,8 +9,36 @@ Tests are split in two groups:
 """
 
 from pathlib import Path
+from typing import Any
 
 from fileidentification.definitions.models import SfInfo
+
+
+def fake_identify_payload(
+    path: str,
+    *,
+    puid: str = "fmt/43",
+    mime: str = "image/jpeg",
+    md5: str | None = None,
+) -> dict[str, Any]:
+    """Build a pygfried ``identify()`` return value for a single file.
+
+    Used by tests that monkeypatch pygfried so re-identification is deterministic.
+    ``md5`` defaults to a value derived from the basename so distinct files do not
+    collapse into a single duplicate group.
+    """
+    return {
+        "files": [
+            {
+                "filename": path,
+                "filesize": 10,
+                "modified": "2024-01-01T00:00:00+00:00",
+                "errors": "",
+                "md5": md5 or Path(path).name.ljust(32, "0")[:32],
+                "matches": [{"id": puid, "mime": mime, "warning": ""}],
+            }
+        ]
+    }
 
 
 def make_sfinfo(

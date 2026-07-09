@@ -15,25 +15,14 @@ from fileidentification.definitions.models import PolicyParams
 from fileidentification.definitions.settings import Bin, FPMsg
 from fileidentification.tasks import conversion as conv_mod
 from fileidentification.tasks.conversion import _add_media_info, _verify, convert_file
-from tests.conftest import make_sfinfo
+from tests.conftest import fake_identify_payload, make_sfinfo
 
 
 def _patch_identify(monkeypatch: pytest.MonkeyPatch, target: Path, puid: str) -> None:
     """Make pygfried.identify report `puid` for the converted target file."""
 
     def fake_identify(path: str, detailed: bool = False) -> dict[str, Any]:
-        return {
-            "files": [
-                {
-                    "filename": path,
-                    "filesize": 1,
-                    "modified": "2024-01-01T00:00:00+00:00",
-                    "errors": "",
-                    "md5": "f" * 32,
-                    "matches": [{"id": puid, "mime": "image/tiff", "warning": ""}],
-                }
-            ]
-        }
+        return fake_identify_payload(path, puid=puid, mime="image/tiff", md5="f" * 32)
 
     monkeypatch.setattr(conv_mod, "pygfried", SimpleNamespace(identify=fake_identify))
 
@@ -64,30 +53,20 @@ def test_unexpected_format_is_rejected(tmp_path: Path, monkeypatch: pytest.Monke
 
 
 def test_expected_format_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Output matches an expected PUID -> wired up as a derived file."""
+    """Output matching any expected PUID -> wired up as a derived file."""
     target = tmp_path / "orig.tif"
     target.write_bytes(b"data")
     _patch_identify(monkeypatch, target, puid="fmt/353")
 
     origin = make_sfinfo("sub/orig.jpg")
     origin.status.pending = True
-    result = _verify(target, origin, expected=["fmt/353"])
+    result = _verify(target, origin, expected=["fmt/152", "fmt/353"])  # matches the second listed PUID
 
     assert result is not None
     assert result.processed_as == "fmt/353"
     assert result.derived_from is origin
     assert result.dest == Path("sub")  # placed next to the original
     assert origin.status.pending is False  # original is now resolved
-
-
-def test_accepts_any_of_several_expected_formats(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    target = tmp_path / "orig.tif"
-    target.write_bytes(b"data")
-    _patch_identify(monkeypatch, target, puid="fmt/353")
-
-    origin = make_sfinfo("sub/orig.jpg")
-    result = _verify(target, origin, expected=["fmt/152", "fmt/353"])
-    assert result is not None
 
 
 class TestAddMediaInfo:

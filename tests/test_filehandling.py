@@ -14,29 +14,14 @@ import pytest
 from fileidentification.definitions.models import LogMsg, Policies, PolicyParams, SfInfo
 from fileidentification.definitions.settings import DEFAULTPOLICIES, FMT2EXT
 from fileidentification.filehandling import FileHandler
-from tests.conftest import make_sfinfo
+from tests.conftest import fake_identify_payload, make_sfinfo
 
 
 def _fake_pygfried(puid: str = "fmt/43") -> SimpleNamespace:
-    """A stand-in for the pygfried module whose identify() echoes the queried path.
-
-    The md5 is derived from the file's basename so distinct files do not collapse
-    into a single duplicate group.
-    """
+    """A stand-in for the pygfried module whose identify() echoes the queried path."""
 
     def identify(path: str, detailed: bool = False) -> dict[str, Any]:
-        return {
-            "files": [
-                {
-                    "filename": path,
-                    "filesize": 10,
-                    "modified": "2024-01-01T00:00:00+00:00",
-                    "errors": "",
-                    "md5": Path(path).name.ljust(32, "0")[:32],
-                    "matches": [{"id": puid, "mime": "image/jpeg", "warning": ""}],
-                }
-            ]
-        }
+        return fake_identify_payload(path, puid=puid)
 
     return SimpleNamespace(identify=identify)
 
