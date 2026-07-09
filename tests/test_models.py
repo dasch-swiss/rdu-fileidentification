@@ -244,3 +244,14 @@ class TestSfInfo2Csv:
         row = sfinfo2csv(s)
         assert row["status"] == "pending"
         assert row["warnings"] == "w1 ; w2"
+
+    def test_media_info_and_derived_from(self) -> None:
+        origin = make_sfinfo("sub/orig.jpg")
+        s = make_sfinfo("sub/out.tif", puid="fmt/353")
+        s.media_info.append(LogMsg(name="imagemagick", msg="TIFF 10x10"))
+        s.processing_logs.append(LogMsg(name="filehandler", msg="converted"))
+        s.derived_from = origin
+        row = sfinfo2csv(s)
+        assert row["media_info"] == "TIFF 10x10"
+        assert row["processing_logs"] == "converted"
+        assert row["derived_from"] == "sub/orig.jpg"

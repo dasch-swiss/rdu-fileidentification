@@ -105,7 +105,6 @@ class FileHandler:
             self.write_logs()
             sys.exit(1)
 
-        self.policies = file.policies
         return file.policies
 
     def _gen_policies(self, outpath: Path, blank: bool = False, extend: bool = False) -> None:
@@ -175,7 +174,7 @@ class FileHandler:
         # load the external passed policies with option -p or default location
         else:
             print_msg(f"Loading policies from {policies_path}", self.mode.QUIET)
-            self._load_policies(policies_path)
+            self.policies = self._load_policies(policies_path)
 
         # expand a passed policies with the filetypes found in root_folder that are not yet in the policies
         if extend and policies_path:

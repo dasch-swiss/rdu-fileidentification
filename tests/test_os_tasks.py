@@ -166,3 +166,17 @@ class TestMoveTmp:
     def test_nothing_to_move_returns_false(self) -> None:
         plain = make_sfinfo("a.jpg")  # no dest -> not a converted file
         assert move_tmp([plain], {}, LogTables(), remove_original=False) is False
+
+    def test_move_failure_records_processing_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        stack, _original, converted, policies, _root = self._scenario(tmp_path)
+
+        def boom(*_a: object, **_k: object) -> None:
+            raise OSError
+
+        monkeypatch.setattr("fileidentification.tasks.os_tasks.shutil.move", boom)
+        lt = LogTables()
+
+        move_tmp(stack, policies, lt, remove_original=False)
+
+        assert lt.processing_errors  # the OSError was captured
+        assert not converted.status.added  # move did not complete

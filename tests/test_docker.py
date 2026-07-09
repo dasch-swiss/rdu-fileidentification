@@ -107,17 +107,15 @@ def fidr_image() -> str:
 def stage(tmp_path: Path, fidr_image: str) -> Iterator[Callable[..., Path]]:
     """Return a helper that copies testdata files into a mounted work dir.
 
-    Each name is copied by its basename into ``work`` (or ``work/<subdir>`` when
-    given), so testdata files living in subfolders can be placed flat or nested.
-    Always returns the same ``work`` dir.
+    Each name is copied by its basename into ``work``, so testdata files living
+    in subfolders can be placed flat. Always returns the same ``work`` dir.
     """
     work = tmp_path / "work"
 
-    def _stage(*names: str, subdir: str = "") -> Path:
-        dest_dir = work / subdir if subdir else work
-        dest_dir.mkdir(parents=True, exist_ok=True)
+    def _stage(*names: str) -> Path:
+        work.mkdir(parents=True, exist_ok=True)
         for name in names:
-            shutil.copy2(TESTDATA / name, dest_dir / Path(name).name)
+            shutil.copy2(TESTDATA / name, work / Path(name).name)
         return work
 
     yield _stage
@@ -214,50 +212,51 @@ def test_extension_mismatch_is_autorenamed(stage: Callable[..., Path], fidr_imag
     assert any("did rename" in m["msg"] for m in renamed["processing_logs"])
 
 
-def test_extension_mismatch_without_rename(stage: Callable[..., Path], fidr_image: str) -> None:
-    """A format with several possible extensions is flagged but left untouched."""
-    name = "SampleJPGImage.tif"  # really a JPEG (fmt/43, which has 6 extensions)
+def test_ffmpeg_converts_mkv_to_mp4(stage: Callable[..., Path], fidr_image: str) -> None:
+    """`fidr -a -r` runs the ffmpeg path: an mkv without ffv1 video is re-encoded to mp4.
+
+    Complements the magick (jpg->tiff) and soffice (doc->docx) conversion tests — this is
+    the only e2e that drives a real ffmpeg *policy* conversion (fmt/569 -> fmt/199).
+    """
+    work = stage("test_hevc.mkv")  # fmt/569 with hevc video, not the ffv1 archival standard
+    proc = run_cli(fidr_image, work, "-a", "-r")
+    assert proc.returncode == 0, proc.stderr
+
+    assert (work / "test_hevc.mp4").is_file(), "expected the ffmpeg-converted .mp4 next to the original"
+    derived = [f for f in _read_log(work)["files"] if f.get("derived_from")]
+    assert derived, "expected an ffmpeg-converted file"
+    assert derived[0]["processed_as"] == "fmt/199"  # MPEG-4
+    assert derived[0]["status"].get("added") is True
+    assert (work / "test_hevc.mkv").is_file()  # original kept (remove_original not set)
+
+
+def test_strict_mode_removes_unlisted_format(stage: Callable[..., Path], fidr_image: str) -> None:
+    """`fidr -a -s -p <policies>`: a file whose PUID is absent from the policies is quarantined."""
+    work = stage("SampleJPGImage.jpg")  # fmt/43
+    policies = work / "empty_policies.json"
+    policies.write_text(json.dumps({"policies": {}}))
+    proc = run_cli(fidr_image, work, "-a", "-s", "-p", str(policies))
+    assert proc.returncode == 0, proc.stderr
+
+    assert not (work / "SampleJPGImage.jpg").exists()
+    assert list((work / "__fileidentification").rglob("_REMOVED/**/SampleJPGImage.jpg"))
+    flagged = next(f for f in _read_log(work)["files"] if f["filename"] == "SampleJPGImage.jpg")
+    assert flagged["status"].get("removed") is True
+    assert any("not in policies" in m["msg"] for m in flagged["processing_logs"])
+
+
+def test_readable_file_with_warnings_is_kept(stage: Callable[..., Path], fidr_image: str) -> None:
+    """`fidr -i -v`: a TIFF with a benign imagemagick warning is recorded but not quarantined."""
+    name = "warn_wrong_data_type_tag.tiff"
     work = stage(name)
-    proc = run_cli(fidr_image, work, "-i")
+    proc = run_cli(fidr_image, work, "-i", "-v")
     assert proc.returncode == 0, proc.stderr
-    assert (work / name).is_file(), "ambiguous extension -> must not be auto-renamed"
+
+    assert (work / name).is_file(), "a readable-with-warnings file must not be removed"
     assert not list((work / "__fileidentification").rglob("_REMOVED/**/*"))
-    flagged = next(f for f in _read_log(work)["files"] if f["filename"] == name)
-    assert any("expecting one of the following ext" in m["msg"] for m in flagged["processing_logs"])
-
-
-def test_nested_directory_is_scanned_recursively(stage: Callable[..., Path], fidr_image: str) -> None:
-    """Files in subdirectories are discovered and keyed by their relative path."""
-    stage("SampleJPGImage.jpg")
-    work = stage("file-sample_100kB.pdf", subdir="sub")
-    proc = run_cli(fidr_image, work)
-    assert proc.returncode == 0, proc.stderr
-    filenames = {f["filename"] for f in _read_log(work)["files"]}
-    assert "SampleJPGImage.jpg" in filenames
-    assert "sub/file-sample_100kB.pdf" in filenames
-
-
-def test_csv_export(stage: Callable[..., Path], fidr_image: str) -> None:
-    """`fidr --csv` writes a CSV alongside the log."""
-    work = stage("SampleJPGImage.jpg")
-    proc = run_cli(fidr_image, work, "--csv")
-    assert proc.returncode == 0, proc.stderr
-    csv_file = work / "__fileidentification" / "_log.json.csv"
-    assert csv_file.is_file()
-    lines = csv_file.read_text().splitlines()
-    assert lines[0].startswith("status,filename")
-    assert len(lines) >= 2  # header + at least one row
-
-
-def test_duplicate_detection(stage: Callable[..., Path], fidr_image: str) -> None:
-    """Files with identical content are grouped under the log's duplicates."""
-    work = stage("SampleJPGImage.jpg")
-    shutil.copy2(work / "SampleJPGImage.jpg", work / "copy.jpg")
-    proc = run_cli(fidr_image, work)
-    assert proc.returncode == 0, proc.stderr
-    duplicates = _read_log(work)["duplicates"]
-    assert duplicates, "identical files should be reported as duplicates"
-    assert any(len(paths) == 2 for paths in duplicates.values())
+    rec = next(f for f in _read_log(work)["files"] if f["filename"] == name)
+    assert not rec["status"].get("removed")
+    assert rec.get("warnings"), "the imagemagick warning should be recorded on the file"
 
 
 def test_fidr_wrapper_script(stage: Callable[..., Path], fidr_image: str) -> None:

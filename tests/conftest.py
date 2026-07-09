@@ -3,42 +3,42 @@
 Tests are split in two groups:
 
 * plain unit tests — pure logic, no external binaries, fast. They run everywhere.
-* tests marked ``@pytest.mark.e2e`` — exercise the real pygfried / ffmpeg /
-  imagemagick / soffice tooling against the files in ``testdata/``. Run only the
-  fast ones with ``pytest -m "not e2e"``.
+* tests marked ``@pytest.mark.docker`` — drive the real fileidentification Docker
+  image and CLI (pygfried / ffmpeg / imagemagick / soffice) against the files in
+  ``testdata/``. Run only the fast ones with ``pytest -m "not docker"``.
 """
 
-import shutil
 from pathlib import Path
-
-import pytest
+from typing import Any
 
 from fileidentification.definitions.models import SfInfo
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-TESTDATA = REPO_ROOT / "testdata"
 
+def fake_identify_payload(
+    path: str,
+    *,
+    puid: str = "fmt/43",
+    mime: str = "image/jpeg",
+    md5: str | None = None,
+) -> dict[str, Any]:
+    """Build a pygfried ``identify()`` return value for a single file.
 
-@pytest.fixture
-def testdata_dir() -> Path:
-    """Absolute path to the repo's testdata directory (read-only — never mutate it)."""
-    return TESTDATA
-
-
-@pytest.fixture
-def sample_files(tmp_path: Path) -> Path:
-    """A fresh, writable copy of a small subset of testdata for destructive tests.
-
-    Returns the directory holding the copies. Each test gets its own tmp dir, so
-    files may be renamed/removed/converted without touching the originals.
+    Used by tests that monkeypatch pygfried so re-identification is deterministic.
+    ``md5`` defaults to a value derived from the basename so distinct files do not
+    collapse into a single duplicate group.
     """
-    dst = tmp_path / "sample"
-    dst.mkdir()
-    for name in ("SampleJPGImage.jpg", "file-sample_100kB.pdf", "corrupt.mp4"):
-        src = TESTDATA / name
-        if src.is_file():
-            shutil.copy2(src, dst / name)
-    return dst
+    return {
+        "files": [
+            {
+                "filename": path,
+                "filesize": 10,
+                "modified": "2024-01-01T00:00:00+00:00",
+                "errors": "",
+                "md5": md5 or Path(path).name.ljust(32, "0")[:32],
+                "matches": [{"id": puid, "mime": mime, "warning": ""}],
+            }
+        ]
+    }
 
 
 def make_sfinfo(

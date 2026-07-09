@@ -100,3 +100,17 @@ class TestInvalidStreams:
         s = make_sfinfo("v.mp4", puid="fmt/199", mime="video/mp4")
         apply_policy(s, {"fmt/199": ACCEPTED}, LogTables(), strict=False)
         assert not s.status.pending
+
+    def test_mp4_ignores_non_av_streams(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # a subtitle stream must be skipped, not treated as a codec violation
+        self._patch_streams(
+            monkeypatch,
+            [
+                {"codec_type": "subtitle", "codec_name": "mov_text"},
+                {"codec_type": "video", "codec_name": "h264"},
+                {"codec_type": "audio", "codec_name": "aac"},
+            ],
+        )
+        s = make_sfinfo("v.mp4", puid="fmt/199", mime="video/mp4")
+        apply_policy(s, {"fmt/199": ACCEPTED}, LogTables(), strict=False)
+        assert not s.status.pending
