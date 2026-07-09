@@ -237,6 +237,64 @@ def test_nested_directory_is_scanned_recursively(stage: Callable[..., Path], fid
     assert "sub/file-sample_100kB.pdf" in filenames
 
 
+def test_ffmpeg_converts_mkv_to_mp4(stage: Callable[..., Path], fidr_image: str) -> None:
+    """`fidr -a -r` runs the ffmpeg path: an mkv without ffv1 video is re-encoded to mp4.
+
+    Complements the magick (jpg->tiff) and soffice (doc->docx) conversion tests — this is
+    the only e2e that drives a real ffmpeg *policy* conversion (fmt/569 -> fmt/199).
+    """
+    work = stage("test_hevc.mkv")  # fmt/569 with hevc video, not the ffv1 archival standard
+    proc = run_cli(fidr_image, work, "-a", "-r")
+    assert proc.returncode == 0, proc.stderr
+
+    assert (work / "test_hevc.mp4").is_file(), "expected the ffmpeg-converted .mp4 next to the original"
+    derived = [f for f in _read_log(work)["files"] if f.get("derived_from")]
+    assert derived, "expected an ffmpeg-converted file"
+    assert derived[0]["processed_as"] == "fmt/199"  # MPEG-4
+    assert derived[0]["status"].get("added") is True
+    assert (work / "test_hevc.mkv").is_file()  # original kept (remove_original not set)
+
+
+def test_strict_mode_removes_unlisted_format(stage: Callable[..., Path], fidr_image: str) -> None:
+    """`fidr -a -s -p <policies>`: a file whose PUID is absent from the policies is quarantined."""
+    work = stage("SampleJPGImage.jpg")  # fmt/43
+    policies = work / "empty_policies.json"
+    policies.write_text(json.dumps({"policies": {}}))
+    proc = run_cli(fidr_image, work, "-a", "-s", "-p", str(policies))
+    assert proc.returncode == 0, proc.stderr
+
+    assert not (work / "SampleJPGImage.jpg").exists()
+    assert list((work / "__fileidentification").rglob("_REMOVED/**/SampleJPGImage.jpg"))
+    flagged = next(f for f in _read_log(work)["files"] if f["filename"] == "SampleJPGImage.jpg")
+    assert flagged["status"].get("removed") is True
+    assert any("not in policies" in m["msg"] for m in flagged["processing_logs"])
+
+
+def test_rerun_reads_existing_log(stage: Callable[..., Path], fidr_image: str) -> None:
+    """A second run loads the existing _log.json instead of rescanning; entries are not duplicated."""
+    work = stage("SampleJPGImage.jpg")
+    assert run_cli(fidr_image, work).returncode == 0
+    first = _read_log(work)["files"]
+    assert run_cli(fidr_image, work).returncode == 0
+    second = _read_log(work)["files"]
+    assert len(second) == len(first)
+    assert {f["filename"] for f in second} == {f["filename"] for f in first}
+
+
+def test_readable_file_with_warnings_is_kept(stage: Callable[..., Path], fidr_image: str) -> None:
+    """`fidr -i -v`: a TIFF with a benign imagemagick warning is recorded but not quarantined."""
+    name = "warn_wrong_data_type_tag.tiff"
+    work = stage(name)
+    proc = run_cli(fidr_image, work, "-i", "-v")
+    assert proc.returncode == 0, proc.stderr
+
+    assert (work / name).is_file(), "a readable-with-warnings file must not be removed"
+    assert not list((work / "__fileidentification").rglob("_REMOVED/**/*"))
+    rec = next(f for f in _read_log(work)["files"] if f["filename"] == name)
+    assert not rec["status"].get("removed")
+    assert rec.get("warnings"), "the imagemagick warning should be recorded on the file"
+
+
 def test_fidr_wrapper_script(stage: Callable[..., Path], fidr_image: str) -> None:
     """The fidr.sh wrapper resolves paths, mounts the dir and runs the image."""
     if IMAGE != "fileidentification":

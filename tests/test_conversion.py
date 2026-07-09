@@ -11,9 +11,10 @@ from typing import Any
 
 import pytest
 
-from fileidentification.definitions.settings import FPMsg
+from fileidentification.definitions.models import PolicyParams
+from fileidentification.definitions.settings import Bin, FPMsg
 from fileidentification.tasks import conversion as conv_mod
-from fileidentification.tasks.conversion import _verify
+from fileidentification.tasks.conversion import _add_media_info, _verify, convert_file
 from tests.conftest import make_sfinfo
 
 
@@ -87,3 +88,46 @@ def test_accepts_any_of_several_expected_formats(tmp_path: Path, monkeypatch: py
     origin = make_sfinfo("sub/orig.jpg")
     result = _verify(target, origin, expected=["fmt/152", "fmt/353"])
     assert result is not None
+
+
+class TestAddMediaInfo:
+    def test_ffmpeg_appends_json_streams(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(conv_mod, "ffmpeg_media_info", lambda path: [{"codec_type": "video"}])
+        s = make_sfinfo("v.mp4", puid="fmt/199")
+        _add_media_info(s, Bin.FFMPEG)
+        assert s.media_info[0].name == "ffmpeg"
+        assert '"codec_type": "video"' in s.media_info[0].msg
+
+    def test_magick_appends_identify_string(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(conv_mod, "imagemagick_media_info", lambda path: "TIFF 10x10")
+        s = make_sfinfo("i.tif", puid="fmt/353")
+        _add_media_info(s, Bin.MAGICK)
+        assert s.media_info[0].name == "imagemagick"
+        assert s.media_info[0].msg == "TIFF 10x10"
+
+    def test_other_bin_is_noop(self) -> None:
+        s = make_sfinfo("d.docx", puid="fmt/412")
+        _add_media_info(s, Bin.SOFFICE)
+        assert not s.media_info
+
+
+def test_convert_file_strips_abs_paths_from_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """convert_file removes root_folder/tdir prefixes from the tool log before attaching it."""
+    origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
+    origin.root_folder = Path("/root")
+    origin.tdir = Path("/tmp/tdir")
+    origin.status.pending = True
+
+    target = tmp_path / "orig.tif"
+    target.write_bytes(b"data")
+    _patch_identify(monkeypatch, target, puid="fmt/353")
+    monkeypatch.setattr(conv_mod, "convert", lambda s, a: (target, "the cmd", "/root/sub/orig.jpg -> /tmp/tdir/out"))
+    monkeypatch.setattr(conv_mod, "_add_media_info", lambda s, b: None)
+
+    policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
+    result, cmds = convert_file(origin, policies)
+
+    assert result is not None
+    assert cmds == ["the cmd"]
+    log = next(log for log in result.processing_logs if log.name == "magick")
+    assert log.msg == "sub/orig.jpg -> out"  # both absolute prefixes stripped
