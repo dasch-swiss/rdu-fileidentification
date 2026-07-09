@@ -136,27 +136,15 @@ class TestGenPolicies:
         assert unknown not in fh.policies
         assert unknown not in (fh.ba.blank or [])
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="BUG: _gen_policies overwrites self.policies via _load_policies(DEFAULTPOLICIES) "
-        "before the extend-merge reads it, so hand-tuned entries are lost. See notes.",
-    )
     def test_extend_keeps_existing_policy(self, tmp_path: Path) -> None:
+        # extend must preserve the pre-loaded (hand-tuned) policy rather than fall back to a blank one.
+        # Regression guard: _load_policies(DEFAULTPOLICIES) inside _gen_policies must not clobber self.policies.
         unknown = _unknown_puid()
         fh = _fh_with_puids(unknown)
         fh.policies = {unknown: PolicyParams(format_name="hand-tuned")}
         fh._gen_policies(tmp_path / "pol.json", extend=True)
-        # intended behaviour: extend should preserve the pre-loaded policy for `unknown`
         assert fh.policies[unknown].format_name == "hand-tuned"
         assert unknown not in (fh.ba.blank or [])  # promoted out of the blank list
-
-    def test_extend_currently_falls_back_to_blank(self, tmp_path: Path) -> None:
-        """Documents the CURRENT (buggy) behaviour: the pre-loaded policy is dropped."""
-        unknown = _unknown_puid()
-        fh = _fh_with_puids(unknown)
-        fh.policies = {unknown: PolicyParams(format_name="hand-tuned")}
-        fh._gen_policies(tmp_path / "pol.json", extend=True)
-        assert fh.policies[unknown].format_name == FMT2EXT[unknown]["name"]
 
     def test_default_propagates_remove_original(self, tmp_path: Path) -> None:
         fh = _fh_with_puids("fmt/43")
@@ -186,7 +174,9 @@ class TestLoadPolicies:
         good.write_text(json.dumps({"policies": {"fmt/43": {"format_name": "JPEG", "accepted": True}}}))
         result = fh._load_policies(good)
         assert "fmt/43" in result
-        assert fh.policies is result
+        # _load_policies only returns the parsed policies; assigning them to self.policies
+        # is the caller's (_manage_policies) job, so the attribute is left untouched here.
+        assert fh.policies == {}
 
 
 class TestManagePolicies:
