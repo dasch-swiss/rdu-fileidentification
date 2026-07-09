@@ -3,9 +3,9 @@
 Tests are split in two groups:
 
 * plain unit tests — pure logic, no external binaries, fast. They run everywhere.
-* tests marked ``@pytest.mark.e2e`` — exercise the real pygfried / ffmpeg /
-  imagemagick / soffice tooling against the files in ``testdata/``. Run only the
-  fast ones with ``pytest -m "not e2e"``.
+* tests marked ``@pytest.mark.docker`` — drive the real fileidentification Docker
+  image and CLI (pygfried / ffmpeg / imagemagick / soffice) against the files in
+  ``testdata/``. Run only the fast ones with ``pytest -m "not docker"``.
 """
 
 import shutil

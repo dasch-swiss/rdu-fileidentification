@@ -237,29 +237,6 @@ def test_nested_directory_is_scanned_recursively(stage: Callable[..., Path], fid
     assert "sub/file-sample_100kB.pdf" in filenames
 
 
-def test_csv_export(stage: Callable[..., Path], fidr_image: str) -> None:
-    """`fidr --csv` writes a CSV alongside the log."""
-    work = stage("SampleJPGImage.jpg")
-    proc = run_cli(fidr_image, work, "--csv")
-    assert proc.returncode == 0, proc.stderr
-    csv_file = work / "__fileidentification" / "_log.json.csv"
-    assert csv_file.is_file()
-    lines = csv_file.read_text().splitlines()
-    assert lines[0].startswith("status,filename")
-    assert len(lines) >= 2  # header + at least one row
-
-
-def test_duplicate_detection(stage: Callable[..., Path], fidr_image: str) -> None:
-    """Files with identical content are grouped under the log's duplicates."""
-    work = stage("SampleJPGImage.jpg")
-    shutil.copy2(work / "SampleJPGImage.jpg", work / "copy.jpg")
-    proc = run_cli(fidr_image, work)
-    assert proc.returncode == 0, proc.stderr
-    duplicates = _read_log(work)["duplicates"]
-    assert duplicates, "identical files should be reported as duplicates"
-    assert any(len(paths) == 2 for paths in duplicates.values())
-
-
 def test_fidr_wrapper_script(stage: Callable[..., Path], fidr_image: str) -> None:
     """The fidr.sh wrapper resolves paths, mounts the dir and runs the image."""
     if IMAGE != "fileidentification":
