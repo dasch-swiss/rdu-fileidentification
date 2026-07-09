@@ -6,7 +6,8 @@ assert on control flow and mode handling rather than on actual conversions.
 
 import json
 from pathlib import Path
-from typing import Any
+from types import SimpleNamespace
+from typing import Any, Self
 
 import pytest
 
@@ -16,10 +17,105 @@ from fileidentification.filehandling import FileHandler
 from tests.conftest import make_sfinfo
 
 
+def _fake_pygfried(puid: str = "fmt/43") -> SimpleNamespace:
+    """A stand-in for the pygfried module whose identify() echoes the queried path.
+
+    The md5 is derived from the file's basename so distinct files do not collapse
+    into a single duplicate group.
+    """
+
+    def identify(path: str, detailed: bool = False) -> dict[str, Any]:
+        return {
+            "files": [
+                {
+                    "filename": path,
+                    "filesize": 10,
+                    "modified": "2024-01-01T00:00:00+00:00",
+                    "errors": "",
+                    "md5": Path(path).name.ljust(32, "0")[:32],
+                    "matches": [{"id": puid, "mime": "image/jpeg", "warning": ""}],
+                }
+            ]
+        }
+
+    return SimpleNamespace(identify=identify)
+
+
+class _LockSpy:
+    """A context manager that counts how many times it is entered."""
+
+    def __init__(self) -> None:
+        self.entered = 0
+
+    def __enter__(self) -> Self:
+        self.entered += 1
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        return None
+
+
 def _unknown_puid() -> str:
     """A PUID that exists in FMT2EXT but has no default policy (for blank/strict/extend paths)."""
     defaults = json.loads(DEFAULTPOLICIES.read_text())["policies"]
     return next(p for p in FMT2EXT if p not in defaults)
+
+
+class TestLoadSfinfos:
+    """_load_sfinfos either scans the folder with pygfried or reloads an existing _log.json."""
+
+    def test_scan_populates_stack_and_analytics(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        root = tmp_path / "root"
+        (root / "sub").mkdir(parents=True)
+        (root / "a.jpg").write_bytes(b"x")
+        (root / "sub" / "b.jpg").write_bytes(b"y")
+
+        fh = FileHandler()
+        fh.fp.TMP_DIR = tmp_path / "tmp"
+        fh.fp.LOGJSON = fh.fp.TMP_DIR / "_log.json"  # absent -> forces a scan
+        monkeypatch.setattr("fileidentification.filehandling.pygfried", _fake_pygfried())
+
+        fh._load_sfinfos(root)
+
+        assert len(fh.stack) == 2
+        # filenames were made relative to root (initial=True) and grouped by puid
+        assert {s.filename for s in fh.stack} == {Path("a.jpg"), Path("sub/b.jpg")}
+        assert set(fh.ba.puid_unique) == {"fmt/43"}
+        assert len(fh.ba.puid_unique["fmt/43"]) == 2
+        assert next(s for s in fh.stack if s.filename == Path("a.jpg")).path == root / "a.jpg"
+
+    def test_reload_from_log_skips_scan_and_removed_files(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fh = FileHandler()
+        fh.fp.TMP_DIR = tmp_path / "tmp"
+        fh.fp.TMP_DIR.mkdir()
+        fh.fp.LOGJSON = fh.fp.TMP_DIR / "_log.json"
+
+        active = make_sfinfo("sub/a.jpg", md5="a" * 32)
+        removed = make_sfinfo("sub/b.jpg", md5="b" * 32)
+        removed.status.removed = True
+        fh.fp.LOGJSON.write_text(
+            json.dumps({"files": [json.loads(active.model_dump_json()), json.loads(removed.model_dump_json())]})
+        )
+
+        # an existing log must be reused verbatim; pygfried must not be invoked
+        def boom(*_a: Any, **_k: Any) -> None:
+            msg = "pygfried scanned the folder despite an existing _log.json"
+            raise AssertionError(msg)
+
+        monkeypatch.setattr("fileidentification.filehandling.pygfried", SimpleNamespace(identify=boom))
+
+        fh._load_sfinfos(tmp_path)
+
+        assert len(fh.stack) == 2  # both entries reloaded
+        # only the active file is grouped for processing; the removed one is skipped
+        assert set(fh.ba.puid_unique) == {"fmt/43"}
+        assert len(fh.ba.puid_unique["fmt/43"]) == 1
+        loaded_active = next(s for s in fh.stack if not s.status.removed)
+        loaded_removed = next(s for s in fh.stack if s.status.removed)
+        assert loaded_active.path == tmp_path / "sub/a.jpg"  # paths set for active files
+        assert loaded_removed.path == Path()  # removed files are left untouched
 
 
 class TestSilentlyReencode:
@@ -241,6 +337,44 @@ class TestConvert:
         assert converted.root_folder == Path("/root")
         assert any("converted ->" in log.msg for log in pending.processing_logs)
 
+    def test_soffice_conversion_is_serialized_by_the_lock(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # soffice cannot run concurrent instances, so its conversions must go through _soffice_lock.
+        fh = FileHandler()
+        pending = make_sfinfo("sub/legacy.doc", puid="fmt/40")
+        pending.status.pending = True
+        pending.root_folder = Path("/root")
+        fh.stack = [pending]
+        fh.policies = {
+            "fmt/40": PolicyParams(accepted=False, bin="soffice", target_container="docx", expected=["fmt/412"])
+        }
+        converted = make_sfinfo("sub/legacy.docx", puid="fmt/412")
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"]))
+
+        spy = _LockSpy()
+        fh._soffice_lock = spy  # type: ignore[assignment]
+        fh.convert()
+
+        assert spy.entered == 1  # the soffice branch acquired the serialization lock
+        assert converted in fh.stack
+
+    def test_non_soffice_conversion_skips_the_lock(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        fh = FileHandler()
+        pending = make_sfinfo("sub/orig.jpg", puid="fmt/43")
+        pending.status.pending = True
+        pending.root_folder = Path("/root")
+        fh.stack = [pending]
+        fh.policies = {
+            "fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
+        }
+        converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"]))
+
+        spy = _LockSpy()
+        fh._soffice_lock = spy  # type: ignore[assignment]
+        fh.convert()
+
+        assert spy.entered == 0  # non-soffice bins run unserialized (nullcontext)
+
     def test_failure_records_processing_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
         fh = FileHandler()
         pending = make_sfinfo("sub/orig.jpg", puid="fmt/43")
@@ -261,6 +395,25 @@ class TestConvert:
         assert fh.log_tables.processing_errors
         err_msg = fh.log_tables.processing_errors[0][0].msg
         assert "conversion failed" in err_msg and "thecmd" in err_msg
+
+
+class TestRemoveTmpCleanup:
+    """remove_tmp moves converted files then prunes the empty folders left in the tmp dir."""
+
+    def test_prunes_empty_dirs_but_keeps_nonempty(self, tmp_path: Path) -> None:
+        fh = FileHandler()
+        fh.mode.QUIET = True
+        fh.fp.TMP_DIR = tmp_path / "tmp"
+        (fh.fp.TMP_DIR / "empty" / "nested").mkdir(parents=True)  # both levels empty
+        (fh.fp.TMP_DIR / "keep").mkdir()
+        (fh.fp.TMP_DIR / "keep" / "file.log").write_bytes(b"x")
+        fh.stack = []  # nothing to move
+
+        fh.remove_tmp(tmp_path)
+
+        assert not (fh.fp.TMP_DIR / "empty").exists()  # empty tree pruned bottom-up
+        assert (fh.fp.TMP_DIR / "keep" / "file.log").is_file()  # non-empty folder untouched
+        assert fh.fp.TMP_DIR.is_dir()  # the (non-empty) tmp root itself survives
 
 
 class TestWriteLogs:
@@ -314,9 +467,7 @@ class TestTestPolicies:
         big = make_sfinfo("big.mp4", puid="fmt/199", filesize=999)
         fh.ba.puid_unique["fmt/199"] = [big, small]
         fh.policies = {
-            "fmt/199": PolicyParams(
-                accepted=False, bin="ffmpeg", target_container="mp4", expected=["fmt/199"]
-            )
+            "fmt/199": PolicyParams(accepted=False, bin="ffmpeg", target_container="mp4", expected=["fmt/199"])
         }
         seen: list[SfInfo] = []
 

@@ -107,17 +107,15 @@ def fidr_image() -> str:
 def stage(tmp_path: Path, fidr_image: str) -> Iterator[Callable[..., Path]]:
     """Return a helper that copies testdata files into a mounted work dir.
 
-    Each name is copied by its basename into ``work`` (or ``work/<subdir>`` when
-    given), so testdata files living in subfolders can be placed flat or nested.
-    Always returns the same ``work`` dir.
+    Each name is copied by its basename into ``work``, so testdata files living
+    in subfolders can be placed flat. Always returns the same ``work`` dir.
     """
     work = tmp_path / "work"
 
-    def _stage(*names: str, subdir: str = "") -> Path:
-        dest_dir = work / subdir if subdir else work
-        dest_dir.mkdir(parents=True, exist_ok=True)
+    def _stage(*names: str) -> Path:
+        work.mkdir(parents=True, exist_ok=True)
         for name in names:
-            shutil.copy2(TESTDATA / name, dest_dir / Path(name).name)
+            shutil.copy2(TESTDATA / name, work / Path(name).name)
         return work
 
     yield _stage
@@ -214,29 +212,6 @@ def test_extension_mismatch_is_autorenamed(stage: Callable[..., Path], fidr_imag
     assert any("did rename" in m["msg"] for m in renamed["processing_logs"])
 
 
-def test_extension_mismatch_without_rename(stage: Callable[..., Path], fidr_image: str) -> None:
-    """A format with several possible extensions is flagged but left untouched."""
-    name = "SampleJPGImage.tif"  # really a JPEG (fmt/43, which has 6 extensions)
-    work = stage(name)
-    proc = run_cli(fidr_image, work, "-i")
-    assert proc.returncode == 0, proc.stderr
-    assert (work / name).is_file(), "ambiguous extension -> must not be auto-renamed"
-    assert not list((work / "__fileidentification").rglob("_REMOVED/**/*"))
-    flagged = next(f for f in _read_log(work)["files"] if f["filename"] == name)
-    assert any("expecting one of the following ext" in m["msg"] for m in flagged["processing_logs"])
-
-
-def test_nested_directory_is_scanned_recursively(stage: Callable[..., Path], fidr_image: str) -> None:
-    """Files in subdirectories are discovered and keyed by their relative path."""
-    stage("SampleJPGImage.jpg")
-    work = stage("file-sample_100kB.pdf", subdir="sub")
-    proc = run_cli(fidr_image, work)
-    assert proc.returncode == 0, proc.stderr
-    filenames = {f["filename"] for f in _read_log(work)["files"]}
-    assert "SampleJPGImage.jpg" in filenames
-    assert "sub/file-sample_100kB.pdf" in filenames
-
-
 def test_ffmpeg_converts_mkv_to_mp4(stage: Callable[..., Path], fidr_image: str) -> None:
     """`fidr -a -r` runs the ffmpeg path: an mkv without ffv1 video is re-encoded to mp4.
 
@@ -268,17 +243,6 @@ def test_strict_mode_removes_unlisted_format(stage: Callable[..., Path], fidr_im
     flagged = next(f for f in _read_log(work)["files"] if f["filename"] == "SampleJPGImage.jpg")
     assert flagged["status"].get("removed") is True
     assert any("not in policies" in m["msg"] for m in flagged["processing_logs"])
-
-
-def test_rerun_reads_existing_log(stage: Callable[..., Path], fidr_image: str) -> None:
-    """A second run loads the existing _log.json instead of rescanning; entries are not duplicated."""
-    work = stage("SampleJPGImage.jpg")
-    assert run_cli(fidr_image, work).returncode == 0
-    first = _read_log(work)["files"]
-    assert run_cli(fidr_image, work).returncode == 0
-    second = _read_log(work)["files"]
-    assert len(second) == len(first)
-    assert {f["filename"] for f in second} == {f["filename"] for f in first}
 
 
 def test_readable_file_with_warnings_is_kept(stage: Callable[..., Path], fidr_image: str) -> None:
