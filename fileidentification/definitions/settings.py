@@ -8,6 +8,8 @@ DEFAULTPOLICIES: Path = Path(__file__).parent / "default_policies.json"
 
 # max number of files processed concurrently in inspect / assert_integrity / apply_policies / convert
 MAX_WORKERS: int = 4
+# max number of pygfried workers
+PYG_WORKERS: int = 4
 
 # paths tmp dir, logs
 TMP_DIR = "__fileidentification"  # added to root folder

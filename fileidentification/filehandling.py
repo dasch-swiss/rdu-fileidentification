@@ -25,7 +25,7 @@ from fileidentification.definitions.models import (
     SfInfo,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, FMT2EXT, MAX_WORKERS, Bin
+from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, FMT2EXT, MAX_WORKERS, PYG_WORKERS, Bin
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
@@ -74,7 +74,7 @@ class FileHandler:
                 if root_folder.is_file():
                     self.stack.append(SfInfo(**pygfried.identify(f"{root_folder}", detailed=True)["files"][0]))  # type: ignore[arg-type]
                 else:
-                    self.stack.extend([SfInfo(**sfi) for sfi in pygfried.identify_dir(f"{root_folder}", workers=4)["files"]])  # type: ignore[arg-type]
+                    self.stack.extend([SfInfo(**sfi) for sfi in pygfried.identify_dir(f"{root_folder}", workers=PYG_WORKERS)["files"]])  # type: ignore[arg-type]
 
         # append path values run basic analytics
         for sfinfo in self.stack:
