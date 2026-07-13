@@ -25,7 +25,7 @@ from fileidentification.definitions.models import (
     SfInfo,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, FMT2EXT, MAX_WORKERS, Bin
+from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, FMT2EXT, MAX_WORKERS, PYG_WORKERS, Bin
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
@@ -71,15 +71,12 @@ class FileHandler:
                 SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True
             ) as prog:
                 prog.add_task(description="Analysing files with pygfried ...", total=None)
-                self.stack.extend(
-                    [
-                        SfInfo(**pygfried.identify(f"{f}", detailed=True)["files"][0])  # type: ignore[arg-type]
-                        for f in root_folder.glob("**/*")
-                        if f.is_file()
-                    ]
-                )
                 if root_folder.is_file():
                     self.stack.append(SfInfo(**pygfried.identify(f"{root_folder}", detailed=True)["files"][0]))  # type: ignore[arg-type]
+                else:
+                    self.stack.extend(
+                        [SfInfo(**sfi) for sfi in pygfried.identify_dir(f"{root_folder}", workers=PYG_WORKERS)["files"]]  # type: ignore[arg-type]
+                    )
 
         # append path values run basic analytics
         for sfinfo in self.stack:
@@ -323,7 +320,7 @@ class FileHandler:
                 [w.writerow(sfinfo2csv(el)) for el in self.stack]
 
     # default run, has a typer interface for the params in identify.py
-    def run(
+    def run(  # noqa: C901 flat task orchestration; complexity is from the flag branches, not nesting
         self,
         root_folder: Path | str,
         assert_integrity: bool = True,
@@ -353,28 +350,35 @@ class FileHandler:
         self.mode.QUIET = mode_quiet
         # generate a list of SfInfo objects out of the target folder
         self._load_sfinfos(root_folder)
-        # generate policies
-        self._manage_policies(policies_path, blank, extend)
-        # probing the files
-        if inspect:
-            self.inspect()
-        if assert_integrity:
-            self.assert_integrity()
-            if not apply:
-                # this triggers -qarx (to catch fixes with reencoding)
-                self._silently_reencode(root_folder)
-        # policies testing
-        if test_puid:
-            self._test_policies(puid=test_puid)
-        if test_policies:
-            self._test_policies()
-        # apply policies
-        if apply:
-            self.apply_policies()
-            self.convert()
-        if convert:
-            self.convert()
-        # remove tmp files
-        if remove_tmp:
-            self.remove_tmp(root_folder)
-        self.write_logs(to_csv=to_csv)
+        # the stack is now complete; from here on, persist it on any failure so a restart
+        # reloads a full inventory (an incomplete _log.json would suppress a rescan).
+        try:
+            # generate policies
+            self._manage_policies(policies_path, blank, extend)
+            # probing the files
+            if inspect:
+                self.inspect()
+            if assert_integrity:
+                self.assert_integrity()
+                if not apply:
+                    # this triggers -qarx (to catch fixes with reencoding)
+                    self._silently_reencode(root_folder)
+            # policies testing
+            if test_puid:
+                self._test_policies(puid=test_puid)
+            if test_policies:
+                self._test_policies()
+            # apply policies
+            if apply:
+                self.apply_policies()
+                self.convert()
+            if convert:
+                self.convert()
+            # remove tmp files
+            if remove_tmp:
+                self.remove_tmp(root_folder)
+            self.write_logs(to_csv=to_csv)
+        except Exception:
+            if self.stack:
+                self.write_logs()
+            raise

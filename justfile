@@ -58,7 +58,7 @@ lint-fix:
     uv run ruff check --fix .
 
 # Run all checks: lint and typecheck
-check: lint typecheck
+check: lint format typecheck
 
 # Run the fast unit tests (no docker needed)
 test:

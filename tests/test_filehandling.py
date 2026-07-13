@@ -18,12 +18,25 @@ from tests.conftest import fake_identify_payload, make_sfinfo
 
 
 def _fake_pygfried(puid: str = "fmt/43") -> SimpleNamespace:
-    """A stand-in for the pygfried module whose identify() echoes the queried path."""
+    """A stand-in for the pygfried module.
+
+    ``identify`` answers a single-file query; ``identify_dir`` walks the folder the
+    way the real pygfried does and returns one ``files`` entry per file found.
+    """
 
     def identify(path: str, detailed: bool = False) -> dict[str, Any]:
         return fake_identify_payload(path, puid=puid)
 
-    return SimpleNamespace(identify=identify)
+    def identify_dir(path: str, workers: int = 1) -> dict[str, Any]:
+        return {
+            "files": [
+                fake_identify_payload(f"{f}", puid=puid)["files"][0]
+                for f in sorted(Path(path).glob("**/*"))
+                if f.is_file()
+            ]
+        }
+
+    return SimpleNamespace(identify=identify, identify_dir=identify_dir)
 
 
 class _LockSpy:
