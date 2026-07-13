@@ -36,20 +36,15 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verb
         log_tables.processing_error_add(msg, sfinfo)
         return None
 
-    # select bin out of mimetype if not specified in policies
+    # select bin out of mimetype if not specified in policies: siegfried mime first, then the FMT2EXT fallback
     pbin = policies[sfinfo.processed_as].bin if sfinfo.processed_as in policies else ""
-    if pbin == "" and sfinfo.matches[0]["mime"] != "":  # noqa: SIM102
-        if sfinfo.matches[0]["mime"].split("/")[0] in ["image", "audio", "video"]:
-            mime = sfinfo.matches[0]["mime"].split("/")[0]
-            pbin = Bin.MAGICK if mime == "image" else Bin.FFMPEG
-            msgm = f"bin not specified in policies, using {pbin} according to the file mimetype for probing"
-            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msgm))
-    if pbin == "" and "mime" in FMT2EXT[sfinfo.processed_as]:  # noqa: SIM102
-        if FMT2EXT[sfinfo.processed_as]["mime"].split("/")[0] in ["image", "audio", "video"]:
-            mime = FMT2EXT[sfinfo.processed_as]["mime"].split("/")[0]
-            pbin = Bin.MAGICK if mime == "image" else Bin.FFMPEG
-            msgm = f"bin not specified in policies, using {pbin} according to the file mimetype for probing"
-            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msgm))
+    if not pbin:
+        for mime in (sfinfo.matches[0]["mime"], FMT2EXT[sfinfo.processed_as].get("mime", "")):
+            pbin = _bin_from_mime(mime)
+            if pbin:
+                msgm = f"bin not specified in policies, using {pbin} according to the file mimetype for probing"
+                sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msgm))
+                break
     # check if the file throws any error, warnings while open/processing it with the respective bin
     if _has_error(sfinfo, pbin, log_tables, verbose):
         return FDMsg.ERROR
@@ -86,6 +81,16 @@ def _rename(sfinfo: SfInfo, ext: str, log_tables: LogTables) -> None:
     except OSError as e:
         secho(f"{e}", fg=colors.RED)
         log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
+
+
+def _bin_from_mime(mime: str) -> str:
+    """Pick the probing bin from a mimetype; '' if it is not an image / audio / video type."""
+    top = mime.split("/", maxsplit=1)[0]
+    if top == "image":
+        return Bin.MAGICK
+    if top in ("audio", "video"):
+        return Bin.FFMPEG
+    return ""
 
 
 def _has_error(sfinfo: SfInfo, pbin: str, log_tables: LogTables, verbose: bool) -> bool:
