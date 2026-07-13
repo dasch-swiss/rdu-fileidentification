@@ -71,15 +71,10 @@ class FileHandler:
                 SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True
             ) as prog:
                 prog.add_task(description="Analysing files with pygfried ...", total=None)
-                self.stack.extend(
-                    [
-                        SfInfo(**pygfried.identify(f"{f}", detailed=True)["files"][0])  # type: ignore[arg-type]
-                        for f in root_folder.glob("**/*")
-                        if f.is_file()
-                    ]
-                )
                 if root_folder.is_file():
                     self.stack.append(SfInfo(**pygfried.identify(f"{root_folder}", detailed=True)["files"][0]))  # type: ignore[arg-type]
+                else:
+                    self.stack.extend([SfInfo(**sfi) for sfi in pygfried.identify_dir(f"{root_folder}", workers=4)["files"]])  # type: ignore[arg-type]
 
         # append path values run basic analytics
         for sfinfo in self.stack:
