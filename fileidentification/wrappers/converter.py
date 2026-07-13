@@ -26,17 +26,12 @@ def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, str]:
     target = Path(wdir / f"{sfinfo.filename.stem}.{args.target_container}")
 
     cmd_list: list[str] = []
-    logtext: str = ""
 
     match args.bin:
         case Bin.FFMPEG:
             cmd_list = ["ffmpeg", "-y", "-i", str(sfinfo.path), *shlex.split(args.processing_args), str(target)]
-            res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
-            logtext = res.stderr
         case Bin.MAGICK:
             cmd_list = ["magick", *shlex.split(args.processing_args), str(sfinfo.path), str(target)]
-            res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
-            logtext = res.stderr
         # case Bin.INCSCAPE:
         #     cmd_list = ["inkscape", f"--export-filename={str(target)}", *shlex.split(args.processing_args), str(sfinfo.path)]
         case Bin.SOFFICE:
@@ -49,8 +44,10 @@ def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, str]:
                 "--outdir",
                 str(wdir),
             ]
-            res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
-            logtext = res.stdout + res.stderr
+
+    res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
+    # soffice reports on stdout; ffmpeg / magick on stderr
+    logtext = res.stdout + res.stderr if args.bin == Bin.SOFFICE else res.stderr
 
     cmd_str = " ".join(shlex.quote(p) for p in cmd_list)
     return target, cmd_str, logtext

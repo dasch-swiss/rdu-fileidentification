@@ -28,13 +28,7 @@ def _fake_pygfried(puid: str = "fmt/43") -> SimpleNamespace:
         return fake_identify_payload(path, puid=puid)
 
     def identify_dir(path: str, workers: int = 1) -> dict[str, Any]:
-        return {
-            "files": [
-                fake_identify_payload(f"{f}", puid=puid)["files"][0]
-                for f in sorted(Path(path).glob("**/*"))
-                if f.is_file()
-            ]
-        }
+        return {"files": [identify(f"{f}")["files"][0] for f in sorted(Path(path).glob("**/*")) if f.is_file()]}
 
     return SimpleNamespace(identify=identify, identify_dir=identify_dir)
 
