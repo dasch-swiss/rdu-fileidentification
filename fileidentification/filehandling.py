@@ -74,7 +74,9 @@ class FileHandler:
                 if root_folder.is_file():
                     self.stack.append(SfInfo(**pygfried.identify(f"{root_folder}", detailed=True)["files"][0]))  # type: ignore[arg-type]
                 else:
-                    self.stack.extend([SfInfo(**sfi) for sfi in pygfried.identify_dir(f"{root_folder}", workers=PYG_WORKERS)["files"]])  # type: ignore[arg-type]
+                    self.stack.extend(
+                        [SfInfo(**sfi) for sfi in pygfried.identify_dir(f"{root_folder}", workers=PYG_WORKERS)["files"]]  # type: ignore[arg-type]
+                    )
 
         # append path values run basic analytics
         for sfinfo in self.stack:
