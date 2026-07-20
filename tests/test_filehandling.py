@@ -53,8 +53,8 @@ def _unknown_puid() -> str:
     return next(p for p in FMT2EXT if p not in defaults)
 
 
-class TestLoadSfinfos:
-    """_load_sfinfos either scans the folder with pygfried or reloads an existing _log.json."""
+class TestBuildStack:
+    """_build_stack either scans the folder with pygfried or reloads an existing _log.json."""
 
     def test_scan_populates_stack_and_analytics(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         root = tmp_path / "root"
@@ -67,7 +67,7 @@ class TestLoadSfinfos:
         fh.fp.LOGJSON = fh.fp.TMP_DIR / "_log.json"  # absent -> forces a scan
         monkeypatch.setattr("fileidentification.filehandling.pygfried", _fake_pygfried())
 
-        fh._load_sfinfos(root)
+        fh._build_stack(root)
 
         assert len(fh.stack) == 2
         # filenames were made relative to root (initial=True) and grouped by puid
@@ -98,7 +98,7 @@ class TestLoadSfinfos:
 
         monkeypatch.setattr("fileidentification.filehandling.pygfried", SimpleNamespace(identify=boom))
 
-        fh._load_sfinfos(tmp_path)
+        fh._build_stack(tmp_path)
 
         assert len(fh.stack) == 2  # both entries reloaded
         # only the active file is grouped for processing; the removed one is skipped
@@ -143,7 +143,7 @@ class TestRunTriggersReencode:
         order: list[str] = []
         # stub out every heavy step so we only observe the branch logic in run()
         monkeypatch.setattr("fileidentification.filehandling.set_filepaths", lambda *a, **k: None)
-        monkeypatch.setattr(fh, "_load_sfinfos", lambda root: order.append("load"))
+        monkeypatch.setattr(fh, "_build_stack", lambda root: order.append("build"))
         monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: order.append("policies"))
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
         monkeypatch.setattr(fh, "_silently_reencode", lambda root: order.append("reencode"))
@@ -162,7 +162,7 @@ class TestRunTriggersReencode:
         fh = FileHandler()
         order: list[str] = []
         monkeypatch.setattr("fileidentification.filehandling.set_filepaths", lambda *a, **k: None)
-        monkeypatch.setattr(fh, "_load_sfinfos", lambda root: None)
+        monkeypatch.setattr(fh, "_build_stack", lambda root: None)
         monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: None)
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
         monkeypatch.setattr(fh, "_silently_reencode", lambda root: order.append("reencode"))

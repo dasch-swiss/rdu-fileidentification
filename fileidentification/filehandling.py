@@ -53,7 +53,7 @@ class FileHandler:
         self._stack_lock = threading.Lock()
         self._soffice_lock = threading.Semaphore(1)
 
-    def _load_sfinfos(self, root_folder: Path) -> None:
+    def _build_stack(self, root_folder: Path) -> None:
         """
         Add sfinfos to stack.
         Checks whether a log json at default location exists. if so, it adds the sfinfos to the stack from there,
@@ -348,7 +348,7 @@ class FileHandler:
         self.mode.STRICT = mode_strict
         self.mode.QUIET = mode_quiet
         # generate a list of SfInfo objects out of the target folder
-        self._load_sfinfos(root_folder)
+        self._build_stack(root_folder)
         # the stack is now complete; from here on, persist it on any failure so a restart
         # reloads a full inventory (an incomplete _log.json would suppress a rescan).
         try:
