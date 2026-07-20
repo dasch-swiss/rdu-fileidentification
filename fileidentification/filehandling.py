@@ -152,7 +152,7 @@ class FileHandler:
         self.policies = jsonfile.policies
         jsonfile.name.write_text(jsonfile.model_dump_json(indent=4, exclude_none=True))
 
-    def _manage_policies(self, policies_path: Path | None = None, blank: bool = False, extend: bool = False) -> None:
+    def _resolve_policies(self, policies_path: Path | None = None, blank: bool = False, extend: bool = False) -> None:
         """
         Set the policies according to the parameters passed. either default policies, external passed policies or
         blank.
@@ -353,7 +353,7 @@ class FileHandler:
         # reloads a full inventory (an incomplete _log.json would suppress a rescan).
         try:
             # generate policies
-            self._manage_policies(policies_path, blank, extend)
+            self._resolve_policies(policies_path, blank, extend)
             # probing the files
             if inspect:
                 self.inspect()
