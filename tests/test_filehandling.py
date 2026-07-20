@@ -422,7 +422,9 @@ class TestConvert:
         origin.root_folder = tmp_path
         origin.tdir = tmp_path
         fh.stack = [origin]
-        fh.policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
+        fh.policies = {
+            "fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
+        }
 
         missing = tmp_path / "never.tif"  # converter produces no file -> failure, with a bin log
         monkeypatch.setattr(
@@ -487,7 +489,9 @@ class TestWriteLogs:
         fh.write_logs(to_csv=False)
         assert not (tmp_path / "_log.json.csv").exists()
 
-    def test_prints_processing_errors_before_dump_clears_them(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_prints_processing_errors_before_dump_clears_them(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         # regression: print_processing_errors must run before dump_errors() empties the table
         fh = FileHandler()
         fh.fp.LOGJSON = tmp_path / "_log.json"
