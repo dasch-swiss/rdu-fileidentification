@@ -117,12 +117,14 @@ class LogTables(BaseModel):
     """
     Run-wide collector for diagnostics and processing errors, shared across worker threads.
     diagnostics: SfInfo objects bucketed by FDMsg name (corrupt, warning, extension mismatch) for the console report.
-    processing_errors: (log message, SfInfo) pairs for failures that abort a file's processing.
-    Always mutate via diagnostics_add / processing_error_add, which hold the internal lock.
+    processing_errors: (summary LogMsg, SfInfo, detail LogMsgs) tuples for failures that abort a file's processing.
+    Only the summary is printed; the details (e.g. the converter's log) are added to the SfInfo copy in the
+    "errors" section by dump_errors, never to the original in "files". Always mutate via diagnostics_add /
+    processing_error_add, which hold the internal lock.
     """
 
     diagnostics: dict[str, list[SfInfo]] = Field(default_factory=dict)
-    processing_errors: list[tuple[LogMsg, SfInfo]] = Field(default_factory=list)
+    processing_errors: list[tuple[LogMsg, SfInfo, list[LogMsg]]] = Field(default_factory=list)
     _lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
 
     def diagnostics_add(self, sfinfo: SfInfo, fdgm: FDMsg) -> None:
@@ -132,18 +134,26 @@ class LogTables(BaseModel):
                 self.diagnostics[fdgm.name] = []
             self.diagnostics[fdgm.name].append(sfinfo)
 
-    def processing_error_add(self, msg: LogMsg, sfinfo: SfInfo) -> None:
-        """Thread-safely append a processing error."""
+    def processing_error_add(self, msg: LogMsg, sfinfo: SfInfo, details: list[LogMsg] | None = None) -> None:
+        """
+        Thread-safely append a processing error.
+        details are extra LogMsgs (e.g. the converter's output) recorded only in the "errors" copy and not printed.
+        """
         with self._lock:
-            self.processing_errors.append((msg, sfinfo))
+            self.processing_errors.append((msg, sfinfo, details or []))
 
     def dump_errors(self) -> list[SfInfo] | None:
-        """Flush processing_errors into their SfInfo.processing_logs and return the affected SfInfo objects."""
+        """
+        Return a copy of each SfInfo that hit a processing error, with the summary LogMsg and any detail LogMsgs
+        appended to its processing_logs. The originals (which also live in the stack / _log.json "files") are left
+        untouched, so the error entry and its details are recorded only in the "errors" section, not in "files".
+        """
         if not self.processing_errors:
             return None
-        for el in self.processing_errors:
-            el[1].processing_logs.append(el[0])
-        result = [el[1] for el in self.processing_errors]
+        result = [
+            sfinfo.model_copy(update={"processing_logs": [*sfinfo.processing_logs, msg, *details]})
+            for msg, sfinfo, details in self.processing_errors
+        ]
         self.processing_errors.clear()
         return result
 

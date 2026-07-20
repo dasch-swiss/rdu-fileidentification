@@ -55,11 +55,12 @@ def _verify(target: Path, sfinfo: SfInfo, expected: list[str]) -> SfInfo | None:
 
 
 # file migration
-def convert_file(sfinfo: SfInfo, policies: Policies) -> tuple[SfInfo | None, list[str]]:
+def convert_file(sfinfo: SfInfo, policies: Policies) -> tuple[SfInfo | None, list[str], LogMsg | None]:
     """
     Convert a file according to its policy, then re-identify and verify the output.
-    Returns (target_sfinfo, [cmd]): target_sfinfo is the SfInfo of the verified converted file, or None if the
-    conversion failed or produced an unexpected format; cmd is the converter command string (for logging).
+    Returns (target_sfinfo, [cmd], bin_log): target_sfinfo is the SfInfo of the verified converted file, or None
+    if the conversion failed or produced an unexpected format; cmd is the converter command string (for logging);
+    bin_log is the converter's log output on failure (for the caller to attach to the error), else None.
     """
 
     args: PolicyParams = policies[sfinfo.processed_as]  # type: ignore[index]
@@ -78,5 +79,6 @@ def convert_file(sfinfo: SfInfo, policies: Policies) -> tuple[SfInfo | None, lis
         _add_media_info(target_sfinfo, args.bin)
         if processing_log:
             target_sfinfo.processing_logs.append(processing_log)
+        processing_log = None  # consumed by the successful target; nothing left for the caller
 
-    return target_sfinfo, [cmd]
+    return target_sfinfo, [cmd], processing_log

@@ -104,9 +104,34 @@ def test_convert_file_strips_abs_paths_from_log(tmp_path: Path, monkeypatch: pyt
     monkeypatch.setattr(conv_mod, "_add_media_info", lambda s, b: None)
 
     policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
-    result, cmds = convert_file(origin, policies)
+    result, cmds, bin_log = convert_file(origin, policies)
 
     assert result is not None
     assert cmds == ["the cmd"]
+    assert bin_log is None  # consumed by the successful target
     log = next(log for log in result.processing_logs if log.name == "magick")
     assert log.msg == "sub/orig.jpg -> out"  # both absolute prefixes stripped
+
+
+def test_convert_file_returns_bin_log_on_failure_without_touching_origin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """On failure the bin's log is returned (for the "errors" copy) and is not added to the origin sfinfo."""
+    origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
+    origin.root_folder = Path("/root")
+    origin.tdir = Path("/tmp/tdir")
+    origin.status.pending = True
+
+    missing_target = tmp_path / "never-created.tif"  # never written -> conversion failed
+    monkeypatch.setattr(conv_mod, "convert", lambda s, a: (missing_target, "the cmd", "magick: some fatal error"))
+
+    policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
+    result, _, bin_log = convert_file(origin, policies)
+
+    assert result is None
+    # the failure reason is recorded on the origin, but the bin log is NOT (it only travels back to the caller)
+    assert FPMsg.CONVFAILED in origin.processing_logs[-1].msg
+    assert not any(log.name == "magick" for log in origin.processing_logs)
+    assert bin_log is not None
+    assert bin_log.name == "magick"
+    assert bin_log.msg == "magick: some fatal error"

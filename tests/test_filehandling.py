@@ -317,7 +317,7 @@ class TestConvert:
 
         converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
         converted.filename = Path("sub/orig.tif")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"]))
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"], None))
 
         fh.convert()
 
@@ -336,7 +336,7 @@ class TestConvert:
             "fmt/40": PolicyParams(accepted=False, bin="soffice", target_container="docx", expected=["fmt/412"])
         }
         converted = make_sfinfo("sub/legacy.docx", puid="fmt/412")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"]))
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"], None))
 
         spy = _LockSpy()
         fh._soffice_lock = spy  # type: ignore[assignment]
@@ -355,7 +355,7 @@ class TestConvert:
             "fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
         }
         converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"]))
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"], None))
 
         spy = _LockSpy()
         fh._soffice_lock = spy  # type: ignore[assignment]
@@ -370,10 +370,10 @@ class TestConvert:
         fh.stack = [pending]
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", bin="magick")}
 
-        def failing_convert(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str]]:
+        def failing_convert(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str], None]:
             # convert_file leaves a diagnostic on the origin before signalling failure
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
-            return None, ["thecmd"]
+            return None, ["thecmd"], None
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", failing_convert)
 
@@ -383,6 +383,68 @@ class TestConvert:
         assert fh.log_tables.processing_errors
         err_msg = fh.log_tables.processing_errors[0][0].msg
         assert "conversion failed" in err_msg and "thecmd" in err_msg
+
+    def test_failure_log_lands_in_errors_not_duplicated_in_files(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # the failed sfinfo appears in both _log.json sections, but its failure entry is recorded only in "errors"
+        fh = FileHandler()
+        fh.fp.LOGJSON = tmp_path / "_log.json"
+        origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
+        origin.status.pending = True
+        fh.stack = [origin]
+        fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", bin="magick")}
+
+        def failing_convert(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str], LogMsg]:
+            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
+            return None, ["thecmd"], LogMsg(name="magick", msg="magick boom detail")
+
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", failing_convert)
+
+        fh.convert()
+        fh.write_logs()
+
+        data = json.loads(fh.fp.LOGJSON.read_text())
+        files_logs = " ".join(log["msg"] for f in data["files"] for log in f.get("processing_logs", []))
+        errors_logs = " ".join(log["msg"] for e in data["errors"] for log in e.get("processing_logs", []))
+        assert "conversion failed" not in files_logs and "magick boom detail" not in files_logs  # nothing in "files"
+        assert "conversion failed" in errors_logs and "thecmd" in errors_logs  # summary in "errors"
+        assert "magick boom detail" in errors_logs  # bin log detail in "errors" only
+
+    def test_bin_log_recorded_only_in_errors_copy_and_not_printed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        # end to end: the bin's log ends up only in the "errors" copy, not in "files", and is never printed
+        fh = FileHandler()
+        fh.fp.LOGJSON = tmp_path / "_log.json"
+        origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
+        origin.status.pending = True
+        origin.root_folder = tmp_path
+        origin.tdir = tmp_path
+        fh.stack = [origin]
+        fh.policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
+
+        missing = tmp_path / "never.tif"  # converter produces no file -> failure, with a bin log
+        monkeypatch.setattr(
+            "fileidentification.tasks.conversion.convert", lambda s, a: (missing, "the cmd", "magick: boom")
+        )
+
+        fh.convert()
+
+        # the summary is the failure reason (+cmd); the bin log rides along only as a detail
+        msg, _sfinfo, details = fh.log_tables.processing_errors[0]
+        assert "conversion failed" in msg.msg and "magick: boom" not in msg.msg
+        assert [d.msg for d in details] == ["magick: boom"]
+        # the origin (the "files" sfinfo) never receives the bin log
+        assert not any(log.name == "magick" for log in origin.processing_logs)
+
+        fh.write_logs()
+        data = json.loads(fh.fp.LOGJSON.read_text())
+        files_logs = " ".join(log["msg"] for f in data["files"] for log in f.get("processing_logs", []))
+        errors_logs = " ".join(log["msg"] for e in data["errors"] for log in e.get("processing_logs", []))
+        assert "magick: boom" not in files_logs  # not in "files"
+        assert "magick: boom" in errors_logs  # only in "errors"
+        assert "magick: boom" not in capsys.readouterr().out  # not printed
 
 
 class TestRemoveTmpCleanup:
@@ -425,6 +487,20 @@ class TestWriteLogs:
         fh.write_logs(to_csv=False)
         assert not (tmp_path / "_log.json.csv").exists()
 
+    def test_prints_processing_errors_before_dump_clears_them(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        # regression: print_processing_errors must run before dump_errors() empties the table
+        fh = FileHandler()
+        fh.fp.LOGJSON = tmp_path / "_log.json"
+        sfinfo = make_sfinfo("sub/orig.jpg")
+        fh.stack = [sfinfo]
+        fh.log_tables.processing_error_add(LogMsg(name="magick", msg="conversion failed [magick] boom"), sfinfo)
+
+        fh.write_logs()
+
+        out = capsys.readouterr().out
+        assert "Processing errors" in out
+        assert "conversion failed [magick] boom" in out
+
 
 class TestInspectMode:
     def test_writes_dated_report_and_removes_policies(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -459,9 +535,9 @@ class TestTestPolicies:
         }
         seen: list[SfInfo] = []
 
-        def record(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str]]:
+        def record(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str], None]:
             seen.append(sfinfo)
-            return None, ["cmd"]
+            return None, ["cmd"], None
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", record)
 
@@ -473,9 +549,9 @@ class TestTestPolicies:
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", accepted=True)}
         called: list[SfInfo] = []
 
-        def record(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str]]:
+        def record(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str], None]:
             called.append(sfinfo)
-            return None, ["cmd"]
+            return None, ["cmd"], None
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", record)
         fh._test_policies()

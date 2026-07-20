@@ -107,4 +107,4 @@ During processing, `__fileidentification/` is created inside the target director
 - `_policies.json` — generated or read-in policies
 - `_log.json` — cumulative log of all processing (appended across runs)
 - `_REMOVED/` — corrupt or removed files
-- `<filename>_<pathhash[:6]>/` — per-file conversion working directories with converted file and `<stem>.log`
+- `<filename>_<pathhash[:6]>/` — per-file conversion working directories with converted file
