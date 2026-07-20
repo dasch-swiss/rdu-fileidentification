@@ -53,7 +53,7 @@ class FileHandler:
         self._stack_lock = threading.Lock()
         self._soffice_lock = threading.Semaphore(1)
 
-    def _load_sfinfos(self, root_folder: Path) -> None:
+    def _build_stack(self, root_folder: Path) -> None:
         """
         Add sfinfos to stack.
         Checks whether a log json at default location exists. if so, it adds the sfinfos to the stack from there,
@@ -88,8 +88,8 @@ class FileHandler:
         print_duplicates(duplicates=self.ba.duplicates, mode=self.mode)
 
     # policies stuff
-    def _load_policies(self, policies_path: Path) -> Policies:
-        """Load and validate an existing policies.json"""
+    def _read_policies(self, policies_path: Path) -> Policies:
+        """Read and validate an existing policies.json"""
         if not policies_path.is_file():
             secho(f"{policies_path} not found", fg=colors.RED)
             self.write_logs()
@@ -106,9 +106,9 @@ class FileHandler:
     def _gen_policies(self, outpath: Path, blank: bool = False, extend: bool = False) -> None:
         """
         Generate a policies.json with the default values of the encountered fileformats
-        :param blank if set to True, it generates a blank policies.json
-        :param extend if true, it expands the loaded policies with filetypes found in root_folder that are not in the
-        loaded policies and writes out an updated policies.json
+        :param blank: if True, generate a blank policies.json
+        :param extend: if True, expand the loaded policies with filetypes found in root_folder that are not in the
+        loaded policies and write out an updated policies.json
         """
 
         jsonfile = PoliciesFile(name=outpath)
@@ -127,7 +127,7 @@ class FileHandler:
             return
 
         # default values
-        default_policies = self._load_policies(DEFAULTPOLICIES)
+        default_policies = self._read_policies(DEFAULTPOLICIES)
         jsonfile.comment += f" using default policies {DEFAULTPOLICIES}"
         jsonfile.comment += " in strict mode" if self.mode.STRICT else ""
         jsonfile.comment += f" updating from {outpath}" if extend else ""
@@ -152,7 +152,7 @@ class FileHandler:
         self.policies = jsonfile.policies
         jsonfile.name.write_text(jsonfile.model_dump_json(indent=4, exclude_none=True))
 
-    def _manage_policies(self, policies_path: Path | None = None, blank: bool = False, extend: bool = False) -> None:
+    def _resolve_policies(self, policies_path: Path | None = None, blank: bool = False, extend: bool = False) -> None:
         """
         Set the policies according to the parameters passed. either default policies, external passed policies or
         blank.
@@ -170,7 +170,7 @@ class FileHandler:
         # load the external passed policies with option -p or default location
         else:
             print_msg(f"Loading policies from {policies_path}", self.mode.QUIET)
-            self.policies = self._load_policies(policies_path)
+            self.policies = self._read_policies(policies_path)
 
         # expand a passed policies with the filetypes found in root_folder that are not yet in the policies
         if extend and policies_path:
@@ -348,12 +348,12 @@ class FileHandler:
         self.mode.STRICT = mode_strict
         self.mode.QUIET = mode_quiet
         # generate a list of SfInfo objects out of the target folder
-        self._load_sfinfos(root_folder)
+        self._build_stack(root_folder)
         # the stack is now complete; from here on, persist it on any failure so a restart
         # reloads a full inventory (an incomplete _log.json would suppress a rescan).
         try:
             # generate policies
-            self._manage_policies(policies_path, blank, extend)
+            self._resolve_policies(policies_path, blank, extend)
             # probing the files
             if inspect:
                 self.inspect()

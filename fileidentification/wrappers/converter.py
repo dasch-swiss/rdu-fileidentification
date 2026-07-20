@@ -12,11 +12,8 @@ SOFFICE = LOPath.Linux if platform.system() == LOPath.Linux.name else LOPath.Dar
 def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, str]:
     """
     Convert a file to the desired format passed by the args.
-
-    :params sfinfo the metadata object of the file
-    :params args the arguments how to convert ('bin', 'processing_args', 'target_container')
-
-    :returns the constructed target path, a human-readable command string, and the captured log output
+    :param args: how to convert the file ('bin', 'processing_args', 'target_container')
+    :returns: the constructed target path, a human-readable command string, and the captured log output
     """
 
     wdir = Path(sfinfo.tdir / f"{sfinfo.filename.name}_{sfinfo.md5[:6]}")

@@ -12,6 +12,7 @@ from fileidentification.wrappers.imagemagick import imagemagick_media_info
 
 
 def _add_media_info(sfinfo: SfInfo, _bin: str) -> None:
+    """Attach technical metadata (codec/stream info) of the converted file to sfinfo.media_info, if _bin supports it."""
     match _bin:
         case Bin.FFMPEG:
             streams = ffmpeg_media_info(sfinfo.filename)
@@ -24,10 +25,10 @@ def _add_media_info(sfinfo: SfInfo, _bin: str) -> None:
 
 def _verify(target: Path, sfinfo: SfInfo, expected: list[str]) -> SfInfo | None:
     """
-    Analyse the created file with pygfried, returns a SfInfo for the new file if verification passed,
-    :param sfinfo the metadata of the origin
-    :param target the path to the converted file to analyse with siegfried
-    :param expected the expected file format, to verify the conversion
+    Identify the converted file with pygfried and verify it matches the expected format.
+    Returns an SfInfo for the new file (linked back to the origin via derived_from) on success, or None if the
+    conversion produced no file or the wrong format; in either failure case a log entry is added to the origin sfinfo.
+    :param expected: the PUIDs the converted file must match to count as a successful conversion
     """
     target_sfinfo = None
     if target.is_file():
@@ -56,9 +57,9 @@ def _verify(target: Path, sfinfo: SfInfo, expected: list[str]) -> SfInfo | None:
 # file migration
 def convert_file(sfinfo: SfInfo, policies: Policies) -> tuple[SfInfo | None, list[str]]:
     """
-    Convert a file, returns the metadata of the converted file as SfInfo
-    :param sfinfo the metadata of the file to convert
-    :param policies the policies for fileconversion
+    Convert a file according to its policy, then re-identify and verify the output.
+    Returns (target_sfinfo, [cmd]): target_sfinfo is the SfInfo of the verified converted file, or None if the
+    conversion failed or produced an unexpected format; cmd is the converter command string (for logging).
     """
 
     args: PolicyParams = policies[sfinfo.processed_as]  # type: ignore[index]

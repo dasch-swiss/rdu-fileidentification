@@ -53,8 +53,8 @@ def _unknown_puid() -> str:
     return next(p for p in FMT2EXT if p not in defaults)
 
 
-class TestLoadSfinfos:
-    """_load_sfinfos either scans the folder with pygfried or reloads an existing _log.json."""
+class TestBuildStack:
+    """_build_stack either scans the folder with pygfried or reloads an existing _log.json."""
 
     def test_scan_populates_stack_and_analytics(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         root = tmp_path / "root"
@@ -67,7 +67,7 @@ class TestLoadSfinfos:
         fh.fp.LOGJSON = fh.fp.TMP_DIR / "_log.json"  # absent -> forces a scan
         monkeypatch.setattr("fileidentification.filehandling.pygfried", _fake_pygfried())
 
-        fh._load_sfinfos(root)
+        fh._build_stack(root)
 
         assert len(fh.stack) == 2
         # filenames were made relative to root (initial=True) and grouped by puid
@@ -98,7 +98,7 @@ class TestLoadSfinfos:
 
         monkeypatch.setattr("fileidentification.filehandling.pygfried", SimpleNamespace(identify=boom))
 
-        fh._load_sfinfos(tmp_path)
+        fh._build_stack(tmp_path)
 
         assert len(fh.stack) == 2  # both entries reloaded
         # only the active file is grouped for processing; the removed one is skipped
@@ -143,8 +143,8 @@ class TestRunTriggersReencode:
         order: list[str] = []
         # stub out every heavy step so we only observe the branch logic in run()
         monkeypatch.setattr("fileidentification.filehandling.set_filepaths", lambda *a, **k: None)
-        monkeypatch.setattr(fh, "_load_sfinfos", lambda root: order.append("load"))
-        monkeypatch.setattr(fh, "_manage_policies", lambda *a, **k: order.append("policies"))
+        monkeypatch.setattr(fh, "_build_stack", lambda root: order.append("build"))
+        monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: order.append("policies"))
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
         monkeypatch.setattr(fh, "_silently_reencode", lambda root: order.append("reencode"))
         monkeypatch.setattr(fh, "apply_policies", lambda: order.append("apply"))
@@ -162,8 +162,8 @@ class TestRunTriggersReencode:
         fh = FileHandler()
         order: list[str] = []
         monkeypatch.setattr("fileidentification.filehandling.set_filepaths", lambda *a, **k: None)
-        monkeypatch.setattr(fh, "_load_sfinfos", lambda root: None)
-        monkeypatch.setattr(fh, "_manage_policies", lambda *a, **k: None)
+        monkeypatch.setattr(fh, "_build_stack", lambda root: None)
+        monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: None)
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
         monkeypatch.setattr(fh, "_silently_reencode", lambda root: order.append("reencode"))
         monkeypatch.setattr(fh, "apply_policies", lambda: order.append("apply"))
@@ -225,8 +225,7 @@ class TestGenPolicies:
         assert unknown not in (fh.ba.blank or [])
 
     def test_extend_keeps_existing_policy(self, tmp_path: Path) -> None:
-        # extend must preserve the pre-loaded (hand-tuned) policy rather than fall back to a blank one.
-        # Regression guard: _load_policies(DEFAULTPOLICIES) inside _gen_policies must not clobber self.policies.
+        # Regression guard: _read_policies(DEFAULTPOLICIES) inside _gen_policies must not clobber self.policies.
         unknown = _unknown_puid()
         fh = _fh_with_puids(unknown)
         fh.policies = {unknown: PolicyParams(format_name="hand-tuned")}
@@ -241,12 +240,12 @@ class TestGenPolicies:
         assert fh.policies["fmt/43"].remove_original is True
 
 
-class TestLoadPolicies:
+class TestReadPolicies:
     def test_missing_file_exits(self, tmp_path: Path) -> None:
         fh = FileHandler()
         fh.fp.LOGJSON = tmp_path / "_log.json"
         with pytest.raises(SystemExit):
-            fh._load_policies(tmp_path / "missing.json")
+            fh._read_policies(tmp_path / "missing.json")
 
     def test_invalid_policy_exits(self, tmp_path: Path) -> None:
         fh = FileHandler()
@@ -254,26 +253,23 @@ class TestLoadPolicies:
         bad = tmp_path / "bad.json"
         bad.write_text(json.dumps({"policies": {"fmt/43": {"bin": "notabin"}}}))
         with pytest.raises(SystemExit):
-            fh._load_policies(bad)
+            fh._read_policies(bad)
 
-    def test_valid_policy_loads(self, tmp_path: Path) -> None:
+    def test_valid_policy_reads(self, tmp_path: Path) -> None:
         fh = FileHandler()
         good = tmp_path / "good.json"
         good.write_text(json.dumps({"policies": {"fmt/43": {"format_name": "JPEG", "accepted": True}}}))
-        result = fh._load_policies(good)
+        result = fh._read_policies(good)
         assert "fmt/43" in result
-        # _load_policies only returns the parsed policies; assigning them to self.policies
-        # is the caller's (_manage_policies) job, so the attribute is left untouched here.
-        assert fh.policies == {}
 
 
-class TestManagePolicies:
-    """_manage_policies chooses between generating, loading the default location, or loading an external file."""
+class TestResolvePolicies:
+    """_resolve_policies chooses between generating, reading the default location, or reading an external file."""
 
     def _spy(self, fh: FileHandler, monkeypatch: pytest.MonkeyPatch) -> dict[str, list[Any]]:
-        calls: dict[str, list[Any]] = {"gen": [], "load": []}
+        calls: dict[str, list[Any]] = {"gen": [], "read": []}
         monkeypatch.setattr(fh, "_gen_policies", lambda *a, **k: calls["gen"].append((a, k)))
-        monkeypatch.setattr(fh, "_load_policies", calls["load"].append)
+        monkeypatch.setattr(fh, "_read_policies", calls["read"].append)
         monkeypatch.setattr("fileidentification.filehandling.print_fmts", lambda *a, **k: None)
         return calls
 
@@ -281,32 +277,32 @@ class TestManagePolicies:
         fh = FileHandler()
         fh.fp.POLJSON = tmp_path / "_policies.json"  # does not exist
         calls = self._spy(fh, monkeypatch)
-        fh._manage_policies(None)
-        assert calls["gen"] and not calls["load"]
+        fh._resolve_policies(None)
+        assert calls["gen"] and not calls["read"]
 
-    def test_loads_default_location_when_present(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_reads_default_location_when_present(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         fh = FileHandler()
         fh.fp.POLJSON = tmp_path / "_policies.json"
         fh.fp.POLJSON.write_text("{}")
         calls = self._spy(fh, monkeypatch)
-        fh._manage_policies(None)
-        assert calls["load"] == [fh.fp.POLJSON] and not calls["gen"]
+        fh._resolve_policies(None)
+        assert calls["read"] == [fh.fp.POLJSON] and not calls["gen"]
 
-    def test_loads_external_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_reads_external_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         fh = FileHandler()
         fh.fp.POLJSON = tmp_path / "_policies.json"
         external = tmp_path / "ext.json"
         calls = self._spy(fh, monkeypatch)
-        fh._manage_policies(external)
-        assert calls["load"] == [external] and not calls["gen"]
+        fh._resolve_policies(external)
+        assert calls["read"] == [external] and not calls["gen"]
 
-    def test_extend_triggers_gen_after_load(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_extend_triggers_gen_after_read(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         fh = FileHandler()
         fh.fp.POLJSON = tmp_path / "_policies.json"
         external = tmp_path / "ext.json"
         calls = self._spy(fh, monkeypatch)
-        fh._manage_policies(external, extend=True)
-        assert calls["load"] == [external]
+        fh._resolve_policies(external, extend=True)
+        assert calls["read"] == [external]
         assert calls["gen"] and calls["gen"][0][1].get("extend") is True
 
 

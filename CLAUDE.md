@@ -53,8 +53,8 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 
 1. `identify.py` — Typer CLI entrypoint; collects all flags and delegates to `FileHandler.run()`
 2. `FileHandler` (`fileidentification/filehandling.py`) — main orchestrator class; holds the processing state (`stack`, `policies`, `ba`, `log_tables`, `fp`, `mode`)
-3. Files are scanned with pygfried → each file becomes an `SfInfo` object in `self.stack`
-4. Policies (JSON keyed by PUID) are loaded or generated → `self.policies`
+3. `_build_stack` populates `self.stack` — either reloading an existing `_log.json` or scanning the folder with pygfried; each file becomes an `SfInfo` object
+4. `_resolve_policies` sets `self.policies` (JSON keyed by PUID) — read from an existing file (`_read_policies`) or generated (`_gen_policies`)
 5. Tasks (integrity check, apply policies, convert, move) operate on the stack in sequence
 
 ### Key Models (`fileidentification/definitions/models.py`)
@@ -104,7 +104,7 @@ Contains alternative policy sets (e.g. `dasch_policies.json`). `just setdasch` c
 ### Temporary Files
 
 During processing, `__fileidentification/` is created inside the target directory (or a custom `--tmp-dir`):
-- `_policies.json` — generated/loaded policies
+- `_policies.json` — generated or read-in policies
 - `_log.json` — cumulative log of all processing (appended across runs)
 - `_REMOVED/` — corrupt or removed files
 - `<filename>_<md5[:6]>/` — per-file conversion working directories with converted file and `<stem>.log`

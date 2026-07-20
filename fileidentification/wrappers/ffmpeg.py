@@ -6,8 +6,11 @@ from typing import Any
 
 def ffmpeg_collect_warnings(file: Path, verbose: bool) -> tuple[bool, str, str]:
     """
-    Check for errors with ffprobe -show_error or ffmpeg dropping frames.
-    Returns True if file is corrupt, stdout, technical metadata of the video
+    Probe the file with ffprobe (and, if verbose, decode it fully with ffmpeg to catch frame-level errors).
+    Returns a tuple (is_corrupt, log_text, specs):
+      is_corrupt: True if ffprobe reported an error;
+      log_text: the ffprobe/ffmpeg diagnostic output (paths stripped);
+      specs: the stream/codec metadata as a JSON string, or '' if none.
     """
 
     cmd = ["ffprobe", "-hide_banner", "-show_error", str(file)]
@@ -30,6 +33,7 @@ def ffmpeg_collect_warnings(file: Path, verbose: bool) -> tuple[bool, str, str]:
 
 
 def ffmpeg_media_info(file: Path) -> dict[str, Any] | None:
+    """Return the per-stream codec/technical metadata from ffprobe, or None if ffprobe fails."""
     cmd: list[str] = [
         "ffprobe",
         str(file),
