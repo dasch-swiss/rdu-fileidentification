@@ -196,7 +196,7 @@ class FileHandler:
                 # we want the smallest file first for running the test
                 sample = self.ba.smallest_file(puid)
                 secho(f"\n{puid}", fg=colors.YELLOW)
-                t_sfinfo, cmd = convert_file(sample, self.policies)
+                t_sfinfo, cmd, _ = convert_file(sample, self.policies)
                 if t_sfinfo:
                     secho(f"{cmd}", fg=colors.GREEN, bold=True)
                     secho(f"You find the file with the log in {t_sfinfo.filename.parent}")
@@ -273,7 +273,7 @@ class FileHandler:
             is_soffice = self.policies[sfinfo.processed_as].bin == Bin.SOFFICE  # type: ignore[index]
             ctx = self._soffice_lock if is_soffice else nullcontext()
             with ctx:
-                conv_sfinfo, cmd = convert_file(sfinfo, self.policies)
+                conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies)
             if conv_sfinfo:
                 msg = f"converted -> {sfinfo.tdir.stem}/{conv_sfinfo.filename.parent.name}/{conv_sfinfo.filename.name}"
                 sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
@@ -283,7 +283,8 @@ class FileHandler:
             else:
                 lmsg = sfinfo.processing_logs.pop()
                 lmsg.msg += f". cmd={cmd} "
-                self.log_tables.processing_error_add(lmsg, sfinfo)
+                # the bin's log (if any) goes in as a detail: recorded in the "errors" copy but not printed
+                self.log_tables.processing_error_add(lmsg, sfinfo, [bin_log] if bin_log else None)
 
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Converting ...", total=None)
@@ -307,10 +308,10 @@ class FileHandler:
 
     def write_logs(self, to_csv: bool = False) -> None:
         """Write the run state to _log.json and optionally export a CSV alongside it."""
+        print_processing_errors(log_tables=self.log_tables)
+
         logoutput = LogOutput(files=self.stack, errors=self.log_tables.dump_errors(), duplicates=self.ba.duplicates)
         self.fp.LOGJSON.write_text(logoutput.model_dump_json(indent=4, exclude_none=True))
-
-        print_processing_errors(log_tables=self.log_tables)
 
         if to_csv:
             with open(f"{self.fp.LOGJSON}.csv", "w") as f:  # noqa: PTH123

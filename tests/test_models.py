@@ -125,14 +125,16 @@ class TestLogTables:
         lt.diagnostics_add(b, FDMsg.ERROR)
         assert lt.diagnostics[FDMsg.ERROR.name] == [a, b]
 
-    def test_dump_errors_flushes_into_logs(self) -> None:
+    def test_dump_errors_returns_copies_and_leaves_originals(self) -> None:
         lt = LogTables()
         s = make_sfinfo()
         msg = LogMsg(name="x", msg="boom")
         lt.processing_error_add(msg, s)
         dumped = lt.dump_errors()
-        assert dumped == [s]
-        assert msg in s.processing_logs
+        assert dumped is not None
+        assert msg in dumped[0].processing_logs  # error recorded in the returned (errors) copy
+        assert msg not in s.processing_logs  # original (files) left untouched -> not duplicated
+        assert dumped[0].filename == s.filename  # the copy is of the same file
         assert lt.processing_errors == []  # cleared
 
     def test_dump_errors_empty_returns_none(self) -> None:
