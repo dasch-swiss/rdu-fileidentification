@@ -88,8 +88,8 @@ class FileHandler:
         print_duplicates(duplicates=self.ba.duplicates, mode=self.mode)
 
     # policies stuff
-    def _load_policies(self, policies_path: Path) -> Policies:
-        """Load and validate an existing policies.json"""
+    def _read_policies(self, policies_path: Path) -> Policies:
+        """Read and validate an existing policies.json"""
         if not policies_path.is_file():
             secho(f"{policies_path} not found", fg=colors.RED)
             self.write_logs()
@@ -127,7 +127,7 @@ class FileHandler:
             return
 
         # default values
-        default_policies = self._load_policies(DEFAULTPOLICIES)
+        default_policies = self._read_policies(DEFAULTPOLICIES)
         jsonfile.comment += f" using default policies {DEFAULTPOLICIES}"
         jsonfile.comment += " in strict mode" if self.mode.STRICT else ""
         jsonfile.comment += f" updating from {outpath}" if extend else ""
@@ -170,7 +170,7 @@ class FileHandler:
         # load the external passed policies with option -p or default location
         else:
             print_msg(f"Loading policies from {policies_path}", self.mode.QUIET)
-            self.policies = self._load_policies(policies_path)
+            self.policies = self._read_policies(policies_path)
 
         # expand a passed policies with the filetypes found in root_folder that are not yet in the policies
         if extend and policies_path:
