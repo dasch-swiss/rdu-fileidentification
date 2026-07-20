@@ -78,7 +78,7 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 
 ### Wrappers (`fileidentification/wrappers/`)
 
-- `converter.py` — builds and runs shell commands for ffmpeg/magick/soffice; each conversion writes to a working subdirectory `__fileidentification/<filename>_<md5[:6]>/`
+- `converter.py` — builds and runs shell commands for ffmpeg/magick/soffice; each conversion writes to a working subdirectory `__fileidentification/<filename>_<pathhash[:6]>/` (the hash is of the file's relative path, so identical files at different paths don't collide)
 - `ffmpeg.py` / `imagemagick.py` — media info extraction helpers
 
 ### Definitions (`fileidentification/definitions/`)
@@ -107,4 +107,4 @@ During processing, `__fileidentification/` is created inside the target director
 - `_policies.json` — generated or read-in policies
 - `_log.json` — cumulative log of all processing (appended across runs)
 - `_REMOVED/` — corrupt or removed files
-- `<filename>_<md5[:6]>/` — per-file conversion working directories with converted file and `<stem>.log`
+- `<filename>_<pathhash[:6]>/` — per-file conversion working directories with converted file and `<stem>.log`

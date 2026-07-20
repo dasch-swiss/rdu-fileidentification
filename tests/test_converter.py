@@ -128,4 +128,28 @@ def test_working_dir_is_created(capture_cmd: list[list[str]], tmp_path: Path) ->
     )
     target, _, _ = converter.convert(s, args)
     assert target.parent.is_dir()
-    assert target.parent.name == "clip.mp4_abcdef"  # <name>_<md5[:6]>
+    # <name>_<pathhash[:6]>: basename prefix plus a 6-char hex hash of the file's relative path
+    name = target.parent.name
+    assert name.startswith("clip.mp4_")
+    suffix = name.rsplit("_", 1)[1]
+    assert len(suffix) == 6 and all(c in "0123456789abcdef" for c in suffix)
+
+
+def test_identical_files_at_different_paths_get_distinct_working_dirs(
+    capture_cmd: list[list[str]], tmp_path: Path
+) -> None:
+    # two duplicates (same content md5, same basename) at different paths must not share a working dir,
+    # otherwise one conversion would overwrite the other
+    args = PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
+
+    a = make_sfinfo("sub_a/clip.mp4", md5="abcdef0000")
+    a.tdir = tmp_path
+    a.path = tmp_path / "sub_a" / "clip.mp4"
+    b = make_sfinfo("sub_b/clip.mp4", md5="abcdef0000")
+    b.tdir = tmp_path
+    b.path = tmp_path / "sub_b" / "clip.mp4"
+
+    target_a, _, _ = converter.convert(a, args)
+    target_b, _, _ = converter.convert(b, args)
+
+    assert target_a.parent != target_b.parent
