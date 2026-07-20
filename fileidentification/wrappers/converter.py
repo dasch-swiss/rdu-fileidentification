@@ -1,3 +1,4 @@
+import hashlib
 import platform
 import shlex
 import subprocess
@@ -16,7 +17,8 @@ def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, str]:
     :returns: the constructed target path, a human-readable command string, and the captured log output
     """
 
-    wdir = Path(sfinfo.tdir / f"{sfinfo.filename.name}_{sfinfo.md5[:6]}")
+    path_hash = hashlib.md5(str(sfinfo.filename).encode()).hexdigest()[:6]  # noqa: S324
+    wdir = sfinfo.tdir / f"{sfinfo.filename.name}_{path_hash}"
     if not wdir.exists():
         wdir.mkdir(parents=True)
 
