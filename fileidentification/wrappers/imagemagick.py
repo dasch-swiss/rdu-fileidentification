@@ -6,8 +6,11 @@ from fileidentification.definitions.settings import ErrMsgIM
 
 def imagemagick_collect_warnings(file: Path, verbose: bool) -> tuple[bool, str, str]:
     """
-    Check for errors with magick identify.
-    Returns True if file is corrupt, stdout, technical metadata of the image
+    Probe the file with magick identify.
+    Returns a tuple (is_corrupt, warnings, specs):
+      is_corrupt: True if the warnings contain an ErrMsgIM indicating an unreadable / partially readable file;
+      warnings: identify's stderr output (paths stripped);
+      specs: the image technical metadata string (format, dimensions, bit depth, channels).
     """
 
     cmd = ["identify", "-format", "%m %wx%h %g %z-bit %[channels]", str(file)]

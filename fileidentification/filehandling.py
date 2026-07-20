@@ -106,9 +106,9 @@ class FileHandler:
     def _gen_policies(self, outpath: Path, blank: bool = False, extend: bool = False) -> None:
         """
         Generate a policies.json with the default values of the encountered fileformats
-        :param blank if set to True, it generates a blank policies.json
-        :param extend if true, it expands the loaded policies with filetypes found in root_folder that are not in the
-        loaded policies and writes out an updated policies.json
+        :param blank: if True, generate a blank policies.json
+        :param extend: if True, expand the loaded policies with filetypes found in root_folder that are not in the
+        loaded policies and write out an updated policies.json
         """
 
         jsonfile = PoliciesFile(name=outpath)

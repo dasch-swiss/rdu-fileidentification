@@ -24,7 +24,12 @@ class LogMsg(BaseModel):
 
 
 class Status(BaseModel):
-    """status of the file: removed, pending for conversion or added"""
+    """
+    Processing state of a file.
+    removed: moved to _REMOVED (corrupt or replaced by a conversion).
+    pending: flagged for conversion but not yet converted.
+    added: this SfInfo is a conversion output that was added to the stack.
+    """
 
     removed: bool = False
     pending: bool = False
@@ -57,6 +62,7 @@ class SfInfo(BaseModel):
     tdir: Path = Field(default_factory=Path, exclude=True)
 
     def model_post_init(self, context: Any, /) -> None:
+        """Derive the fields not provided by siegfried: status, processed_as, md5"""
         if not self.status:
             self.status = Status()
         if not self.processed_as:
@@ -87,7 +93,7 @@ class SfInfo(BaseModel):
         """
         Set root_folder and tdir, and derive the absolute path for this file.
         On the initial run (scanned by pygfried), filename is made relative to root_folder.
-        When loaded from an existing log (initial=False), filename is already relative.
+        When read from an existing log (initial=False), filename is already relative.
         """
         if root_folder.is_file():
             root_folder = root_folder.parent
@@ -108,7 +114,12 @@ class LogOutput(BaseModel):
 
 
 class LogTables(BaseModel):
-    """table to store errors and warnings"""
+    """
+    Run-wide collector for diagnostics and processing errors, shared across worker threads.
+    diagnostics: SfInfo objects bucketed by FDMsg name (corrupt, warning, extension mismatch) for the console report.
+    processing_errors: (log message, SfInfo) pairs for failures that abort a file's processing.
+    Always mutate via diagnostics_add / processing_error_add, which hold the internal lock.
+    """
 
     diagnostics: dict[str, list[SfInfo]] = Field(default_factory=dict)
     processing_errors: list[tuple[LogMsg, SfInfo]] = Field(default_factory=list)
@@ -138,6 +149,12 @@ class LogTables(BaseModel):
 
 
 class BasicAnalytics(BaseModel):
+    """
+    Indexes the scanned files for analytics and policy generation:
+    by MD5 (to find duplicates) and by PUID (puid_unique, the distinct formats found in the folder).
+    siegfried_errors holds files siegfried could not read; blank tracks PUIDs generated without a default policy.
+    """
+
     filehashes: dict[str, list[Path]] = Field(default_factory=dict)
     puid_unique: dict[str, list[SfInfo]] = Field(default_factory=dict)
     siegfried_errors: list[SfInfo] = Field(default_factory=list)
@@ -167,6 +184,17 @@ class BasicAnalytics(BaseModel):
 
 # models for policies
 class PolicyParams(BaseModel):
+    """
+    One policy entry, keyed by PUID in a policies.json.
+    accepted=True means the format is kept as-is; accepted=False means it must be converted, in which case
+    bin, target_container and expected are required (enforced by assert_conv_args).
+    bin: the converter to use (ffmpeg / magick / soffice).
+    target_container: the output file extension / container to convert to.
+    processing_args: extra arguments passed to the converter (no ';', see allowed_args).
+    expected: PUIDs the converted file is verified against to confirm the conversion succeeded.
+    remove_original: whether the source file is moved to _REMOVED after a successful conversion.
+    """
+
     format_name: str = Field(default_factory=str)
     bin: str = Field(default="")
     accepted: bool = Field(default=True)
@@ -208,6 +236,8 @@ Policies = dict[str, PolicyParams]
 
 
 class PoliciesFile(BaseModel):
+    """On-disk structure of a policies.json: the output path (name), a generated comment, and the PUID->policy map."""
+
     name: Path = Field(default_factory=Path)
     comment: str = Field(default_factory=str)
     policies: Policies = Field(default_factory=Policies)

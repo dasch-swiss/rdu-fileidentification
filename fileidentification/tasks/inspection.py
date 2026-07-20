@@ -96,11 +96,9 @@ def _bin_from_mime(mime: str) -> str:
 def _has_error(sfinfo: SfInfo, pbin: str, log_tables: LogTables, verbose: bool) -> bool:
     """
     Check if the file throws any error or warning while opening or playing.
-    returns True if file is corrupt
-    :param sfinfo the metadata of the file to analyse
-    :param pbin the exec to probe the file
-    :param log_tables the logtables
-    :param verbose if true it does more detailed inspections
+    :param pbin: the exec used to probe the file
+    :param verbose: if True, do more detailed inspections
+    :returns: True if the file is corrupt
     """
 
     # get the specs and errors
