@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import threading
+from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from datetime import UTC, datetime
@@ -185,19 +186,22 @@ class FileHandler:
                     # the test output is not moved, so it lives in the sample's working dir
                     secho(f"You find the file with the log in {self.ws.working_dir(sample.filename)}")
 
+    def _run_parallel(self, items: Iterable[SfInfo], description: str, work: Callable[[SfInfo], object]) -> None:
+        """Run `work` over `items` on the thread pool under a transient spinner labelled `description`."""
+        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
+            prog.add_task(description=description, total=None)
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                list(executor.map(work, items))
+
     def inspect(self, to_csv: bool = False) -> None:
         """Probe all active files and write a dated report JSON without modifying the source files."""
         self.ws.poljson.unlink(missing_ok=True)
         active = [s for s in self.stack if s.is_active]
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Probing the files ...", total=None)
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(
-                    executor.map(
-                        lambda sfinfo: inspect_file(sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE),
-                        active,
-                    )
-                )
+        self._run_parallel(
+            active,
+            "Probing the files ...",
+            lambda sfinfo: inspect_file(sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE),
+        )
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
         self.write_logs(to_csv=to_csv, target=self.ws.report_json(datetime.now(UTC).strftime("%y%m%d")))
@@ -205,17 +209,11 @@ class FileHandler:
     def assert_integrity(self) -> None:
         """Probe all active files: remove corrupt ones and rename files with extension mismatches."""
         active = [s for s in self.stack if s.is_active]
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Probing the files ...", total=None)
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(
-                    executor.map(
-                        lambda sfinfo: assert_file_integrity(
-                            sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE
-                        ),
-                        active,
-                    )
-                )
+        self._run_parallel(
+            active,
+            "Probing the files ...",
+            lambda sfinfo: assert_file_integrity(sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE),
+        )
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
 
@@ -233,15 +231,11 @@ class FileHandler:
     def apply_policies(self) -> None:
         """Evaluate the policy for every active file and mark those that need conversion as pending."""
         active = [s for s in self.stack if s.is_active]
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Applying policies ...", total=None)
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(
-                    executor.map(
-                        lambda sfinfo: apply_policy(sfinfo, self.policies, self.ws, self.log_tables, self.mode.STRICT),
-                        active,
-                    )
-                )
+        self._run_parallel(
+            active,
+            "Applying policies ...",
+            lambda sfinfo: apply_policy(sfinfo, self.policies, self.ws, self.log_tables, self.mode.STRICT),
+        )
 
     def convert(self) -> None:
         """Convert files whose metadata status pending is True"""
@@ -269,10 +263,7 @@ class FileHandler:
                 # the bin's log (if any) goes in as a detail: recorded in the "errors" copy but not printed
                 self.log_tables.processing_error_add(lmsg, sfinfo, [bin_log] if bin_log else None)
 
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Converting ...", total=None)
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(executor.map(_convert_one, pending))
+        self._run_parallel(pending, "Converting ...", _convert_one)
 
     def remove_tmp(self, root_folder: Path) -> None:
         """Move converted files from the tmp dir to their destinations and clean up empty tmp folders."""
