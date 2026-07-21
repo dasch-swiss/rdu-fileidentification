@@ -21,10 +21,7 @@ def assert_file_integrity(
             ext = "." + FMT2EXT[sfinfo.processed_as]["file_extensions"][-1]  # type: ignore[index]
             _rename(sfinfo, ext, ws, log_tables)
         else:
-            # several possible extensions: cannot auto-rename, so flag it for a manual rename in the report
-            sfinfo.processing_logs.append(
-                LogMsg(name="filehandler", msg="several possible extensions, rename manually")
-            )
+            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="you should manually rename the file"))
 
 
 def inspect_file(

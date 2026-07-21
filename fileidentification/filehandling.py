@@ -180,11 +180,17 @@ class FileHandler:
                 # we want the smallest file first for running the test
                 sample = self.ba.smallest_file(puid)
                 secho(f"\n{puid}", fg=colors.YELLOW)
-                t_sfinfo, cmd, _ = convert_file(sample, self.policies, self.ws)
+                t_sfinfo, cmd, bin_log = convert_file(sample, self.policies, self.ws)
                 if t_sfinfo:
                     secho(f"{cmd}", fg=colors.GREEN, bold=True)
-                    # the test output is not moved, so it lives in the sample's working dir
-                    secho(f"You find the file with the log in {self.ws.working_dir(sample.filename)}")
+                else:
+                    # the conversion test failed: surface why (this path is interactive, so print it now)
+                    reason = sample.processing_logs[-1].msg if sample.processing_logs else "conversion failed"
+                    secho(f"{reason}", fg=colors.RED, bold=True)
+                    secho(f"{cmd}")
+                    if bin_log:
+                        secho(f"{bin_log.name}: {bin_log.msg}")
+                secho(f"You find the file (if any) in {self.ws.working_dir(sample.filename)}")
 
     def _run_parallel(self, items: list[SfInfo], description: str, work: Callable[[SfInfo], object]) -> None:
         """
