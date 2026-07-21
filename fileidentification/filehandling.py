@@ -24,7 +24,7 @@ from fileidentification.definitions.models import (
     SfInfo,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, MAX_WORKERS, PYG_WORKERS
+from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, MAX_WORKERS, PYG_WORKERS, Bin
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
@@ -39,7 +39,6 @@ from fileidentification.tasks.inspection import assert_file_integrity, inspect_f
 from fileidentification.tasks.os_tasks import move_tmp
 from fileidentification.tasks.policies import apply_policy, build_policies
 from fileidentification.workspace import Workspace
-from fileidentification.wrappers.tools import tool_for
 
 
 class FileHandler:
@@ -254,8 +253,9 @@ class FileHandler:
             return
 
         def _convert_one(sfinfo: SfInfo) -> None:
-            tool = tool_for(self.policies[sfinfo.processed_as].bin)  # type: ignore[index]
-            ctx = self._soffice_lock if tool and tool.serialized_run else nullcontext()
+            # soffice cannot run concurrent instances, so serialize its conversions through the lock
+            soffice = self.policies[sfinfo.processed_as].bin == Bin.SOFFICE  # type: ignore[index]
+            ctx = self._soffice_lock if soffice else nullcontext()
             with ctx:
                 conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies, self.ws)
             if conv_sfinfo:
