@@ -1,18 +1,27 @@
-"""Unit tests for apply_policy.
+"""Unit tests for tasks.policies: resolving/generating policies (read_policies, build_policies) and applying them
+(apply_policy).
 
-The A/V stream inspection (`_has_invalid_streams`) shells out to ffprobe, so the
-ffmpeg helper is monkeypatched to keep these tests pure and fast.
+read_policies / build_policies are tested directly, with no FileHandler, no shared state, and no SystemExit.
+The A/V stream inspection (`_has_invalid_streams`) shells out to ffprobe, so the ffmpeg helper is monkeypatched
+to keep those tests pure and fast.
 """
 
+import json
 from typing import Any
 
 import pytest
 
-from fileidentification.definitions.models import LogTables, PolicyParams
-from fileidentification.definitions.settings import PLMsg
+from fileidentification.definitions.models import LogTables, Mode, PolicyParams
+from fileidentification.definitions.settings import DEFAULTPOLICIES, FMT2EXT, PLMsg
 from fileidentification.tasks import policies as policies_mod
-from fileidentification.tasks.policies import apply_policy
+from fileidentification.tasks.policies import apply_policy, build_policies
 from tests.conftest import make_sfinfo
+
+
+def _unknown_puid() -> str:
+    """A PUID that exists in FMT2EXT but has no default policy."""
+    defaults = json.loads(DEFAULTPOLICIES.read_text())["policies"]
+    return next(p for p in FMT2EXT if p not in defaults)
 
 ACCEPTED = PolicyParams(format_name="JPEG", accepted=True)
 CONVERT = PolicyParams(format_name="JPEG", accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
@@ -114,3 +123,45 @@ class TestInvalidStreams:
         s = make_sfinfo("v.mp4", puid="fmt/199", mime="video/mp4")
         apply_policy(s, {"fmt/199": ACCEPTED}, LogTables(), strict=False)
         assert not s.status.pending
+
+
+class TestBuildPolicies:
+    def test_blank_makes_one_accepted_entry_per_puid(self) -> None:
+        policies, blank = build_policies(["fmt/43", "fmt/11"], {}, Mode(), blank=True)
+        assert set(policies) == {"fmt/43", "fmt/11"}
+        assert all(p.accepted for p in policies.values())
+        assert blank == []  # blank generation does not track a blank list
+
+    def test_blank_respects_remove_original(self) -> None:
+        policies, _ = build_policies(["fmt/43"], {}, Mode(REMOVEORIGINAL=True), blank=True)
+        assert policies["fmt/43"].remove_original is True
+
+    def test_default_maps_known_puid(self) -> None:
+        defaults = {"fmt/43": PolicyParams(format_name="JPEG from default", accepted=True)}
+        policies, blank = build_policies(["fmt/43"], defaults, Mode())
+        assert policies["fmt/43"].format_name == "JPEG from default"
+        assert blank == []
+
+    def test_unknown_puid_gets_blank_fallback_when_not_strict(self) -> None:
+        unknown = _unknown_puid()
+        policies, blank = build_policies([unknown], {}, Mode())
+        assert policies[unknown].accepted is True
+        assert blank == [unknown]
+
+    def test_strict_drops_unknown_puid(self) -> None:
+        unknown = _unknown_puid()
+        policies, blank = build_policies([unknown], {}, Mode(STRICT=True))
+        assert unknown not in policies
+        assert blank == []
+
+    def test_extend_keeps_existing_and_unblanks(self) -> None:
+        unknown = _unknown_puid()
+        existing = {unknown: PolicyParams(format_name="hand-tuned")}
+        policies, blank = build_policies([unknown], {}, Mode(), extend=True, existing=existing)
+        assert policies[unknown].format_name == "hand-tuned"
+        assert blank == []  # promoted out of the blank list
+
+    def test_remove_original_propagates_to_default_policy(self) -> None:
+        defaults = {"fmt/43": PolicyParams(format_name="JPEG", accepted=True)}
+        policies, _ = build_policies(["fmt/43"], defaults, Mode(REMOVEORIGINAL=True))
+        assert policies["fmt/43"].remove_original is True
