@@ -4,6 +4,7 @@ from fileidentification.definitions.models import LogMsg, LogTables, Mode, Polic
 from fileidentification.definitions.settings import FMT2EXT, PLMsg
 from fileidentification.tasks.console_output import print_invalid_streams_error
 from fileidentification.tasks.os_tasks import remove
+from fileidentification.workspace import Workspace
 from fileidentification.wrappers.ffmpeg import ffmpeg_media_info
 
 
@@ -54,7 +55,7 @@ def build_policies(
     return policies, blank_puids
 
 
-def apply_policy(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, strict: bool) -> None:
+def apply_policy(sfinfo: SfInfo, policies: Policies, ws: Workspace, log_tables: LogTables, strict: bool) -> None:
     """
     Decide what to do with the file based on its policy entry.
     Sets sfinfo.status.pending=True if the file needs conversion.
@@ -72,7 +73,7 @@ def apply_policy(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, stri
         # in strict mode, move file
         if strict:
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"{PLMsg.NOTINPOLICIES}"))
-            remove(sfinfo, log_tables)
+            remove(sfinfo, ws, log_tables)
             return
         # just flag it as skipped
         sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"{PLMsg.SKIPPED}"))
@@ -84,14 +85,14 @@ def apply_policy(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, stri
         return
 
     # check if mp4 / mkv has correct stream (i.e. h264 and aac)
-    if puid in ["fmt/199", "fmt/569"] and _has_invalid_streams(sfinfo, puid):
+    if puid in ["fmt/199", "fmt/569"] and _has_invalid_streams(sfinfo, puid, ws):
         sfinfo.status.pending = True
         return
 
 
-def _has_invalid_streams(sfinfo: SfInfo, puid: str) -> bool:
+def _has_invalid_streams(sfinfo: SfInfo, puid: str, ws: Workspace) -> bool:
     """Return true if video and audio codec differ from archival standards"""
-    streams = ffmpeg_media_info(sfinfo.path)
+    streams = ffmpeg_media_info(ws.abs_path(sfinfo.filename))
     if not streams:
         print_invalid_streams_error(sfinfo.filename)
         return False

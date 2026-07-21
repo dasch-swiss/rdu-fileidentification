@@ -89,34 +89,6 @@ class TestSfInfoModelPostInit:
         assert not s.status.pending
 
 
-class TestSetProcessingPaths:
-    def test_initial_makes_filename_relative(self) -> None:
-        s = make_sfinfo(filename="/root/sub/x.jpg")
-        s.set_processing_paths(Path("/root"), Path("/tmp/tdir"), initial=True)
-        assert s.filename == Path("sub/x.jpg")
-        assert s.path == Path("/root/sub/x.jpg")
-        assert s.root_folder == Path("/root")
-
-    def test_non_initial_keeps_filename(self) -> None:
-        s = make_sfinfo(filename="sub/x.jpg")
-        s.set_processing_paths(Path("/root"), Path("/tmp/tdir"), initial=False)
-        assert s.filename == Path("sub/x.jpg")
-        assert s.path == Path("/root/sub/x.jpg")
-
-    def test_file_root_uses_parent(self, tmp_path: Path) -> None:
-        root_file = tmp_path / "only.jpg"
-        root_file.write_bytes(b"x")
-        s = make_sfinfo(filename=str(root_file))
-        s.set_processing_paths(root_file, tmp_path / "tdir", initial=True)
-        assert s.root_folder == tmp_path
-
-    def test_dest_skips_path_assignment(self) -> None:
-        s = make_sfinfo(filename="sub/x.jpg")
-        s.dest = Path("out")
-        s.set_processing_paths(Path("/root"), Path("/tmp/tdir"), initial=False)
-        assert s.path == Path()  # untouched default
-
-
 class TestLogTables:
     def test_diagnostics_add_groups_by_message(self) -> None:
         lt = LogTables()

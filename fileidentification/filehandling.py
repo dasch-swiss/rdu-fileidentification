@@ -38,6 +38,7 @@ from fileidentification.tasks.conversion import convert_file
 from fileidentification.tasks.inspection import assert_file_integrity, inspect_file
 from fileidentification.tasks.os_tasks import move_tmp, set_filepaths
 from fileidentification.tasks.policies import apply_policy, build_policies
+from fileidentification.workspace import Workspace
 from fileidentification.wrappers.tools import tool_for
 
 
@@ -51,6 +52,7 @@ class FileHandler:
         self.ba = BasicAnalytics()
         self.stack: list[SfInfo] = []
         self.fp: FilePaths = FilePaths()
+        self.ws: Workspace = Workspace(Path(), Path())  # replaced in run() once root_folder / tmp are resolved
         self._stack_lock = threading.Lock()
         self._soffice_lock = threading.Semaphore(1)
 
@@ -60,14 +62,13 @@ class FileHandler:
         Checks whether a log json at default location exists. if so, it adds the sfinfos to the stack from there,
         otherwhise it scans the root_folder with pygfried and adds its output as sfinfos to the stack
         """
-        initial = True
         # if there is a log, try to read from there
         if self.fp.LOGJSON.is_file():
-            initial = False
             self.stack.extend([SfInfo(**metadata) for metadata in json.loads(self.fp.LOGJSON.read_text())["files"]])
 
-        # else scan the root_folder with pygfried
-        if not self.stack:
+        # scan the root_folder with pygfried only when nothing was reloaded; those files then need relativizing
+        initial = not self.stack
+        if initial:
             with Progress(
                 SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True
             ) as prog:
@@ -78,10 +79,10 @@ class FileHandler:
                     scanned = pygfried.identify_dir(f"{root_folder}", workers=PYG_WORKERS)["files"]
                 self.stack.extend(SfInfo(**sfi) for sfi in scanned)  # type: ignore[arg-type]
 
-        # append path values run basic analytics
+        # relativize freshly scanned filenames (portable form), run basic analytics
         for sfinfo in self.stack:
-            if not sfinfo.status.removed:
-                sfinfo.set_processing_paths(root_folder, self.fp.TMP_DIR, initial=initial)
+            if initial and not sfinfo.status.removed:
+                sfinfo.filename = self.ws.relativize(sfinfo.filename)
             if not (sfinfo.status.removed or sfinfo.dest):
                 self.ba.append(sfinfo)
 
@@ -180,10 +181,11 @@ class FileHandler:
                 # we want the smallest file first for running the test
                 sample = self.ba.smallest_file(puid)
                 secho(f"\n{puid}", fg=colors.YELLOW)
-                t_sfinfo, cmd, _ = convert_file(sample, self.policies)
+                t_sfinfo, cmd, _ = convert_file(sample, self.policies, self.ws)
                 if t_sfinfo:
                     secho(f"{cmd}", fg=colors.GREEN, bold=True)
-                    secho(f"You find the file with the log in {t_sfinfo.filename.parent}")
+                    # the test output is not moved, so it lives in the sample's working dir
+                    secho(f"You find the file with the log in {self.ws.working_dir(sample.filename)}")
 
     def inspect(self) -> None:
         """
@@ -198,7 +200,7 @@ class FileHandler:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 list(
                     executor.map(
-                        lambda sfinfo: inspect_file(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE),
+                        lambda sfinfo: inspect_file(sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE),
                         active,
                     )
                 )
@@ -213,7 +215,9 @@ class FileHandler:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 list(
                     executor.map(
-                        lambda sfinfo: assert_file_integrity(sfinfo, self.policies, self.log_tables, self.mode.VERBOSE),
+                        lambda sfinfo: assert_file_integrity(
+                            sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE
+                        ),
                         active,
                     )
                 )
@@ -239,7 +243,7 @@ class FileHandler:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 list(
                     executor.map(
-                        lambda sfinfo: apply_policy(sfinfo, self.policies, self.log_tables, self.mode.STRICT),
+                        lambda sfinfo: apply_policy(sfinfo, self.policies, self.ws, self.log_tables, self.mode.STRICT),
                         active,
                     )
                 )
@@ -257,11 +261,10 @@ class FileHandler:
             tool = tool_for(self.policies[sfinfo.processed_as].bin)  # type: ignore[index]
             ctx = self._soffice_lock if tool and tool.serialized_run else nullcontext()
             with ctx:
-                conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies)
+                conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies, self.ws)
             if conv_sfinfo:
-                msg = f"converted -> {sfinfo.tdir.stem}/{conv_sfinfo.filename.parent.name}/{conv_sfinfo.filename.name}"
+                msg = f"converted -> {conv_sfinfo.filename}"
                 sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
-                conv_sfinfo.root_folder = sfinfo.root_folder
                 with self._stack_lock:
                     self.stack.append(conv_sfinfo)
             else:
@@ -280,7 +283,7 @@ class FileHandler:
         # move converted files from the working dir to its destination
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Moving files ...", total=None)
-            files_moved = move_tmp(self.stack, self.policies, self.log_tables, self.mode.REMOVEORIGINAL)
+            files_moved = move_tmp(self.stack, self.ws, self.policies, self.log_tables, self.mode.REMOVEORIGINAL)
 
         # remove empty folders in working dir
         if self.fp.TMP_DIR.is_dir():
@@ -327,6 +330,8 @@ class FileHandler:
         root_folder = Path(root_folder)
         # set dirs / paths
         set_filepaths(self.fp, root_folder, tmp_dir)
+        # the per-run path calculator (root_folder is normalized to the parent dir for a single-file target)
+        self.ws = Workspace(root_folder, self.fp.TMP_DIR)
         # set the mode
         self.mode.REMOVEORIGINAL = remove_original
         self.mode.VERBOSE = mode_verbose
