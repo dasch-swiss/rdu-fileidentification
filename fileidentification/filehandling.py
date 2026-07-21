@@ -14,7 +14,6 @@ from typer import colors, secho
 
 from fileidentification.definitions.models import (
     BasicAnalytics,
-    FilePaths,
     LogMsg,
     LogOutput,
     LogTables,
@@ -38,7 +37,7 @@ from fileidentification.tasks.conversion import convert_file
 from fileidentification.tasks.inspection import assert_file_integrity, inspect_file
 from fileidentification.tasks.os_tasks import move_tmp, set_filepaths
 from fileidentification.tasks.policies import apply_policy, build_policies
-from fileidentification.workspace import Workspace
+from fileidentification.workspace import FilePaths, Workspace
 from fileidentification.wrappers.tools import tool_for
 
 

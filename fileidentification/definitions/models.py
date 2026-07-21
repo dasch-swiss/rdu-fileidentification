@@ -250,14 +250,6 @@ class Mode(BaseModel):
     QUIET: bool = False
 
 
-class FilePaths(BaseModel, validate_assignment=True):
-    """Resolved filesystem paths used throughout a FileHandler run."""
-
-    TMP_DIR: Path = Field(default_factory=Path)
-    POLJSON: Path = Field(default_factory=Path)
-    LOGJSON: Path = Field(default_factory=Path)
-
-
 def get_md5(path: str | Path) -> str:
     """Compute and return the MD5 hex digest of the file at path."""
     md5 = hashlib.md5()  # noqa: S324

@@ -95,7 +95,12 @@ class TestAddMediaInfo:
         # invariant: the converted file's filename is already its relative home, so media info must be
         # probed at the physical working-dir path passed in, never at sfinfo.filename.
         seen: list[Path] = []
-        monkeypatch.setattr(tools, "ffmpeg_media_info", lambda path: seen.append(path) or [])
+
+        def rec(path: Path) -> list[Any]:
+            seen.append(path)
+            return []
+
+        monkeypatch.setattr(tools, "ffmpeg_media_info", rec)
         s = make_sfinfo("sub/out.mp4", puid="fmt/199")  # relative home, not where the file physically is
         physical = Path("/work/out.mp4_abc123/out.mp4")
         _add_media_info(s, tool_for(Bin.FFMPEG), physical)

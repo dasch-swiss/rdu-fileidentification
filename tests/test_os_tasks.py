@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from fileidentification.definitions.models import FilePaths, LogTables, PolicyParams, SfInfo
+from fileidentification.definitions.models import LogTables, PolicyParams, SfInfo
 from fileidentification.definitions.settings import LOGJSON, POLJSON, RMV_DIR, TMP_DIR
 from fileidentification.tasks.os_tasks import move_tmp, remove, set_filepaths
-from fileidentification.workspace import Workspace
+from fileidentification.workspace import FilePaths, Workspace
 from tests.conftest import make_sfinfo, make_ws
 
 

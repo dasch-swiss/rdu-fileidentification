@@ -1,15 +1,27 @@
 """
-Constructed fresh each run from the CLI root_folder and the tmp dir; never persisted. Portability comes
-from the relative `filename` stored in _log.json — the Workspace only resolves that portable name against
-wherever the run happens to be right now. `tdir` may live on a different volume (--tmp-dir / external drive),
-so it is kept independent of root_folder.
+Run-scoped path types: FilePaths (the resolved tmp dir + its two JSON files) and Workspace (the path calculator).
+
+The Workspace is constructed fresh each run from the CLI root_folder and the tmp dir; never persisted.
+Portability comes from the relative `filename` stored in _log.json — the Workspace only resolves that portable
+name against wherever the run happens to be right now. `tdir` may live on a different volume (--tmp-dir /
+external drive), so it is kept independent of root_folder.
 """
 
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
+from pydantic import BaseModel, Field
+
 from fileidentification.definitions.settings import RMV_DIR
+
+
+class FilePaths(BaseModel, validate_assignment=True):
+    """Resolved output paths used throughout a FileHandler run (the tmp dir and the two JSON files in it)."""
+
+    TMP_DIR: Path = Field(default_factory=Path)
+    POLJSON: Path = Field(default_factory=Path)
+    LOGJSON: Path = Field(default_factory=Path)
 
 
 @dataclass(frozen=True)

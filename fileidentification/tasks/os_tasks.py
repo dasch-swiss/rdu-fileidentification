@@ -2,10 +2,10 @@ import shutil
 import sys
 from pathlib import Path
 
-from fileidentification.definitions.models import FilePaths, LogMsg, LogTables, Policies, SfInfo
+from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
 from fileidentification.definitions.settings import LOGJSON, POLJSON, TMP_DIR
 from fileidentification.tasks.console_output import print_os_error, print_root_not_found
-from fileidentification.workspace import Workspace
+from fileidentification.workspace import FilePaths, Workspace
 
 
 def remove(sfinfo: SfInfo, ws: Workspace, log_tables: LogTables) -> None:
