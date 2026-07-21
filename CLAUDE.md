@@ -52,7 +52,7 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 ### Data Flow
 
 1. `identify.py` — Typer CLI entrypoint; collects all flags and delegates to `FileHandler.run()`
-2. `FileHandler` (`fileidentification/filehandling.py`) — main orchestrator class; holds the processing state (`stack`, `policies`, `ba`, `log_tables`, `fp`, `mode`)
+2. `FileHandler` (`fileidentification/filehandling.py`) — main orchestrator class; holds the processing state (`stack`, `policies`, `ba`, `log_tables`, `ws`, `mode`)
 3. `_build_stack` populates `self.stack` — either reloading an existing `_log.json` or scanning the folder with pygfried; each file becomes an `SfInfo` object
 4. `_resolve_policies` sets `self.policies` (JSON keyed by PUID) — read from an existing file (`_read_policies`) or generated (`_gen_policies`)
 5. Tasks (integrity check, apply policies, convert, move) operate on the stack in sequence
@@ -64,7 +64,7 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 - **`BasicAnalytics`** — groups `SfInfo` objects by PUID and tracks duplicates (by MD5)
 - **`LogTables`** — accumulates diagnostics and processing errors during a run. Thread-safe: `diagnostics_add` and `processing_error_add` both hold an internal `threading.Lock`.
 - **`Mode`** — flags: `REMOVEORIGINAL`, `VERBOSE`, `STRICT`, `QUIET`
-- **`FilePaths`** — resolved paths for `TMP_DIR`, `POLJSON` (`_policies.json`), `LOGJSON` (`_log.json`)
+- **`Workspace`** (`fileidentification/workspace.py`) — the single run-scoped path module; a frozen dataclass holding `root_folder` + `tmp_dir`, built once via `Workspace.for_run(root, tmp_dir)` (validates root, normalizes a single-file target, creates the tmp dir). Derives `logjson` (`_log.json`), `poljson` (`_policies.json`), and `report_json(ymd)`, plus `abs_path` / `working_dir` / `removed_dest`. `write_logs` targets `ws.logjson` by default; the read-only `inspect` mode passes `ws.report_json(ymd)` so its report stays separate from a processing run.
 
 ### Task Modules (`fileidentification/tasks/`)
 
@@ -73,7 +73,7 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 | `inspection.py` | `inspect_file` / `assert_file_integrity` — probes files via ffmpeg/magick, detects corruption and extension mismatches |
 | `policies.py` | `apply_policy` — marks `SfInfo.status.pending = True` for files that need conversion |
 | `conversion.py` | `convert_file` — runs the converter, then re-identifies output with pygfried to verify |
-| `os_tasks.py` | `move_tmp`, `set_filepaths` — filesystem operations, moving converted files to destination |
+| `os_tasks.py` | `move_tmp`, `remove` — filesystem operations, moving converted files to destination and quarantining removed ones |
 | `console_output.py` | Rich/typer formatted console output (tables, diagnostics) |
 
 ### Wrappers (`fileidentification/wrappers/`)
@@ -103,8 +103,9 @@ Contains alternative policy sets (e.g. `dasch_policies.json`). `just setdasch` c
 
 ### Temporary Files
 
-During processing, `__fileidentification/` is created inside the target directory (or a custom `--tmp-dir`):
+`Workspace.for_run` creates the tmp dir: `__fileidentification/` inside the target directory, `<parent>/<stem>/` for a single-file target, or a custom `--tmp-dir` (which may be on another volume). It holds:
 - `_policies.json` — generated or read-in policies
 - `_log.json` — cumulative log of all processing (appended across runs)
+- `<yymmdd>_report.json` — written by the read-only `--inspect` mode instead of `_log.json`
 - `_REMOVED/` — corrupt or removed files
 - `<filename>_<pathhash[:6]>/` — per-file conversion working directories with converted file

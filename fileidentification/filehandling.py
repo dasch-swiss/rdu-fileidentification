@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pygfried
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from typer import colors, secho
+from typer import Exit, colors, secho
 
 from fileidentification.definitions.models import (
     BasicAnalytics,
@@ -31,13 +31,14 @@ from fileidentification.tasks.console_output import (
     print_fmts,
     print_msg,
     print_processing_errors,
+    print_root_not_found,
     print_siegfried_errors,
 )
 from fileidentification.tasks.conversion import convert_file
 from fileidentification.tasks.inspection import assert_file_integrity, inspect_file
-from fileidentification.tasks.os_tasks import move_tmp, set_filepaths
+from fileidentification.tasks.os_tasks import move_tmp
 from fileidentification.tasks.policies import apply_policy, build_policies
-from fileidentification.workspace import FilePaths, Workspace
+from fileidentification.workspace import Workspace
 from fileidentification.wrappers.tools import tool_for
 
 
@@ -50,7 +51,6 @@ class FileHandler:
         self.log_tables = LogTables()
         self.ba = BasicAnalytics()
         self.stack: list[SfInfo] = []
-        self.fp: FilePaths = FilePaths()
         self.ws: Workspace = Workspace(Path(), Path())  # replaced in run() once root_folder / tmp are resolved
         self._stack_lock = threading.Lock()
         self._soffice_lock = threading.Semaphore(1)
@@ -62,8 +62,8 @@ class FileHandler:
         otherwhise it scans the root_folder with pygfried and adds its output as sfinfos to the stack
         """
         # if there is a log, try to read from there
-        if self.fp.LOGJSON.is_file():
-            self.stack.extend([SfInfo(**metadata) for metadata in json.loads(self.fp.LOGJSON.read_text())["files"]])
+        if self.ws.logjson.is_file():
+            self.stack.extend([SfInfo(**metadata) for metadata in json.loads(self.ws.logjson.read_text())["files"]])
 
         # scan the root_folder with pygfried only when nothing was reloaded; those files then need relativizing
         initial = not self.stack
@@ -142,13 +142,13 @@ class FileHandler:
         blank.
         """
         # default policies found and no external policies are passed
-        if not policies_path and self.fp.POLJSON.is_file():
+        if not policies_path and self.ws.poljson.is_file():
             # set default location
-            policies_path = self.fp.POLJSON
+            policies_path = self.ws.poljson
         # no default policies found or the blank option is given:
         # fallback: generate the policies with optional flag blank
         if not policies_path or blank:
-            policies_path = self.fp.POLJSON
+            policies_path = self.ws.poljson
             print_msg("Generating policies", self.mode.QUIET)
             self._gen_policies(policies_path, blank=blank)
         # load the external passed policies with option -p or default location
@@ -158,8 +158,8 @@ class FileHandler:
 
         # expand a passed policies with the filetypes found in root_folder that are not yet in the policies
         if extend and policies_path:
-            print_msg(f"Updating the filetypes in policies {self.fp.POLJSON}", self.mode.QUIET)
-            self._gen_policies(self.fp.POLJSON, extend=extend)
+            print_msg(f"Updating the filetypes in policies {self.ws.poljson}", self.mode.QUIET)
+            self._gen_policies(self.ws.poljson, extend=extend)
 
         print_fmts(list(self.ba.puid_unique), self.ba, self.policies, self.mode)
 
@@ -186,13 +186,11 @@ class FileHandler:
                     # the test output is not moved, so it lives in the sample's working dir
                     secho(f"You find the file with the log in {self.ws.working_dir(sample.filename)}")
 
-    def inspect(self) -> None:
+    def inspect(self, to_csv: bool = False) -> None:
         """
-        Probe all active files and write a dated report JSON without modifying any files.
-        Deletes the policies file so the report is not conflated with a processing run.
+        Probe all active files and write a dated report JSON without modifying the source files.
         """
-        self.fp.LOGJSON = self.fp.TMP_DIR / f"{datetime.now(UTC).strftime('%y%m%d')}_report.json"
-        self.fp.POLJSON.unlink(missing_ok=True)
+        self.ws.poljson.unlink(missing_ok=True)
         active = [s for s in self.stack if not (s.status.removed or s.dest)]
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Probing the files ...", total=None)
@@ -205,6 +203,7 @@ class FileHandler:
                 )
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
+        self.write_logs(to_csv=to_csv, target=self.ws.report_json(datetime.now(UTC).strftime("%y%m%d")))
 
     def assert_integrity(self) -> None:
         """Probe all active files: remove corrupt ones and rename files with extension mismatches."""
@@ -285,22 +284,26 @@ class FileHandler:
             files_moved = move_tmp(self.stack, self.ws, self.policies, self.log_tables, self.mode.REMOVEORIGINAL)
 
         # remove empty folders in working dir
-        if self.fp.TMP_DIR.is_dir():
-            for path, _, _ in os.walk(self.fp.TMP_DIR, topdown=False):
+        if self.ws.tmp_dir.is_dir():
+            for path, _, _ in os.walk(self.ws.tmp_dir, topdown=False):
                 if len(os.listdir(path)) == 0:  # noqa: PTH208
                     Path(path).rmdir()
         if files_moved:
-            print_msg(f"\nMoved the files from {self.fp.TMP_DIR.stem} to {root_folder.stem} ...", self.mode.QUIET)
+            print_msg(f"\nMoved the files from {self.ws.tmp_dir.stem} to {root_folder.stem} ...", self.mode.QUIET)
 
-    def write_logs(self, to_csv: bool = False) -> None:
-        """Write the run state to _log.json and optionally export a CSV alongside it."""
+    def write_logs(self, to_csv: bool = False, target: Path | None = None) -> None:
+        """
+        Write the run state to `target` (default: _log.json) and optionally export a CSV alongside it.
+        inspect() passes a dated report path so its read-only output stays separate from a processing run.
+        """
+        dest = target or self.ws.logjson
         print_processing_errors(log_tables=self.log_tables)
 
         logoutput = LogOutput(files=self.stack, errors=self.log_tables.dump_errors(), duplicates=self.ba.duplicates)
-        self.fp.LOGJSON.write_text(logoutput.model_dump_json(indent=4, exclude_none=True))
+        dest.write_text(logoutput.model_dump_json(indent=4, exclude_none=True))
 
         if to_csv:
-            with open(f"{self.fp.LOGJSON}.csv", "w") as f:  # noqa: PTH123
+            with open(f"{dest}.csv", "w") as f:  # noqa: PTH123
                 w = csv.DictWriter(f, CSVFIELDS)
                 w.writeheader()
                 [w.writerow(sfinfo2csv(el)) for el in self.stack]
@@ -327,10 +330,12 @@ class FileHandler:
         inspect: bool = False,
     ) -> None:
         root_folder = Path(root_folder)
-        # set dirs / paths
-        set_filepaths(self.fp, root_folder, tmp_dir)
-        # the per-run path calculator (root_folder is normalized to the parent dir for a single-file target)
-        self.ws = Workspace(root_folder, self.fp.TMP_DIR)
+        # resolve the run's paths (validates the root, normalizes a single-file target, creates the tmp dir)
+        try:
+            self.ws = Workspace.for_run(root_folder, tmp_dir)
+        except ValueError:
+            print_root_not_found()
+            raise Exit(1) from None
         # set the mode
         self.mode.REMOVEORIGINAL = remove_original
         self.mode.VERBOSE = mode_verbose
@@ -343,9 +348,10 @@ class FileHandler:
         try:
             # generate policies
             self._resolve_policies(policies_path, blank, extend)
-            # probing the files
+            # inspect is a terminal, read-only mode: write the dated report and stop before any file-altering step
             if inspect:
-                self.inspect()
+                self.inspect(to_csv=to_csv)
+                return
             if assert_integrity:
                 self.assert_integrity()
                 if not apply:
