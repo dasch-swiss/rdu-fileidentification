@@ -2,10 +2,10 @@ import json
 from pathlib import Path
 
 import pygfried
-from typer import colors, secho
 
 from fileidentification.definitions.models import LogMsg, Policies, PolicyParams, SfInfo
 from fileidentification.definitions.settings import Bin, FPMsg
+from fileidentification.tasks.console_output import print_conversion_failed_error, print_unexpected_format_error
 from fileidentification.wrappers.converter import convert
 from fileidentification.wrappers.ffmpeg import ffmpeg_media_info
 from fileidentification.wrappers.imagemagick import imagemagick_media_info
@@ -43,13 +43,13 @@ def _verify(target: Path, sfinfo: SfInfo, expected: list[str]) -> SfInfo | None:
         else:
             p_error = f" did expect {expected}, got {target_sfinfo.processed_as} instead"
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"{FPMsg.NOTEXPECTEDFMT}{p_error}"))
-            secho(f"\tERROR: {p_error} when converting {sfinfo.filename} to {target}", fg=colors.YELLOW, bold=True)
+            print_unexpected_format_error(p_error, sfinfo.filename, target)
             target_sfinfo = None
 
     else:
         # conversion error, nothing to analyse
         sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"{FPMsg.CONVFAILED}"))
-        secho(f"\tERROR failed to convert {sfinfo.filename} to {target}", fg=colors.RED, bold=True)
+        print_conversion_failed_error(sfinfo.filename, target)
 
     return target_sfinfo
 

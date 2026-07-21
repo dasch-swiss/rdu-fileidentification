@@ -1,7 +1,10 @@
-from typer import colors, secho
-
 from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
 from fileidentification.definitions.settings import FMT2EXT, Bin, FDMsg, FPMsg, REencMsg
+from fileidentification.tasks.console_output import (
+    print_empty_source_warning,
+    print_manual_rename_warning,
+    print_os_error,
+)
 from fileidentification.tasks.os_tasks import remove
 from fileidentification.wrappers.ffmpeg import ffmpeg_collect_warnings
 from fileidentification.wrappers.imagemagick import imagemagick_collect_warnings
@@ -21,8 +24,7 @@ def assert_file_integrity(sfinfo: SfInfo, policies: Policies, log_tables: LogTab
             ext = "." + FMT2EXT[sfinfo.processed_as]["file_extensions"][-1]  # type: ignore[index]
             _rename(sfinfo, ext, log_tables)
         else:
-            secho(f"\nWARNING: you should manually rename {sfinfo.filename}", fg=colors.YELLOW)
-            secho(f"{sfinfo.processing_logs[0].msg}", fg=colors.YELLOW)
+            print_manual_rename_warning(sfinfo.filename, sfinfo.processing_logs[0].msg)
 
 
 def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verbose: bool) -> FDMsg | None:
@@ -51,7 +53,7 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verb
 
     if sfinfo.errors == FDMsg.EMPTYSOURCE:
         sfinfo.processing_logs.append(LogMsg(name="siegfried", msg=FDMsg.EMPTYSOURCE))
-        secho(f"\nWARNING: {sfinfo.filename} has empty source", fg=colors.YELLOW)
+        print_empty_source_warning(sfinfo.filename)
         log_tables.diagnostics_add(sfinfo, FDMsg.WARNING)
 
     # extension mismatch
@@ -79,7 +81,7 @@ def _rename(sfinfo: SfInfo, ext: str, log_tables: LogTables) -> None:
         sfinfo.path, sfinfo.filename = dest, dest.relative_to(sfinfo.root_folder)
         sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
     except OSError as e:
-        secho(f"{e}", fg=colors.RED)
+        print_os_error(str(e))
         log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 

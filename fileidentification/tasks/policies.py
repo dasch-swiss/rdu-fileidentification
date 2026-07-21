@@ -1,7 +1,6 @@
-from typer import colors, secho
-
 from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
 from fileidentification.definitions.settings import PLMsg
+from fileidentification.tasks.console_output import print_invalid_streams_error
 from fileidentification.tasks.os_tasks import remove
 from fileidentification.wrappers.ffmpeg import ffmpeg_media_info
 
@@ -45,7 +44,7 @@ def _has_invalid_streams(sfinfo: SfInfo, puid: str) -> bool:
     """Return true if video and audio codec differ from archival standards"""
     streams = ffmpeg_media_info(sfinfo.path)
     if not streams:
-        secho(f"\t{sfinfo.filename} throwing errors. consider file", fg=colors.RED, bold=True)
+        print_invalid_streams_error(sfinfo.filename)
         return False
     if puid in ["fmt/569"]:
         # only the video codec has to be ffv1 -> return false as soon as any stream is ffv1
