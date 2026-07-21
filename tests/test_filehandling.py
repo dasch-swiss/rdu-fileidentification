@@ -554,3 +554,25 @@ class TestTestPolicies:
         monkeypatch.setattr("fileidentification.filehandling.convert_file", record)
         fh._test_policies()
         assert called == []
+
+    def test_failed_policy_test_prints_reason_and_bin_log(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        # a failing sample test must still surface the failure (this path prints immediately, no progress bar)
+        fh = _fh_with_puids("fmt/199")
+        sample = make_sfinfo("small.mp4", puid="fmt/199", filesize=1)
+        sample.processing_logs.append(LogMsg(name="filehandler", msg="did expect ['fmt/199'], got fmt/5 instead"))
+        fh.ba.puid_unique["fmt/199"] = [sample]
+        fh.policies = {
+            "fmt/199": PolicyParams(accepted=False, bin="ffmpeg", target_container="mp4", expected=["fmt/199"])
+        }
+        monkeypatch.setattr(
+            "fileidentification.filehandling.convert_file",
+            lambda s, p, ws: (None, ["ffmpeg -i in out"], LogMsg(name="ffmpeg", msg="stream error")),
+        )
+
+        fh._test_policies()
+
+        out = capsys.readouterr().out
+        assert "got fmt/5 instead" in out  # the failure reason from the sample's logs
+        assert "stream error" in out  # the converter's own log

@@ -89,6 +89,26 @@ class TestSfInfoModelPostInit:
         assert not s.status.pending
 
 
+class TestSfInfoIsActive:
+    def test_fresh_file_is_active(self) -> None:
+        assert make_sfinfo().is_active
+
+    def test_pending_file_is_still_active(self) -> None:
+        s = make_sfinfo()
+        s.status.pending = True
+        assert s.is_active  # pending files are still in play
+
+    def test_removed_file_is_not_active(self) -> None:
+        s = make_sfinfo()
+        s.status.removed = True
+        assert not s.is_active
+
+    def test_conversion_output_with_dest_is_not_active(self) -> None:
+        s = make_sfinfo()
+        s.dest = Path("sub")
+        assert not s.is_active
+
+
 class TestLogTables:
     def test_diagnostics_add_groups_by_message(self) -> None:
         lt = LogTables()

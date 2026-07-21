@@ -84,7 +84,7 @@ class TestInspectFileOutcomes:
         s = make_sfinfo(puid="fmt/43", mime="image/jpeg")
         s.errors = FDMsg.EMPTYSOURCE
         assert inspect_file(s, {}, WS, LogTables(), verbose=False) is None
-        assert any(FDMsg.EMPTYSOURCE in log.msg for log in s.processing_logs)
+        assert any(FDMsg.EMPTYSOURCE in log.msg for log in s.warnings)
 
     def test_extension_mismatch_is_returned(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(insp, "_has_error", lambda *a, **k: False)

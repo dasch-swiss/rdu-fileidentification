@@ -3,13 +3,14 @@ import json
 import os
 import sys
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pygfried
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from typer import Exit, colors, secho
 
 from fileidentification.definitions.models import (
@@ -24,7 +25,7 @@ from fileidentification.definitions.models import (
     SfInfo,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, MAX_WORKERS, PYG_WORKERS
+from fileidentification.definitions.settings import CSVFIELDS, DEFAULTPOLICIES, MAX_WORKERS, PYG_WORKERS, Bin
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
@@ -39,7 +40,6 @@ from fileidentification.tasks.inspection import assert_file_integrity, inspect_f
 from fileidentification.tasks.os_tasks import move_tmp
 from fileidentification.tasks.policies import apply_policy, build_policies
 from fileidentification.workspace import Workspace
-from fileidentification.wrappers.tools import tool_for
 
 
 class FileHandler:
@@ -82,7 +82,7 @@ class FileHandler:
         for sfinfo in self.stack:
             if initial and not sfinfo.status.removed:
                 sfinfo.filename = self.ws.relativize(sfinfo.filename)
-            if not (sfinfo.status.removed or sfinfo.dest):
+            if sfinfo.is_active:
                 self.ba.append(sfinfo)
 
         print_siegfried_errors(ba=self.ba)
@@ -180,43 +180,58 @@ class FileHandler:
                 # we want the smallest file first for running the test
                 sample = self.ba.smallest_file(puid)
                 secho(f"\n{puid}", fg=colors.YELLOW)
-                t_sfinfo, cmd, _ = convert_file(sample, self.policies, self.ws)
+                t_sfinfo, cmd, bin_log = convert_file(sample, self.policies, self.ws)
                 if t_sfinfo:
                     secho(f"{cmd}", fg=colors.GREEN, bold=True)
-                    # the test output is not moved, so it lives in the sample's working dir
-                    secho(f"You find the file with the log in {self.ws.working_dir(sample.filename)}")
+                else:
+                    # the conversion test failed: surface why (this path is interactive, so print it now)
+                    reason = sample.processing_logs[-1].msg if sample.processing_logs else "conversion failed"
+                    secho(f"{reason}", fg=colors.RED, bold=True)
+                    secho(f"{cmd}")
+                    if bin_log:
+                        secho(f"{bin_log.name}: {bin_log.msg}")
+                secho(f"You find the file (if any) in {self.ws.working_dir(sample.filename)}")
+
+    def _run_parallel(self, items: list[SfInfo], description: str, work: Callable[[SfInfo], object]) -> None:
+        """
+        Run `work` over `items` on the thread pool, showing a progress bar (labelled `description`) that
+        advances as each file completes. Exceptions raised by `work` propagate via future.result().
+        """
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(complete_style="green", finished_style="green"),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            transient=True,
+        ) as prog:
+            task = prog.add_task(description=description, total=len(items))
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                for future in as_completed([executor.submit(work, item) for item in items]):
+                    future.result()
+                    prog.advance(task)
 
     def inspect(self, to_csv: bool = False) -> None:
         """Probe all active files and write a dated report JSON without modifying the source files."""
         self.ws.poljson.unlink(missing_ok=True)
-        active = [s for s in self.stack if not (s.status.removed or s.dest)]
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Probing the files ...", total=None)
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(
-                    executor.map(
-                        lambda sfinfo: inspect_file(sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE),
-                        active,
-                    )
-                )
+        active = [s for s in self.stack if s.is_active]
+        self._run_parallel(
+            active,
+            "Probing the files ...",
+            lambda sfinfo: inspect_file(sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE),
+        )
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
         self.write_logs(to_csv=to_csv, target=self.ws.report_json(datetime.now(UTC).strftime("%y%m%d")))
 
     def assert_integrity(self) -> None:
         """Probe all active files: remove corrupt ones and rename files with extension mismatches."""
-        active = [s for s in self.stack if not (s.status.removed or s.dest)]
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Probing the files ...", total=None)
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(
-                    executor.map(
-                        lambda sfinfo: assert_file_integrity(
-                            sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE
-                        ),
-                        active,
-                    )
-                )
+        active = [s for s in self.stack if s.is_active]
+        self._run_parallel(
+            active,
+            "Probing the files ...",
+            lambda sfinfo: assert_file_integrity(sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE),
+        )
 
         print_diagnostic(log_tables=self.log_tables, mode=self.mode)
 
@@ -233,16 +248,12 @@ class FileHandler:
 
     def apply_policies(self) -> None:
         """Evaluate the policy for every active file and mark those that need conversion as pending."""
-        active = [s for s in self.stack if not (s.status.removed or s.dest)]
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Applying policies ...", total=None)
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(
-                    executor.map(
-                        lambda sfinfo: apply_policy(sfinfo, self.policies, self.ws, self.log_tables, self.mode.STRICT),
-                        active,
-                    )
-                )
+        active = [s for s in self.stack if s.is_active]
+        self._run_parallel(
+            active,
+            "Applying policies ...",
+            lambda sfinfo: apply_policy(sfinfo, self.policies, self.ws, self.log_tables, self.mode.STRICT),
+        )
 
     def convert(self) -> None:
         """Convert files whose metadata status pending is True"""
@@ -254,8 +265,9 @@ class FileHandler:
             return
 
         def _convert_one(sfinfo: SfInfo) -> None:
-            tool = tool_for(self.policies[sfinfo.processed_as].bin)  # type: ignore[index]
-            ctx = self._soffice_lock if tool and tool.serialized_run else nullcontext()
+            # soffice cannot run concurrent instances, so serialize its conversions through the lock
+            soffice = self.policies[sfinfo.processed_as].bin == Bin.SOFFICE  # type: ignore[index]
+            ctx = self._soffice_lock if soffice else nullcontext()
             with ctx:
                 conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies, self.ws)
             if conv_sfinfo:
@@ -269,10 +281,7 @@ class FileHandler:
                 # the bin's log (if any) goes in as a detail: recorded in the "errors" copy but not printed
                 self.log_tables.processing_error_add(lmsg, sfinfo, [bin_log] if bin_log else None)
 
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description="Converting ...", total=None)
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(executor.map(_convert_one, pending))
+        self._run_parallel(pending, "Converting ...", _convert_one)
 
     def remove_tmp(self, root_folder: Path) -> None:
         """Move converted files from the tmp dir to their destinations and clean up empty tmp folders."""

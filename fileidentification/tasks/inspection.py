@@ -1,10 +1,5 @@
 from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
 from fileidentification.definitions.settings import FMT2EXT, FDMsg, FPMsg
-from fileidentification.tasks.console_output import (
-    print_empty_source_warning,
-    print_manual_rename_warning,
-    print_os_error,
-)
 from fileidentification.tasks.os_tasks import remove
 from fileidentification.workspace import Workspace
 from fileidentification.wrappers.tools import MediaTool, tool_for, tool_from_mime
@@ -16,7 +11,7 @@ def assert_file_integrity(
     """
     Probe the file and act on the result: remove it if corrupt, rename it if the extension is wrong.
     If the format has only one known extension, the rename is done automatically;
-    otherwise a manual rename warning is printed.
+    otherwise it is flagged in the diagnostics for a manual rename.
     """
     res: FDMsg | None = inspect_file(sfinfo, policies, ws, log_tables, verbose)
     if res == FDMsg.ERROR:
@@ -26,7 +21,7 @@ def assert_file_integrity(
             ext = "." + FMT2EXT[sfinfo.processed_as]["file_extensions"][-1]  # type: ignore[index]
             _rename(sfinfo, ext, ws, log_tables)
         else:
-            print_manual_rename_warning(sfinfo.filename, sfinfo.processing_logs[0].msg)
+            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="you should manually rename the file"))
 
 
 def inspect_file(
@@ -56,8 +51,8 @@ def inspect_file(
         return FDMsg.ERROR
 
     if sfinfo.errors == FDMsg.EMPTYSOURCE:
-        sfinfo.processing_logs.append(LogMsg(name="siegfried", msg=FDMsg.EMPTYSOURCE))
-        print_empty_source_warning(sfinfo.filename)
+        # record as a warning so the end-of-phase report surfaces it (the WARNING bucket prints sfinfo.warnings)
+        sfinfo.warnings.append(LogMsg(name="siegfried", msg=FDMsg.EMPTYSOURCE))
         log_tables.diagnostics_add(sfinfo, FDMsg.WARNING)
 
     # extension mismatch
@@ -86,7 +81,6 @@ def _rename(sfinfo: SfInfo, ext: str, ws: Workspace, log_tables: LogTables) -> N
         sfinfo.filename = ws.relativize(dest)
         sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
     except OSError as e:
-        print_os_error(str(e))
         log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 

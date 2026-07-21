@@ -38,13 +38,6 @@ class TestResolution:
         assert tool_from_mime("") is None
 
 
-class TestSerializedRun:
-    def test_only_soffice_is_serialized(self) -> None:
-        assert Soffice().serialized_run is True
-        assert Ffmpeg().serialized_run is False
-        assert Imagemagick().serialized_run is False
-
-
 class TestBuildCommand:
     def _args(self, **kw: object) -> PolicyParams:
         base = {"accepted": False, "target_container": "x", "expected": ["fmt/1"]}

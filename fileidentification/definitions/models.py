@@ -85,6 +85,10 @@ class SfInfo(BaseModel):
             return puid
         return None
 
+    @property
+    def is_active(self) -> bool:
+        return not (self.status.removed or self.dest)
+
 
 class LogOutput(BaseModel):
     """Top-level structure written to _log.json: all files, processing errors, and duplicates."""
