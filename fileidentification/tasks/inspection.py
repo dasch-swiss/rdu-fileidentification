@@ -1,13 +1,12 @@
 from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
-from fileidentification.definitions.settings import FMT2EXT, Bin, FDMsg, FPMsg, REencMsg
+from fileidentification.definitions.settings import FMT2EXT, FDMsg, FPMsg
 from fileidentification.tasks.console_output import (
     print_empty_source_warning,
     print_manual_rename_warning,
     print_os_error,
 )
 from fileidentification.tasks.os_tasks import remove
-from fileidentification.wrappers.ffmpeg import ffmpeg_collect_warnings
-from fileidentification.wrappers.imagemagick import imagemagick_collect_warnings
+from fileidentification.wrappers.tools import MediaTool, tool_for, tool_from_mime
 
 
 def assert_file_integrity(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verbose: bool) -> None:
@@ -38,17 +37,17 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verb
         log_tables.processing_error_add(msg, sfinfo)
         return None
 
-    # select bin out of mimetype if not specified in policies: siegfried mime first, then the FMT2EXT fallback
-    pbin = policies[sfinfo.processed_as].bin if sfinfo.processed_as in policies else ""
-    if not pbin:
+    # select the tool out of the mimetype if not specified in policies: siegfried mime first, then the FMT2EXT fallback
+    tool = tool_for(policies[sfinfo.processed_as].bin) if sfinfo.processed_as in policies else None
+    if not tool:
         for mime in (sfinfo.matches[0]["mime"], FMT2EXT[sfinfo.processed_as].get("mime", "")):
-            pbin = _bin_from_mime(mime)
-            if pbin:
-                msgm = f"bin not specified in policies, using {pbin} according to the file mimetype for probing"
+            tool = tool_from_mime(mime)
+            if tool:
+                msgm = f"bin not specified in policies, using {tool.bin} according to the file mimetype for probing"
                 sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msgm))
                 break
-    # check if the file throws any error, warnings while open/processing it with the respective bin
-    if _has_error(sfinfo, pbin, log_tables, verbose):
+    # check if the file throws any error, warnings while open/processing it with the respective tool
+    if _has_error(sfinfo, tool, log_tables, verbose):
         return FDMsg.ERROR
 
     if sfinfo.errors == FDMsg.EMPTYSOURCE:
@@ -85,47 +84,34 @@ def _rename(sfinfo: SfInfo, ext: str, log_tables: LogTables) -> None:
         log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 
-def _bin_from_mime(mime: str) -> str:
-    """Pick the probing bin from a mimetype; '' if it is not an image / audio / video type."""
-    top = mime.split("/", maxsplit=1)[0]
-    if top == "image":
-        return Bin.MAGICK
-    if top in ("audio", "video"):
-        return Bin.FFMPEG
-    return ""
-
-
-def _has_error(sfinfo: SfInfo, pbin: str, log_tables: LogTables, verbose: bool) -> bool:
+def _has_error(sfinfo: SfInfo, tool: MediaTool | None, log_tables: LogTables, verbose: bool) -> bool:
     """
-    Check if the file throws any error or warning while opening or playing.
-    :param pbin: the exec used to probe the file
+    Probe the file with the given tool and interpret the result.
+    :param tool: the MediaTool used to probe the file; None or a non-probing tool (soffice) means no test.
     :param verbose: if True, do more detailed inspections
     :returns: True if the file is corrupt
     """
+    # no tool, or a tool that does not probe (soffice) -> no test
+    # TODO: inspection for other files than Audio/Video/IMAGE
+    if tool is None:
+        return False
+    result = tool.probe(sfinfo.path, verbose)
+    if result is None:
+        return False
 
-    # get the specs and errors
-    match pbin:
-        case Bin.FFMPEG:
-            error, stderr, specs = ffmpeg_collect_warnings(sfinfo.path, verbose=verbose)
-            # see if warning needs file to be re-encoded
-            if any(msg in stderr for msg in REencMsg):
-                sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="file flagged for reencoding"))
-                sfinfo.status.pending = True
-        case Bin.MAGICK:
-            error, stderr, specs = imagemagick_collect_warnings(sfinfo.path, verbose=verbose)
-        case _:
-            # returns False if bin is soffice or empty string (means no tests)
-            # TODO: inspection for other files than Audio/Video/IMAGE
-            return False
+    # see if a warning needs the file to be re-encoded
+    if result.needs_reencode:
+        sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="file flagged for reencoding"))
+        sfinfo.status.pending = True
 
-    if specs and not sfinfo.media_info:
-        sfinfo.media_info.append(LogMsg(name=pbin, msg=specs))
-    if error:
-        sfinfo.warnings.append(LogMsg(name=pbin, msg=stderr))
+    if result.specs and not sfinfo.media_info:
+        sfinfo.media_info.append(LogMsg(name=tool.bin, msg=result.specs))
+    if result.is_corrupt:
+        sfinfo.warnings.append(LogMsg(name=tool.bin, msg=result.warnings))
         log_tables.diagnostics_add(sfinfo, FDMsg.ERROR)
         return True
     # if warnings but file is readable
-    if stderr:
-        sfinfo.warnings.append(LogMsg(name=pbin, msg=stderr))
+    if result.warnings:
+        sfinfo.warnings.append(LogMsg(name=tool.bin, msg=result.warnings))
         log_tables.diagnostics_add(sfinfo, FDMsg.WARNING)
     return False

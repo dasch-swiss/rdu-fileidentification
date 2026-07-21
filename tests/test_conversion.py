@@ -15,6 +15,8 @@ from fileidentification.definitions.models import PolicyParams
 from fileidentification.definitions.settings import Bin, FPMsg
 from fileidentification.tasks import conversion as conv_mod
 from fileidentification.tasks.conversion import _add_media_info, _verify, convert_file
+from fileidentification.wrappers import tools
+from fileidentification.wrappers.tools import tool_for
 from tests.conftest import fake_identify_payload, make_sfinfo
 
 
@@ -71,22 +73,22 @@ def test_expected_format_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyP
 
 class TestAddMediaInfo:
     def test_ffmpeg_appends_json_streams(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(conv_mod, "ffmpeg_media_info", lambda path: [{"codec_type": "video"}])
+        monkeypatch.setattr(tools, "ffmpeg_media_info", lambda path: [{"codec_type": "video"}])
         s = make_sfinfo("v.mp4", puid="fmt/199")
-        _add_media_info(s, Bin.FFMPEG)
+        _add_media_info(s, tool_for(Bin.FFMPEG))
         assert s.media_info[0].name == "ffmpeg"
         assert '"codec_type": "video"' in s.media_info[0].msg
 
     def test_magick_appends_identify_string(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(conv_mod, "imagemagick_media_info", lambda path: "TIFF 10x10")
+        monkeypatch.setattr(tools, "imagemagick_media_info", lambda path: "TIFF 10x10")
         s = make_sfinfo("i.tif", puid="fmt/353")
-        _add_media_info(s, Bin.MAGICK)
+        _add_media_info(s, tool_for(Bin.MAGICK))
         assert s.media_info[0].name == "imagemagick"
         assert s.media_info[0].msg == "TIFF 10x10"
 
     def test_other_bin_is_noop(self) -> None:
         s = make_sfinfo("d.docx", puid="fmt/412")
-        _add_media_info(s, Bin.SOFFICE)
+        _add_media_info(s, tool_for(Bin.SOFFICE))
         assert not s.media_info
 
 

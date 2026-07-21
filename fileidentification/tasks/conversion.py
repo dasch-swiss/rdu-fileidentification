@@ -1,26 +1,21 @@
-import json
 from pathlib import Path
 
 import pygfried
 
 from fileidentification.definitions.models import LogMsg, Policies, PolicyParams, SfInfo
-from fileidentification.definitions.settings import Bin, FPMsg
+from fileidentification.definitions.settings import FPMsg
 from fileidentification.tasks.console_output import print_conversion_failed_error, print_unexpected_format_error
 from fileidentification.wrappers.converter import convert
-from fileidentification.wrappers.ffmpeg import ffmpeg_media_info
-from fileidentification.wrappers.imagemagick import imagemagick_media_info
+from fileidentification.wrappers.tools import MediaTool, tool_for
 
 
-def _add_media_info(sfinfo: SfInfo, _bin: str) -> None:
-    """Attach technical metadata (codec/stream info) of the converted file to sfinfo.media_info, if _bin supports it."""
-    match _bin:
-        case Bin.FFMPEG:
-            streams = ffmpeg_media_info(sfinfo.filename)
-            sfinfo.media_info.append(LogMsg(name="ffmpeg", msg=json.dumps(streams)))
-        case Bin.MAGICK:
-            sfinfo.media_info.append(LogMsg(name="imagemagick", msg=imagemagick_media_info(sfinfo.filename)))
-        case _:
-            pass
+def _add_media_info(sfinfo: SfInfo, tool: MediaTool | None) -> None:
+    """Attach technical metadata (codec/stream info) of the converted file to sfinfo.media_info, if tool supports it."""
+    if tool is None:
+        return
+    media_info = tool.media_info(sfinfo.filename)
+    if media_info:
+        sfinfo.media_info.append(media_info)
 
 
 def _verify(target: Path, sfinfo: SfInfo, expected: list[str]) -> SfInfo | None:
@@ -64,6 +59,7 @@ def convert_file(sfinfo: SfInfo, policies: Policies) -> tuple[SfInfo | None, lis
     """
 
     args: PolicyParams = policies[sfinfo.processed_as]  # type: ignore[index]
+    tool = tool_for(args.bin)
 
     target_path, cmd, logtext = convert(sfinfo, args)
 
@@ -76,7 +72,7 @@ def convert_file(sfinfo: SfInfo, policies: Policies) -> tuple[SfInfo | None, lis
     # create an SfInfo for target and verify output, add codec and processing logs
     target_sfinfo = _verify(target_path, sfinfo, args.expected)
     if target_sfinfo:
-        _add_media_info(target_sfinfo, args.bin)
+        _add_media_info(target_sfinfo, tool)
         if processing_log:
             target_sfinfo.processing_logs.append(processing_log)
         processing_log = None  # consumed by the successful target; nothing left for the caller

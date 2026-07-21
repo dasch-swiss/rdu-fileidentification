@@ -1,10 +1,10 @@
 """Unit tests for tasks.inspection.
 
 inspect_file / assert_file_integrity / _rename / _has_error all shell out to
-ffmpeg / imagemagick in real use. Here the probe helpers (``_has_error``,
-``ffmpeg_collect_warnings``, ``imagemagick_collect_warnings``) and the side-effecting
-helpers (``remove``, ``_rename``, ``inspect_file``) are monkeypatched so the branch
-logic is exercised without any external binary or (except for ``_rename``) filesystem.
+ffmpeg / imagemagick in real use. Here the MediaTool probe (via the underlying
+``tools.ffmpeg_collect_warnings`` / ``tools.imagemagick_collect_warnings``) and the
+side-effecting helpers (``remove``, ``_rename``, ``inspect_file``) are monkeypatched so
+the branch logic is exercised without any external binary or (except for ``_rename``) filesystem.
 """
 
 from pathlib import Path
@@ -16,55 +16,57 @@ from fileidentification.definitions.models import LogTables, PolicyParams
 from fileidentification.definitions.settings import Bin, FDMsg, FPMsg, REencMsg
 from fileidentification.tasks import inspection as insp
 from fileidentification.tasks.inspection import _has_error, _rename, assert_file_integrity, inspect_file
+from fileidentification.wrappers import tools
+from fileidentification.wrappers.tools import tool_for
 from tests.conftest import make_sfinfo
 
 
 class TestInspectFileBinSelection:
-    """inspect_file picks the probing bin from the policy, then the siegfried mime, then FMT2EXT."""
+    """inspect_file picks the probing tool from the policy, then the siegfried mime, then FMT2EXT."""
 
     @staticmethod
-    def _capture_pbin(monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
-        captured: dict[str, str] = {}
+    def _capture_tool(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+        captured: dict[str, Any] = {}
 
-        def fake_has_error(sfinfo: Any, pbin: str, log_tables: Any, verbose: bool) -> bool:
-            captured["pbin"] = pbin
+        def fake_has_error(sfinfo: Any, tool: Any, log_tables: Any, verbose: bool) -> bool:
+            captured["tool"] = tool
             return False
 
         monkeypatch.setattr(insp, "_has_error", fake_has_error)
         return captured
 
     def test_bin_from_policy(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        captured = self._capture_pbin(monkeypatch)
+        captured = self._capture_tool(monkeypatch)
         s = make_sfinfo(puid="fmt/43", mime="image/jpeg")
         inspect_file(s, {"fmt/43": PolicyParams(format_name="x", bin="ffmpeg")}, LogTables(), verbose=False)
-        assert captured["pbin"] == "ffmpeg"  # policy wins over the image mime
+        assert captured["tool"].bin == Bin.FFMPEG  # policy wins over the image mime
 
     def test_bin_from_siegfried_mime_image(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        captured = self._capture_pbin(monkeypatch)
+        captured = self._capture_tool(monkeypatch)
         s = make_sfinfo(puid="fmt/43", mime="image/jpeg")
         inspect_file(s, {}, LogTables(), verbose=False)
-        assert captured["pbin"] == Bin.MAGICK
+        assert captured["tool"].bin == Bin.MAGICK
         assert any("bin not specified" in log.msg for log in s.processing_logs)
 
     def test_bin_from_siegfried_mime_video(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        captured = self._capture_pbin(monkeypatch)
+        captured = self._capture_tool(monkeypatch)
         s = make_sfinfo(puid="fmt/199", mime="video/mp4")
         inspect_file(s, {}, LogTables(), verbose=False)
-        assert captured["pbin"] == Bin.FFMPEG
+        assert captured["tool"].bin == Bin.FFMPEG
 
     def test_bin_from_fmt2ext_when_no_siegfried_mime(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        captured = self._capture_pbin(monkeypatch)
+        captured = self._capture_tool(monkeypatch)
         # empty siegfried mime forces the FMT2EXT fallback; fmt/43 is image/jpeg there
         s = make_sfinfo(puid="fmt/43", mime="")
         inspect_file(s, {}, LogTables(), verbose=False)
-        assert captured["pbin"] == Bin.MAGICK
+        assert captured["tool"].bin == Bin.MAGICK
 
     def test_no_bin_when_no_mime_anywhere(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        captured = self._capture_pbin(monkeypatch)
+        captured = self._capture_tool(monkeypatch)
         # fmt/569 (Matroska) has no mime key in FMT2EXT and we pass no siegfried mime
         s = make_sfinfo(puid="fmt/569", mime="")
         inspect_file(s, {}, LogTables(), verbose=False)
-        assert captured["pbin"] == ""
+        assert captured["tool"] is None
 
 
 class TestInspectFileOutcomes:
@@ -98,18 +100,18 @@ class TestInspectFileOutcomes:
 
 
 class TestHasError:
-    """_has_error dispatches on the bin and interprets the collected warnings."""
+    """_has_error probes with the given MediaTool and interprets the collected warnings."""
 
     def _patch_ffmpeg(self, monkeypatch: pytest.MonkeyPatch, ret: tuple[bool, str, str]) -> None:
-        monkeypatch.setattr(insp, "ffmpeg_collect_warnings", lambda path, verbose: ret)
+        monkeypatch.setattr(tools, "ffmpeg_collect_warnings", lambda path, verbose: ret)
 
     def _patch_magick(self, monkeypatch: pytest.MonkeyPatch, ret: tuple[bool, str, str]) -> None:
-        monkeypatch.setattr(insp, "imagemagick_collect_warnings", lambda path, verbose: ret)
+        monkeypatch.setattr(tools, "imagemagick_collect_warnings", lambda path, verbose: ret)
 
     def test_ffmpeg_reencode_flag_sets_pending(self, monkeypatch: pytest.MonkeyPatch) -> None:
         self._patch_ffmpeg(monkeypatch, (False, str(REencMsg.ffmpeg1), ""))
         s = make_sfinfo("v.mp4", puid="fmt/199")
-        assert _has_error(s, Bin.FFMPEG, LogTables(), verbose=False) is False
+        assert _has_error(s, tool_for(Bin.FFMPEG), LogTables(), verbose=False) is False
         assert s.status.pending is True
         assert any("reencoding" in log.msg for log in s.processing_logs)
 
@@ -117,7 +119,7 @@ class TestHasError:
         self._patch_ffmpeg(monkeypatch, (True, "boom", "specs"))
         s = make_sfinfo("v.mp4", puid="fmt/199")
         lt = LogTables()
-        assert _has_error(s, Bin.FFMPEG, lt, verbose=False) is True
+        assert _has_error(s, tool_for(Bin.FFMPEG), lt, verbose=False) is True
         assert s.media_info and s.media_info[0].msg == "specs"
         assert s.warnings and s.warnings[0].msg == "boom"
         assert FDMsg.ERROR.name in lt.diagnostics
@@ -126,7 +128,7 @@ class TestHasError:
         self._patch_ffmpeg(monkeypatch, (False, "just a warning", ""))
         s = make_sfinfo("v.mp4", puid="fmt/199")
         lt = LogTables()
-        assert _has_error(s, Bin.FFMPEG, lt, verbose=False) is False
+        assert _has_error(s, tool_for(Bin.FFMPEG), lt, verbose=False) is False
         assert s.warnings and s.warnings[0].msg == "just a warning"
         assert FDMsg.WARNING.name in lt.diagnostics
         assert s.status.pending is False
@@ -134,12 +136,12 @@ class TestHasError:
     def test_magick_error_is_corrupt(self, monkeypatch: pytest.MonkeyPatch) -> None:
         self._patch_magick(monkeypatch, (True, "identify: Cannot read", "specs"))
         s = make_sfinfo("i.jpg", puid="fmt/43")
-        assert _has_error(s, Bin.MAGICK, LogTables(), verbose=False) is True
+        assert _has_error(s, tool_for(Bin.MAGICK), LogTables(), verbose=False) is True
 
     def test_soffice_and_empty_bin_are_noops(self) -> None:
         s = make_sfinfo("d.docx", puid="fmt/412")
-        assert _has_error(s, Bin.SOFFICE, LogTables(), verbose=False) is False
-        assert _has_error(s, "", LogTables(), verbose=False) is False
+        assert _has_error(s, tool_for(Bin.SOFFICE), LogTables(), verbose=False) is False
+        assert _has_error(s, tool_for(""), LogTables(), verbose=False) is False
         assert not s.warnings and not s.media_info
 
     def test_specs_not_overwritten_when_media_info_present(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -148,7 +150,7 @@ class TestHasError:
         self._patch_ffmpeg(monkeypatch, (False, "", "new-specs"))
         s = make_sfinfo("v.mp4", puid="fmt/199")
         s.media_info.append(LogMsg(name="ffmpeg", msg="pre-existing"))
-        _has_error(s, Bin.FFMPEG, LogTables(), verbose=False)
+        _has_error(s, tool_for(Bin.FFMPEG), LogTables(), verbose=False)
         assert len(s.media_info) == 1  # existing media_info left untouched
 
 
