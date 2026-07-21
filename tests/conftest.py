@@ -12,6 +12,13 @@ from pathlib import Path
 from typing import Any
 
 from fileidentification.definitions.models import SfInfo
+from fileidentification.workspace import Workspace
+
+
+def make_ws(root: str | Path = "/root", tdir: str | Path | None = None) -> Workspace:
+    """Build a Workspace for tests; tdir defaults to <root>/__fileidentification."""
+    root = Path(root)
+    return Workspace(root, Path(tdir) if tdir is not None else root / "__fileidentification")
 
 
 def fake_identify_payload(

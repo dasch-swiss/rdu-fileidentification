@@ -56,10 +56,6 @@ class SfInfo(BaseModel):
     # if converted
     derived_from: Self | None = None
     dest: Path | None = None
-    # paths used during processing, they are not written out
-    path: Path = Field(default_factory=Path, exclude=True)
-    root_folder: Path = Field(default_factory=Path, exclude=True)
-    tdir: Path = Field(default_factory=Path, exclude=True)
 
     def model_post_init(self, context: Any, /) -> None:
         """Derive the fields not provided by siegfried: status, processed_as, md5"""
@@ -88,21 +84,6 @@ class SfInfo(BaseModel):
             puid: str = self.matches[0]["id"]
             return puid
         return None
-
-    def set_processing_paths(self, root_folder: Path, tdir: Path, initial: bool) -> None:
-        """
-        Set root_folder and tdir, and derive the absolute path for this file.
-        On the initial run (scanned by pygfried), filename is made relative to root_folder.
-        When read from an existing log (initial=False), filename is already relative.
-        """
-        if root_folder.is_file():
-            root_folder = root_folder.parent
-        self.root_folder = root_folder
-        self.tdir = tdir
-        if initial:
-            self.filename = self.filename.parent.relative_to(root_folder) / self.filename.name
-        if not self.dest:
-            self.path = self.root_folder / self.filename
 
 
 class LogOutput(BaseModel):
@@ -267,14 +248,6 @@ class Mode(BaseModel):
     VERBOSE: bool = False
     STRICT: bool = False
     QUIET: bool = False
-
-
-class FilePaths(BaseModel, validate_assignment=True):
-    """Resolved filesystem paths used throughout a FileHandler run."""
-
-    TMP_DIR: Path = Field(default_factory=Path)
-    POLJSON: Path = Field(default_factory=Path)
-    LOGJSON: Path = Field(default_factory=Path)
 
 
 def get_md5(path: str | Path) -> str:

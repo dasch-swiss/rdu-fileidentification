@@ -6,27 +6,32 @@ from fileidentification.tasks.console_output import (
     print_os_error,
 )
 from fileidentification.tasks.os_tasks import remove
+from fileidentification.workspace import Workspace
 from fileidentification.wrappers.tools import MediaTool, tool_for, tool_from_mime
 
 
-def assert_file_integrity(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verbose: bool) -> None:
+def assert_file_integrity(
+    sfinfo: SfInfo, policies: Policies, ws: Workspace, log_tables: LogTables, verbose: bool
+) -> None:
     """
     Probe the file and act on the result: remove it if corrupt, rename it if the extension is wrong.
     If the format has only one known extension, the rename is done automatically;
     otherwise a manual rename warning is printed.
     """
-    res: FDMsg | None = inspect_file(sfinfo, policies, log_tables, verbose)
+    res: FDMsg | None = inspect_file(sfinfo, policies, ws, log_tables, verbose)
     if res == FDMsg.ERROR:
-        remove(sfinfo, log_tables)
+        remove(sfinfo, ws, log_tables)
     if res == FDMsg.EXTMISMATCH:
         if len(FMT2EXT[sfinfo.processed_as]["file_extensions"]) == 1:  # type: ignore[index]
             ext = "." + FMT2EXT[sfinfo.processed_as]["file_extensions"][-1]  # type: ignore[index]
-            _rename(sfinfo, ext, log_tables)
+            _rename(sfinfo, ext, ws, log_tables)
         else:
             print_manual_rename_warning(sfinfo.filename, sfinfo.processing_logs[0].msg)
 
 
-def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verbose: bool) -> FDMsg | None:
+def inspect_file(
+    sfinfo: SfInfo, policies: Policies, ws: Workspace, log_tables: LogTables, verbose: bool
+) -> FDMsg | None:
     """
     Probe the file without making any filesystem changes.
     Returns ERROR if the file is corrupt, EXTMISMATCH if the extension is wrong, or None if the file is OK.
@@ -47,7 +52,7 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verb
                 sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msgm))
                 break
     # check if the file throws any error, warnings while open/processing it with the respective tool
-    if _has_error(sfinfo, tool, log_tables, verbose):
+    if _has_error(sfinfo, tool, ws, log_tables, verbose):
         return FDMsg.ERROR
 
     if sfinfo.errors == FDMsg.EMPTYSOURCE:
@@ -65,26 +70,27 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, verb
     return None
 
 
-def _rename(sfinfo: SfInfo, ext: str, log_tables: LogTables) -> None:
+def _rename(sfinfo: SfInfo, ext: str, ws: Workspace, log_tables: LogTables) -> None:
     """
-    Rename the file on disk to the given extension and update sfinfo.path and sfinfo.filename.
+    Rename the file on disk to the given extension and update sfinfo.filename to the new portable relative path.
     If a file with the target name already exists, the MD5 prefix is appended to avoid collision.
     """
-    dest = sfinfo.path.with_suffix(ext)
+    source = ws.abs_path(sfinfo.filename)
+    dest = source.with_suffix(ext)
     # if a file with same name and extension already there, append file hash to name
     if dest.is_file():
-        dest = sfinfo.path.parent / f"{sfinfo.path.stem}_{sfinfo.md5[:6]}{ext}"
+        dest = source.parent / f"{source.stem}_{sfinfo.md5[:6]}{ext}"
     try:
-        sfinfo.path.rename(dest)
-        msg = f"did rename {sfinfo.path.name} -> {dest.name}"
-        sfinfo.path, sfinfo.filename = dest, dest.relative_to(sfinfo.root_folder)
+        source.rename(dest)
+        msg = f"did rename {source.name} -> {dest.name}"
+        sfinfo.filename = ws.relativize(dest)
         sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
     except OSError as e:
         print_os_error(str(e))
         log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 
-def _has_error(sfinfo: SfInfo, tool: MediaTool | None, log_tables: LogTables, verbose: bool) -> bool:
+def _has_error(sfinfo: SfInfo, tool: MediaTool | None, ws: Workspace, log_tables: LogTables, verbose: bool) -> bool:
     """
     Probe the file with the given tool and interpret the result.
     :param tool: the MediaTool used to probe the file; None or a non-probing tool (soffice) means no test.
@@ -95,7 +101,7 @@ def _has_error(sfinfo: SfInfo, tool: MediaTool | None, log_tables: LogTables, ve
     # TODO: inspection for other files than Audio/Video/IMAGE
     if tool is None:
         return False
-    result = tool.probe(sfinfo.path, verbose)
+    result = tool.probe(ws.abs_path(sfinfo.filename), verbose)
     if result is None:
         return False
 

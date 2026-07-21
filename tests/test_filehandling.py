@@ -14,7 +14,7 @@ import pytest
 from fileidentification.definitions.models import LogMsg, Policies, PolicyParams, SfInfo
 from fileidentification.definitions.settings import DEFAULTPOLICIES, FMT2EXT
 from fileidentification.filehandling import FileHandler
-from tests.conftest import fake_identify_payload, make_sfinfo
+from tests.conftest import fake_identify_payload, make_sfinfo, make_ws
 
 
 def _fake_pygfried(puid: str = "fmt/43") -> SimpleNamespace:
@@ -65,6 +65,7 @@ class TestBuildStack:
         fh = FileHandler()
         fh.fp.TMP_DIR = tmp_path / "tmp"
         fh.fp.LOGJSON = fh.fp.TMP_DIR / "_log.json"  # absent -> forces a scan
+        fh.ws = make_ws(root, fh.fp.TMP_DIR)
         monkeypatch.setattr("fileidentification.filehandling.pygfried", _fake_pygfried())
 
         fh._build_stack(root)
@@ -74,7 +75,8 @@ class TestBuildStack:
         assert {s.filename for s in fh.stack} == {Path("a.jpg"), Path("sub/b.jpg")}
         assert set(fh.ba.puid_unique) == {"fmt/43"}
         assert len(fh.ba.puid_unique["fmt/43"]) == 2
-        assert next(s for s in fh.stack if s.filename == Path("a.jpg")).path == root / "a.jpg"
+        a = next(s for s in fh.stack if s.filename == Path("a.jpg"))
+        assert fh.ws.abs_path(a.filename) == root / "a.jpg"
 
     def test_reload_from_log_skips_scan_and_removed_files(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -106,8 +108,9 @@ class TestBuildStack:
         assert len(fh.ba.puid_unique["fmt/43"]) == 1
         loaded_active = next(s for s in fh.stack if not s.status.removed)
         loaded_removed = next(s for s in fh.stack if s.status.removed)
-        assert loaded_active.path == tmp_path / "sub/a.jpg"  # paths set for active files
-        assert loaded_removed.path == Path()  # removed files are left untouched
+        # reloaded filenames are kept verbatim (already relative / portable)
+        assert loaded_active.filename == Path("sub/a.jpg")
+        assert loaded_removed.filename == Path("sub/b.jpg")
 
 
 class TestSilentlyReencode:
@@ -311,18 +314,16 @@ class TestConvert:
         fh = FileHandler()
         pending = make_sfinfo("sub/orig.jpg", puid="fmt/43")
         pending.status.pending = True
-        pending.root_folder = Path("/root")
         fh.stack = [pending]
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", bin="magick")}
 
         converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
         converted.filename = Path("sub/orig.tif")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"], None))
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p, ws: (converted, ["cmd"], None))
 
         fh.convert()
 
         assert converted in fh.stack
-        assert converted.root_folder == Path("/root")
         assert any("converted ->" in log.msg for log in pending.processing_logs)
 
     def test_soffice_conversion_is_serialized_by_the_lock(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -330,13 +331,12 @@ class TestConvert:
         fh = FileHandler()
         pending = make_sfinfo("sub/legacy.doc", puid="fmt/40")
         pending.status.pending = True
-        pending.root_folder = Path("/root")
         fh.stack = [pending]
         fh.policies = {
             "fmt/40": PolicyParams(accepted=False, bin="soffice", target_container="docx", expected=["fmt/412"])
         }
         converted = make_sfinfo("sub/legacy.docx", puid="fmt/412")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"], None))
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p, ws: (converted, ["cmd"], None))
 
         spy = _LockSpy()
         fh._soffice_lock = spy  # type: ignore[assignment]
@@ -349,13 +349,12 @@ class TestConvert:
         fh = FileHandler()
         pending = make_sfinfo("sub/orig.jpg", puid="fmt/43")
         pending.status.pending = True
-        pending.root_folder = Path("/root")
         fh.stack = [pending]
         fh.policies = {
             "fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
         }
         converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p: (converted, ["cmd"], None))
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p, ws: (converted, ["cmd"], None))
 
         spy = _LockSpy()
         fh._soffice_lock = spy  # type: ignore[assignment]
@@ -370,7 +369,7 @@ class TestConvert:
         fh.stack = [pending]
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", bin="magick")}
 
-        def failing_convert(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str], None]:
+        def failing_convert(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], None]:
             # convert_file leaves a diagnostic on the origin before signalling failure
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
             return None, ["thecmd"], None
@@ -395,7 +394,7 @@ class TestConvert:
         fh.stack = [origin]
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", bin="magick")}
 
-        def failing_convert(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str], LogMsg]:
+        def failing_convert(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], LogMsg]:
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
             return None, ["thecmd"], LogMsg(name="magick", msg="magick boom detail")
 
@@ -417,10 +416,9 @@ class TestConvert:
         # end to end: the bin's log ends up only in the "errors" copy, not in "files", and is never printed
         fh = FileHandler()
         fh.fp.LOGJSON = tmp_path / "_log.json"
+        fh.ws = make_ws(tmp_path, tmp_path)
         origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
         origin.status.pending = True
-        origin.root_folder = tmp_path
-        origin.tdir = tmp_path
         fh.stack = [origin]
         fh.policies = {
             "fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
@@ -428,7 +426,7 @@ class TestConvert:
 
         missing = tmp_path / "never.tif"  # converter produces no file -> failure, with a bin log
         monkeypatch.setattr(
-            "fileidentification.tasks.conversion.convert", lambda s, a: (missing, "the cmd", "magick: boom")
+            "fileidentification.tasks.conversion.convert", lambda s, a, ws: (missing, "the cmd", "magick: boom")
         )
 
         fh.convert()
@@ -539,7 +537,7 @@ class TestTestPolicies:
         }
         seen: list[SfInfo] = []
 
-        def record(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str], None]:
+        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], None]:
             seen.append(sfinfo)
             return None, ["cmd"], None
 
@@ -553,7 +551,7 @@ class TestTestPolicies:
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", accepted=True)}
         called: list[SfInfo] = []
 
-        def record(sfinfo: SfInfo, policies: Policies) -> tuple[None, list[str], None]:
+        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], None]:
             called.append(sfinfo)
             return None, ["cmd"], None
 

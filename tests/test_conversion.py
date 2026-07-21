@@ -17,7 +17,7 @@ from fileidentification.tasks import conversion as conv_mod
 from fileidentification.tasks.conversion import _add_media_info, _verify, convert_file
 from fileidentification.wrappers import tools
 from fileidentification.wrappers.tools import tool_for
-from tests.conftest import fake_identify_payload, make_sfinfo
+from tests.conftest import fake_identify_payload, make_sfinfo, make_ws
 
 
 def _patch_identify(monkeypatch: pytest.MonkeyPatch, target: Path, puid: str) -> None:
@@ -75,38 +75,54 @@ class TestAddMediaInfo:
     def test_ffmpeg_appends_json_streams(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(tools, "ffmpeg_media_info", lambda path: [{"codec_type": "video"}])
         s = make_sfinfo("v.mp4", puid="fmt/199")
-        _add_media_info(s, tool_for(Bin.FFMPEG))
+        _add_media_info(s, tool_for(Bin.FFMPEG), s.filename)
         assert s.media_info[0].name == "ffmpeg"
         assert '"codec_type": "video"' in s.media_info[0].msg
 
     def test_magick_appends_identify_string(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(tools, "imagemagick_media_info", lambda path: "TIFF 10x10")
         s = make_sfinfo("i.tif", puid="fmt/353")
-        _add_media_info(s, tool_for(Bin.MAGICK))
+        _add_media_info(s, tool_for(Bin.MAGICK), s.filename)
         assert s.media_info[0].name == "imagemagick"
         assert s.media_info[0].msg == "TIFF 10x10"
 
     def test_other_bin_is_noop(self) -> None:
         s = make_sfinfo("d.docx", puid="fmt/412")
-        _add_media_info(s, tool_for(Bin.SOFFICE))
+        _add_media_info(s, tool_for(Bin.SOFFICE), s.filename)
         assert not s.media_info
+
+    def test_probes_physical_path_not_filename(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # invariant: the converted file's filename is already its relative home, so media info must be
+        # probed at the physical working-dir path passed in, never at sfinfo.filename.
+        seen: list[Path] = []
+
+        def rec(path: Path) -> list[Any]:
+            seen.append(path)
+            return []
+
+        monkeypatch.setattr(tools, "ffmpeg_media_info", rec)
+        s = make_sfinfo("sub/out.mp4", puid="fmt/199")  # relative home, not where the file physically is
+        physical = Path("/work/out.mp4_abc123/out.mp4")
+        _add_media_info(s, tool_for(Bin.FFMPEG), physical)
+        assert seen == [physical]
 
 
 def test_convert_file_strips_abs_paths_from_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """convert_file removes root_folder/tdir prefixes from the tool log before attaching it."""
     origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
-    origin.root_folder = Path("/root")
-    origin.tdir = Path("/tmp/tdir")
     origin.status.pending = True
+    ws = make_ws("/root", "/tmp/tdir")
 
     target = tmp_path / "orig.tif"
     target.write_bytes(b"data")
     _patch_identify(monkeypatch, target, puid="fmt/353")
-    monkeypatch.setattr(conv_mod, "convert", lambda s, a: (target, "the cmd", "/root/sub/orig.jpg -> /tmp/tdir/out"))
-    monkeypatch.setattr(conv_mod, "_add_media_info", lambda s, b: None)
+    monkeypatch.setattr(
+        conv_mod, "convert", lambda s, a, ws: (target, "the cmd", "/root/sub/orig.jpg -> /tmp/tdir/out")
+    )
+    monkeypatch.setattr(conv_mod, "_add_media_info", lambda s, t, p: None)
 
     policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
-    result, cmds, bin_log = convert_file(origin, policies)
+    result, cmds, bin_log = convert_file(origin, policies, ws)
 
     assert result is not None
     assert cmds == ["the cmd"]
@@ -120,15 +136,14 @@ def test_convert_file_returns_bin_log_on_failure_without_touching_origin(
 ) -> None:
     """On failure the bin's log is returned (for the "errors" copy) and is not added to the origin sfinfo."""
     origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
-    origin.root_folder = Path("/root")
-    origin.tdir = Path("/tmp/tdir")
     origin.status.pending = True
+    ws = make_ws("/root", "/tmp/tdir")
 
     missing_target = tmp_path / "never-created.tif"  # never written -> conversion failed
-    monkeypatch.setattr(conv_mod, "convert", lambda s, a: (missing_target, "the cmd", "magick: some fatal error"))
+    monkeypatch.setattr(conv_mod, "convert", lambda s, a, ws: (missing_target, "the cmd", "magick: some fatal error"))
 
     policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
-    result, _, bin_log = convert_file(origin, policies)
+    result, _, bin_log = convert_file(origin, policies, ws)
 
     assert result is None
     # the failure reason is recorded on the origin, but the bin log is NOT (it only travels back to the caller)
