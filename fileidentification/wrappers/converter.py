@@ -1,13 +1,10 @@
 import hashlib
-import platform
 import shlex
 import subprocess
 from pathlib import Path
 
 from fileidentification.definitions.models import PolicyParams, SfInfo
-from fileidentification.definitions.settings import PDFSETTINGS, Bin, LOPath
-
-SOFFICE = LOPath.Linux if platform.system() == LOPath.Linux.name else LOPath.Darwin
+from fileidentification.wrappers.tools import tool_for
 
 
 def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, str]:
@@ -17,6 +14,10 @@ def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, str]:
     :returns: the constructed target path, a human-readable command string, and the captured log output
     """
 
+    tool = tool_for(args.bin)
+    if tool is None:
+        raise ValueError(f"no conversion tool for bin {args.bin!r}")  # noqa: EM102, TRY003
+
     path_hash = hashlib.md5(str(sfinfo.filename).encode()).hexdigest()[:6]  # noqa: S324
     wdir = sfinfo.tdir / f"{sfinfo.filename.name}_{path_hash}"
     if not wdir.exists():
@@ -24,29 +25,9 @@ def convert(sfinfo: SfInfo, args: PolicyParams) -> tuple[Path, str, str]:
 
     target = Path(wdir / f"{sfinfo.filename.stem}.{args.target_container}")
 
-    cmd_list: list[str] = []
-
-    match args.bin:
-        case Bin.FFMPEG:
-            cmd_list = ["ffmpeg", "-y", "-i", str(sfinfo.path), *shlex.split(args.processing_args), str(target)]
-        case Bin.MAGICK:
-            cmd_list = ["magick", *shlex.split(args.processing_args), str(sfinfo.path), str(target)]
-        # case Bin.INCSCAPE:
-        #     cmd_list = ["inkscape", f"--export-filename={str(target)}", *shlex.split(args.processing_args), str(sfinfo.path)]
-        case Bin.SOFFICE:
-            soffice_filter = f"pdf{PDFSETTINGS}" if args.target_container == "pdf" else args.target_container
-            cmd_list = [
-                str(SOFFICE),
-                *shlex.split(args.processing_args),
-                soffice_filter,
-                str(sfinfo.path),
-                "--outdir",
-                str(wdir),
-            ]
-
+    cmd_list = tool.build_command(sfinfo.path, args, target, wdir)
     res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
-    # soffice reports on stdout; ffmpeg / magick on stderr
-    logtext = res.stdout + res.stderr if args.bin == Bin.SOFFICE else res.stderr
+    logtext = tool.read_log(res)
 
     cmd_str = " ".join(shlex.quote(p) for p in cmd_list)
     return target, cmd_str, logtext

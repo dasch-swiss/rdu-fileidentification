@@ -2,10 +2,9 @@ import shutil
 import sys
 from pathlib import Path
 
-from typer import colors, secho
-
 from fileidentification.definitions.models import FilePaths, LogMsg, LogTables, Policies, SfInfo
 from fileidentification.definitions.settings import LOGJSON, POLJSON, RMV_DIR, TMP_DIR
+from fileidentification.tasks.console_output import print_os_error, print_root_not_found
 
 
 def remove(sfinfo: SfInfo, log_tables: LogTables) -> None:
@@ -17,7 +16,7 @@ def remove(sfinfo: SfInfo, log_tables: LogTables) -> None:
         sfinfo.status.removed = True
         #  sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="file removed"))
     except OSError as e:
-        secho(f"{e}", fg=colors.RED)
+        print_os_error(str(e))
         log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 
@@ -53,7 +52,7 @@ def move_tmp(stack: list[SfInfo], policies: Policies, log_tables: LogTables, rem
                 sfinfo.status.added = True
                 sfinfo.dest = None
             except OSError as e:
-                secho(f"{e}", fg=colors.RED)
+                print_os_error(str(e))
                 log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
     return write_logs
@@ -67,7 +66,7 @@ def set_filepaths(fp: FilePaths, root_folder: Path, tmp_dir: Path | None = None)
     """
     # assert rootfolder
     if root_folder.__fspath__() == "." or not root_folder.exists():
-        secho("root folder not found", fg=colors.RED)
+        print_root_not_found()
         sys.exit(1)
     fp.TMP_DIR = root_folder / TMP_DIR
     # if its a file, use stem as tmp dir

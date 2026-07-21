@@ -116,6 +116,46 @@ def print_msg(msg: str, quiet: bool) -> None:
         secho(msg)
 
 
+# inline messages emitted by the task modules while processing a single file.
+# these are errors / warnings, so they are shown regardless of quiet mode.
+
+
+def print_manual_rename_warning(filename: Path, hint: str) -> None:
+    """Warn that a file with an extension mismatch has to be renamed by hand (several possible extensions)."""
+    secho(f"\nWARNING: you should manually rename {filename}", fg=colors.YELLOW)
+    secho(hint, fg=colors.YELLOW)
+
+
+def print_empty_source_warning(filename: Path) -> None:
+    """Warn that a file has an empty source."""
+    secho(f"\nWARNING: {filename} has empty source", fg=colors.YELLOW)
+
+
+def print_os_error(error: str) -> None:
+    """Report a filesystem error (rename / move / remove failure)."""
+    secho(error, fg=colors.RED)
+
+
+def print_root_not_found() -> None:
+    """Report that the given root folder does not exist."""
+    secho("root folder not found", fg=colors.RED)
+
+
+def print_unexpected_format_error(detail: str, filename: Path, target: Path) -> None:
+    """Report that a conversion produced a file in an unexpected format."""
+    secho(f"\tERROR: {detail} when converting {filename} to {target}", fg=colors.YELLOW, bold=True)
+
+
+def print_conversion_failed_error(filename: Path, target: Path) -> None:
+    """Report that a conversion produced no output file."""
+    secho(f"\tERROR failed to convert {filename} to {target}", fg=colors.RED, bold=True)
+
+
+def print_invalid_streams_error(filename: Path) -> None:
+    """Report that ffprobe could not read the streams of a file flagged for a stream check."""
+    secho(f"\t{filename} throwing errors. consider file", fg=colors.RED, bold=True)
+
+
 def _format_bite_size(bytes_size: int) -> str:
     """Convert a byte count to a human-readable MB / GB / TB string."""
     tmp = bytes_size / (1024**2)

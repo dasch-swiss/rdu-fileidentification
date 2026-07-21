@@ -1,9 +1,57 @@
-from typer import colors, secho
+from collections.abc import Iterable
 
-from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
-from fileidentification.definitions.settings import PLMsg
+from fileidentification.definitions.models import LogMsg, LogTables, Mode, Policies, PolicyParams, SfInfo
+from fileidentification.definitions.settings import FMT2EXT, PLMsg
+from fileidentification.tasks.console_output import print_invalid_streams_error
 from fileidentification.tasks.os_tasks import remove
 from fileidentification.wrappers.ffmpeg import ffmpeg_media_info
+
+
+def build_policies(
+    puids: Iterable[str],
+    default_policies: Policies,
+    mode: Mode,
+    *,
+    blank: bool = False,
+    extend: bool = False,
+    existing: Policies | None = None,
+) -> tuple[Policies, list[str]]:
+    """
+    Build the policy map for the encountered puids. Pure: no file I/O, no shared-state mutation.
+
+    blank: one accept-by-default entry per puid (no default lookup).
+    Otherwise each puid takes its default policy; puids without a default get an empty fallback policy
+    (unless in strict mode, where they are dropped).
+    extend: puids already present in `existing` keep their existing (hand-tuned) policy.
+    remove_original mode is propagated onto every resulting policy.
+
+    Returns (policies, blank_puids) where blank_puids are the puids that received an empty fallback policy.
+    """
+    policies: Policies = {}
+    blank_puids: list[str] = []
+
+    if blank:
+        for puid in puids:
+            policies[puid] = PolicyParams(format_name=FMT2EXT[puid]["name"], remove_original=mode.REMOVEORIGINAL)
+        return policies, blank_puids
+
+    for puid in puids:
+        if puid in default_policies:
+            policies[puid] = default_policies[puid]
+        # no default for this filetype and not strict: add an empty (blank) policy
+        if not mode.STRICT and puid not in default_policies:
+            policies[puid] = PolicyParams(format_name=FMT2EXT[puid]["name"])
+            blank_puids.append(puid)
+        # extend: keep an already existing policy for this puid
+        if extend and existing and puid in existing:
+            policies[puid] = existing[puid]
+            if puid in blank_puids:
+                blank_puids.remove(puid)
+        # propagate remove_original mode
+        if puid in policies and mode.REMOVEORIGINAL:
+            policies[puid].remove_original = mode.REMOVEORIGINAL
+
+    return policies, blank_puids
 
 
 def apply_policy(sfinfo: SfInfo, policies: Policies, log_tables: LogTables, strict: bool) -> None:
@@ -45,7 +93,7 @@ def _has_invalid_streams(sfinfo: SfInfo, puid: str) -> bool:
     """Return true if video and audio codec differ from archival standards"""
     streams = ffmpeg_media_info(sfinfo.path)
     if not streams:
-        secho(f"\t{sfinfo.filename} throwing errors. consider file", fg=colors.RED, bold=True)
+        print_invalid_streams_error(sfinfo.filename)
         return False
     if puid in ["fmt/569"]:
         # only the video codec has to be ffv1 -> return false as soon as any stream is ffv1
