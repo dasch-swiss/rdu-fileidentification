@@ -1,3 +1,5 @@
+import shlex
+import subprocess
 from pathlib import Path
 
 import pygfried
@@ -5,7 +7,6 @@ import pygfried
 from fileidentification.definitions.models import LogMsg, Policies, PolicyParams, SfInfo
 from fileidentification.definitions.settings import FPMsg
 from fileidentification.workspace import Workspace
-from fileidentification.wrappers.converter import convert
 from fileidentification.wrappers.tools import MediaTool, tool_for
 
 
@@ -55,6 +56,24 @@ def _verify(target: Path, sfinfo: SfInfo, expected: list[str]) -> SfInfo | None:
 
 
 # file migration
+def _run_tool(sfinfo: SfInfo, args: PolicyParams, tool: MediaTool, ws: Workspace) -> tuple[Path, str, str]:
+    """
+    Run the tool's conversion command in a per-file working directory.
+    Returns the constructed target path, a shell-quoted command string (for logging), and the tool's captured log.
+    """
+    wdir = ws.working_dir(sfinfo.filename)
+    if not wdir.exists():
+        wdir.mkdir(parents=True)
+
+    target = wdir / f"{sfinfo.filename.stem}.{args.target_container}"
+
+    cmd_list = tool.build_command(ws.abs_path(sfinfo.filename), args, target, wdir)
+    res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
+
+    cmd_str = " ".join(shlex.quote(p) for p in cmd_list)
+    return target, cmd_str, tool.read_log(res)
+
+
 def convert_file(sfinfo: SfInfo, policies: Policies, ws: Workspace) -> tuple[SfInfo | None, list[str], LogMsg | None]:
     """
     Convert a file according to its policy, then re-identify and verify the output.
@@ -65,8 +84,10 @@ def convert_file(sfinfo: SfInfo, policies: Policies, ws: Workspace) -> tuple[SfI
 
     args: PolicyParams = policies[sfinfo.processed_as]  # type: ignore[index]
     tool = tool_for(args.bin)
+    if tool is None:
+        raise ValueError(f"no conversion tool for bin {args.bin!r}")  # noqa: EM102, TRY003
 
-    target_path, cmd, logtext = convert(sfinfo, args, ws)
+    target_path, cmd, logtext = _run_tool(sfinfo, args, tool, ws)
 
     # strip abs paths from log output
     processing_log = None

@@ -305,7 +305,8 @@ class TestConvert:
 
         missing = tmp_path / "never.tif"  # converter produces no file -> failure, with a bin log
         monkeypatch.setattr(
-            "fileidentification.tasks.conversion.convert", lambda s, a, ws: (missing, "the cmd", "magick: boom")
+            "fileidentification.tasks.conversion._run_tool",
+            lambda s, a, tool, ws: (missing, "the cmd", "magick: boom"),
         )
 
         fh.convert()
