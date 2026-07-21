@@ -200,7 +200,7 @@ class FileHandler:
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
+            BarColumn(complete_style="green", finished_style="green"),
             MofNCompleteColumn(),
             TimeElapsedColumn(),
             transient=True,
