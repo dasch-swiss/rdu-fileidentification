@@ -1,7 +1,6 @@
 import shutil
 
 from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
-from fileidentification.tasks.console_output import print_os_error
 from fileidentification.workspace import Workspace
 
 
@@ -14,7 +13,6 @@ def remove(sfinfo: SfInfo, ws: Workspace, log_tables: LogTables) -> None:
         sfinfo.status.removed = True
         #  sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="file removed"))
     except OSError as e:
-        print_os_error(str(e))
         log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 
@@ -53,7 +51,6 @@ def move_tmp(
                 sfinfo.status.added = True
                 sfinfo.dest = None
             except OSError as e:
-                print_os_error(str(e))
                 log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
     return write_logs
