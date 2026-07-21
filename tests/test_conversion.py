@@ -1,10 +1,13 @@
-"""Unit tests for conversion._verify.
+"""Unit tests for tasks.conversion.
 
-_verify re-identifies a freshly converted file with pygfried and decides whether
-the conversion produced the expected format. pygfried is monkeypatched so the
-tests are deterministic and do not depend on a real conversion having run.
+_verify re-identifies a freshly converted file with pygfried and decides whether the conversion produced the
+expected format; pygfried is monkeypatched so the tests are deterministic. _run_tool is the module-internal seam
+that runs the tool command (its subprocess is faked); the per-bin command shape is owned by test_tools
+(MediaTool.build_command) and the working-dir math by test_workspace. convert_file wires the two together.
+Real per-bin conversions are covered by test_docker.
 """
 
+import shlex
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -14,10 +17,17 @@ import pytest
 from fileidentification.definitions.models import PolicyParams
 from fileidentification.definitions.settings import Bin, FPMsg
 from fileidentification.tasks import conversion as conv_mod
-from fileidentification.tasks.conversion import _add_media_info, _verify, convert_file
+from fileidentification.tasks.conversion import _add_media_info, _run_tool, _verify, convert_file
 from fileidentification.wrappers import tools
-from fileidentification.wrappers.tools import tool_for
+from fileidentification.wrappers.tools import MediaTool, tool_for
 from tests.conftest import fake_identify_payload, make_sfinfo, make_ws
+
+
+def _tool(bin_: str) -> MediaTool:
+    """Resolve a MediaTool for tests, narrowing away the None case (the bins used here are always known)."""
+    tool = tool_for(bin_)
+    assert tool is not None
+    return tool
 
 
 def _patch_identify(monkeypatch: pytest.MonkeyPatch, target: Path, puid: str) -> None:
@@ -117,7 +127,7 @@ def test_convert_file_strips_abs_paths_from_log(tmp_path: Path, monkeypatch: pyt
     target.write_bytes(b"data")
     _patch_identify(monkeypatch, target, puid="fmt/353")
     monkeypatch.setattr(
-        conv_mod, "convert", lambda s, a, ws: (target, "the cmd", "/root/sub/orig.jpg -> /tmp/tdir/out")
+        conv_mod, "_run_tool", lambda s, a, tool, ws: (target, "the cmd", "/root/sub/orig.jpg -> /tmp/tdir/out")
     )
     monkeypatch.setattr(conv_mod, "_add_media_info", lambda s, t, p: None)
 
@@ -140,7 +150,9 @@ def test_convert_file_returns_bin_log_on_failure_without_touching_origin(
     ws = make_ws("/root", "/tmp/tdir")
 
     missing_target = tmp_path / "never-created.tif"  # never written -> conversion failed
-    monkeypatch.setattr(conv_mod, "convert", lambda s, a, ws: (missing_target, "the cmd", "magick: some fatal error"))
+    monkeypatch.setattr(
+        conv_mod, "_run_tool", lambda s, a, tool, ws: (missing_target, "the cmd", "magick: some fatal error")
+    )
 
     policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
     result, _, bin_log = convert_file(origin, policies, ws)
@@ -152,3 +164,57 @@ def test_convert_file_returns_bin_log_on_failure_without_touching_origin(
     assert bin_log is not None
     assert bin_log.name == "magick"
     assert bin_log.msg == "magick: some fatal error"
+
+
+class TestRunTool:
+    """_run_tool resolves source/target/working-dir and runs the tool command; the subprocess is faked here.
+
+    Covers only _run_tool's own wiring: source & target resolution, working-dir creation, the log stream it
+    returns, and shell-quoting of the printable command. Real per-bin conversions are covered by test_docker.
+    """
+
+    @pytest.fixture
+    def capture_cmd(self, monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
+        """Capture the cmd_list passed to subprocess.run inside conversion."""
+        calls: list[list[str]] = []
+
+        def fake_run(cmd: list[str], **kwargs: Any) -> SimpleNamespace:
+            calls.append(cmd)
+            return SimpleNamespace(stdout="out", stderr="err", returncode=0)
+
+        monkeypatch.setattr("fileidentification.tasks.conversion.subprocess.run", fake_run)
+        return calls
+
+    def test_wires_source_target_and_creates_working_dir(self, capture_cmd: list[list[str]], tmp_path: Path) -> None:
+        s = make_sfinfo("clip.mp4", md5="abcdef0000")
+        ws = make_ws(tmp_path, tmp_path)
+        args = PolicyParams(
+            accepted=False, bin="ffmpeg", target_container="mkv", processing_args="-c:v ffv1", expected=["fmt/569"]
+        )
+        target, _cmd_str, logtext = _run_tool(s, args, _tool(args.bin), ws)
+        cmd = capture_cmd[0]
+        assert str(ws.abs_path(s.filename)) in cmd  # source resolved from the workspace
+        assert cmd[-1] == str(target)
+        assert target.name == "clip.mkv"  # named from target_container
+        assert target.parent.is_dir()  # the working dir was created
+        assert logtext == "err"  # log comes from the tool's stream (ffmpeg: stderr)
+
+    def test_magick_places_source_and_target(self, capture_cmd: list[list[str]], tmp_path: Path) -> None:
+        # magick puts the source positionally (no -i), so guard that _run_tool wires the other command shape too
+        s = make_sfinfo("clip.mp4", md5="abcdef0000")
+        ws = make_ws(tmp_path, tmp_path)
+        args = PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
+        target, _, _ = _run_tool(s, args, _tool(args.bin), ws)
+        assert capture_cmd[0][-2:] == [str(ws.abs_path(s.filename)), str(target)]
+        assert target.name == "clip.tif"
+
+    def test_cmd_str_is_shell_quoted(self, capture_cmd: list[list[str]], tmp_path: Path) -> None:
+        s = make_sfinfo("my clip.mp4", md5="abcdef0000")
+        ws = make_ws(tmp_path, tmp_path)
+        args = PolicyParams(
+            accepted=False, bin="ffmpeg", target_container="mkv", processing_args="-c:v ffv1", expected=["fmt/569"]
+        )
+        _target, cmd_str, _ = _run_tool(s, args, _tool(args.bin), ws)
+        # a path with a space must be quoted so the string is copy-pasteable
+        assert shlex.quote(str(ws.abs_path(s.filename))) in cmd_str
+        assert "'" in cmd_str  # the space forced shell quoting

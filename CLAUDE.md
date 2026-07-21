@@ -78,8 +78,9 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 
 ### Wrappers (`fileidentification/wrappers/`)
 
-- `converter.py` — builds and runs shell commands for ffmpeg/magick/soffice; each conversion writes to a working subdirectory `__fileidentification/<filename>_<pathhash[:6]>/` (the hash is of the file's relative path, so identical files at different paths don't collide)
 - `ffmpeg.py` / `imagemagick.py` — media info extraction helpers
+
+Running a converter (building and running the shell command, writing to a working subdirectory `__fileidentification/<filename>_<pathhash[:6]>/` — the hash is of the file's relative path, so identical files at different paths don't collide) lives in `tasks/conversion.py` (`_run_tool`), with the per-bin command shape owned by the `MediaTool` seam in `wrappers/tools.py`.
 
 ### Definitions (`fileidentification/definitions/`)
 
