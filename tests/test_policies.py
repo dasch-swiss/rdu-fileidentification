@@ -23,6 +23,7 @@ def _unknown_puid() -> str:
     defaults = json.loads(DEFAULTPOLICIES.read_text())["policies"]
     return next(p for p in FMT2EXT if p not in defaults)
 
+
 ACCEPTED = PolicyParams(format_name="JPEG", accepted=True)
 CONVERT = PolicyParams(format_name="JPEG", accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
 
