@@ -73,7 +73,7 @@ def convert_file(sfinfo: SfInfo, policies: Policies, ws: Workspace) -> tuple[SfI
 
     # strip abs paths from log output
     processing_log = None
-    logtext = logtext.replace(f"{ws.root_folder}/", "").replace(f"{ws.tdir}/", "")
+    logtext = logtext.replace(f"{ws.root_folder}/", "").replace(f"{ws.tmp_dir}/", "")
     if logtext:
         processing_log = LogMsg(name=f"{args.bin}", msg=logtext)
 

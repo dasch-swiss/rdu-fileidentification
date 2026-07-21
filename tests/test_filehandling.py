@@ -63,9 +63,7 @@ class TestBuildStack:
         (root / "sub" / "b.jpg").write_bytes(b"y")
 
         fh = FileHandler()
-        fh.fp.TMP_DIR = tmp_path / "tmp"
-        fh.fp.LOGJSON = fh.fp.TMP_DIR / "_log.json"  # absent -> forces a scan
-        fh.ws = make_ws(root, fh.fp.TMP_DIR)
+        fh.ws = make_ws(root, tmp_path / "tmp")  # ws.logjson absent -> forces a scan
         monkeypatch.setattr("fileidentification.filehandling.pygfried", _fake_pygfried())
 
         fh._build_stack(root)
@@ -82,14 +80,14 @@ class TestBuildStack:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         fh = FileHandler()
-        fh.fp.TMP_DIR = tmp_path / "tmp"
-        fh.fp.TMP_DIR.mkdir()
-        fh.fp.LOGJSON = fh.fp.TMP_DIR / "_log.json"
+        tmp = tmp_path / "tmp"
+        tmp.mkdir()
+        fh.ws = make_ws(tmp_path, tmp)
 
         active = make_sfinfo("sub/a.jpg", md5="a" * 32)
         removed = make_sfinfo("sub/b.jpg", md5="b" * 32)
         removed.status.removed = True
-        fh.fp.LOGJSON.write_text(
+        fh.ws.logjson.write_text(
             json.dumps({"files": [json.loads(active.model_dump_json()), json.loads(removed.model_dump_json())]})
         )
 
@@ -145,7 +143,6 @@ class TestRunTriggersReencode:
         fh = FileHandler()
         order: list[str] = []
         # stub out every heavy step so we only observe the branch logic in run()
-        monkeypatch.setattr("fileidentification.filehandling.set_filepaths", lambda *a, **k: None)
         monkeypatch.setattr(fh, "_build_stack", lambda root: order.append("build"))
         monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: order.append("policies"))
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
@@ -164,7 +161,6 @@ class TestRunTriggersReencode:
     def test_reencode_not_called_when_apply_set(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         fh = FileHandler()
         order: list[str] = []
-        monkeypatch.setattr("fileidentification.filehandling.set_filepaths", lambda *a, **k: None)
         monkeypatch.setattr(fh, "_build_stack", lambda root: None)
         monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: None)
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
@@ -246,13 +242,13 @@ class TestGenPolicies:
 class TestReadPolicies:
     def test_missing_file_exits(self, tmp_path: Path) -> None:
         fh = FileHandler()
-        fh.fp.LOGJSON = tmp_path / "_log.json"
+        fh.ws = make_ws(tmp_path, tmp_path)  # write_logs (on failure) targets ws.logjson
         with pytest.raises(SystemExit):
             fh._read_policies(tmp_path / "missing.json")
 
     def test_invalid_policy_exits(self, tmp_path: Path) -> None:
         fh = FileHandler()
-        fh.fp.LOGJSON = tmp_path / "_log.json"
+        fh.ws = make_ws(tmp_path, tmp_path)  # write_logs (on failure) targets ws.logjson
         bad = tmp_path / "bad.json"
         bad.write_text(json.dumps({"policies": {"fmt/43": {"bin": "notabin"}}}))
         with pytest.raises(SystemExit):
@@ -278,22 +274,22 @@ class TestResolvePolicies:
 
     def test_generates_when_nothing_present(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         fh = FileHandler()
-        fh.fp.POLJSON = tmp_path / "_policies.json"  # does not exist
+        fh.ws = make_ws(tmp_path, tmp_path)  # ws.poljson does not exist
         calls = self._spy(fh, monkeypatch)
         fh._resolve_policies(None)
         assert calls["gen"] and not calls["read"]
 
     def test_reads_default_location_when_present(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         fh = FileHandler()
-        fh.fp.POLJSON = tmp_path / "_policies.json"
-        fh.fp.POLJSON.write_text("{}")
+        fh.ws = make_ws(tmp_path, tmp_path)
+        fh.ws.poljson.write_text("{}")
         calls = self._spy(fh, monkeypatch)
         fh._resolve_policies(None)
-        assert calls["read"] == [fh.fp.POLJSON] and not calls["gen"]
+        assert calls["read"] == [fh.ws.poljson] and not calls["gen"]
 
     def test_reads_external_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         fh = FileHandler()
-        fh.fp.POLJSON = tmp_path / "_policies.json"
+        fh.ws = make_ws(tmp_path, tmp_path)
         external = tmp_path / "ext.json"
         calls = self._spy(fh, monkeypatch)
         fh._resolve_policies(external)
@@ -301,7 +297,7 @@ class TestResolvePolicies:
 
     def test_extend_triggers_gen_after_read(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         fh = FileHandler()
-        fh.fp.POLJSON = tmp_path / "_policies.json"
+        fh.ws = make_ws(tmp_path, tmp_path)
         external = tmp_path / "ext.json"
         calls = self._spy(fh, monkeypatch)
         fh._resolve_policies(external, extend=True)
@@ -388,7 +384,7 @@ class TestConvert:
     ) -> None:
         # the failed sfinfo appears in both _log.json sections, but its failure entry is recorded only in "errors"
         fh = FileHandler()
-        fh.fp.LOGJSON = tmp_path / "_log.json"
+        fh.ws = make_ws(tmp_path, tmp_path)
         origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
         origin.status.pending = True
         fh.stack = [origin]
@@ -403,7 +399,7 @@ class TestConvert:
         fh.convert()
         fh.write_logs()
 
-        data = json.loads(fh.fp.LOGJSON.read_text())
+        data = json.loads(fh.ws.logjson.read_text())
         files_logs = " ".join(log["msg"] for f in data["files"] for log in f.get("processing_logs", []))
         errors_logs = " ".join(log["msg"] for e in data["errors"] for log in e.get("processing_logs", []))
         assert "conversion failed" not in files_logs and "magick boom detail" not in files_logs  # nothing in "files"
@@ -415,7 +411,6 @@ class TestConvert:
     ) -> None:
         # end to end: the bin's log ends up only in the "errors" copy, not in "files", and is never printed
         fh = FileHandler()
-        fh.fp.LOGJSON = tmp_path / "_log.json"
         fh.ws = make_ws(tmp_path, tmp_path)
         origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
         origin.status.pending = True
@@ -439,7 +434,7 @@ class TestConvert:
         assert not any(log.name == "magick" for log in origin.processing_logs)
 
         fh.write_logs()
-        data = json.loads(fh.fp.LOGJSON.read_text())
+        data = json.loads(fh.ws.logjson.read_text())
         files_logs = " ".join(log["msg"] for f in data["files"] for log in f.get("processing_logs", []))
         errors_logs = " ".join(log["msg"] for e in data["errors"] for log in e.get("processing_logs", []))
         assert "magick: boom" not in files_logs  # not in "files"
@@ -453,27 +448,27 @@ class TestRemoveTmpCleanup:
     def test_prunes_empty_dirs_but_keeps_nonempty(self, tmp_path: Path) -> None:
         fh = FileHandler()
         fh.mode.QUIET = True
-        fh.fp.TMP_DIR = tmp_path / "tmp"
-        (fh.fp.TMP_DIR / "empty" / "nested").mkdir(parents=True)  # both levels empty
-        (fh.fp.TMP_DIR / "keep").mkdir()
-        (fh.fp.TMP_DIR / "keep" / "file.log").write_bytes(b"x")
+        fh.ws = make_ws(tmp_path, tmp_path / "tmp")
+        (fh.ws.tmp_dir / "empty" / "nested").mkdir(parents=True)  # both levels empty
+        (fh.ws.tmp_dir / "keep").mkdir()
+        (fh.ws.tmp_dir / "keep" / "file.log").write_bytes(b"x")
         fh.stack = []  # nothing to move
 
         fh.remove_tmp(tmp_path)
 
-        assert not (fh.fp.TMP_DIR / "empty").exists()  # empty tree pruned bottom-up
-        assert (fh.fp.TMP_DIR / "keep" / "file.log").is_file()  # non-empty folder untouched
-        assert fh.fp.TMP_DIR.is_dir()  # the (non-empty) tmp root itself survives
+        assert not (fh.ws.tmp_dir / "empty").exists()  # empty tree pruned bottom-up
+        assert (fh.ws.tmp_dir / "keep" / "file.log").is_file()  # non-empty folder untouched
+        assert fh.ws.tmp_dir.is_dir()  # the (non-empty) tmp root itself survives
 
 
 class TestWriteLogs:
     def test_csv_export_writes_header_and_rows(self, tmp_path: Path) -> None:
         fh = FileHandler()
-        fh.fp.LOGJSON = tmp_path / "_log.json"
+        fh.ws = make_ws(tmp_path, tmp_path)
         fh.stack = [make_sfinfo("a.jpg"), make_sfinfo("b.jpg")]
         fh.write_logs(to_csv=True)
 
-        assert fh.fp.LOGJSON.is_file()
+        assert fh.ws.logjson.is_file()
         csv_file = tmp_path / "_log.json.csv"
         assert csv_file.is_file()
         lines = csv_file.read_text().splitlines()
@@ -482,7 +477,7 @@ class TestWriteLogs:
 
     def test_no_csv_when_flag_unset(self, tmp_path: Path) -> None:
         fh = FileHandler()
-        fh.fp.LOGJSON = tmp_path / "_log.json"
+        fh.ws = make_ws(tmp_path, tmp_path)
         fh.stack = [make_sfinfo("a.jpg")]
         fh.write_logs(to_csv=False)
         assert not (tmp_path / "_log.json.csv").exists()
@@ -492,7 +487,7 @@ class TestWriteLogs:
     ) -> None:
         # regression: print_processing_errors must run before dump_errors() empties the table
         fh = FileHandler()
-        fh.fp.LOGJSON = tmp_path / "_log.json"
+        fh.ws = make_ws(tmp_path, tmp_path)
         sfinfo = make_sfinfo("sub/orig.jpg")
         fh.stack = [sfinfo]
         fh.log_tables.processing_error_add(LogMsg(name="magick", msg="conversion failed [magick] boom"), sfinfo)
@@ -507,9 +502,8 @@ class TestWriteLogs:
 class TestInspectMode:
     def test_writes_dated_report_and_removes_policies(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         fh = FileHandler()
-        fh.fp.TMP_DIR = tmp_path
-        fh.fp.POLJSON = tmp_path / "_policies.json"
-        fh.fp.POLJSON.write_text("{}")
+        fh.ws = make_ws(tmp_path, tmp_path)
+        fh.ws.poljson.write_text("{}")
 
         active = make_sfinfo("a.jpg")
         skipped_removed = make_sfinfo("b.jpg")
@@ -521,8 +515,10 @@ class TestInspectMode:
 
         fh.inspect()
 
-        assert not fh.fp.POLJSON.exists()  # policies file deleted so report is standalone
-        assert fh.fp.LOGJSON.name.endswith("_report.json")
+        assert not fh.ws.poljson.exists()  # policies file deleted so report is standalone
+        reports = list(fh.ws.tmp_dir.glob("*_report.json"))
+        assert len(reports) == 1  # a dated report was written ...
+        assert not fh.ws.logjson.exists()  # ... instead of the canonical processing log
         assert probed == [active]  # removed files are skipped
 
 

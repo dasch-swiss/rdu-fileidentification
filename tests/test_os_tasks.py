@@ -5,43 +5,10 @@ from pathlib import Path
 import pytest
 
 from fileidentification.definitions.models import LogTables, PolicyParams, SfInfo
-from fileidentification.definitions.settings import LOGJSON, POLJSON, RMV_DIR, TMP_DIR
-from fileidentification.tasks.os_tasks import move_tmp, remove, set_filepaths
-from fileidentification.workspace import FilePaths, Workspace
+from fileidentification.definitions.settings import RMV_DIR
+from fileidentification.tasks.os_tasks import move_tmp, remove
+from fileidentification.workspace import Workspace
 from tests.conftest import make_sfinfo, make_ws
-
-
-class TestSetFilepaths:
-    def test_directory_root(self, tmp_path: Path) -> None:
-        fp = FilePaths()
-        set_filepaths(fp, tmp_path)
-        assert fp.TMP_DIR == tmp_path / TMP_DIR
-        assert fp.TMP_DIR.is_dir()
-        assert fp.LOGJSON == fp.TMP_DIR / LOGJSON
-        assert fp.POLJSON == fp.TMP_DIR / POLJSON
-
-    def test_file_root_uses_stem(self, tmp_path: Path) -> None:
-        f = tmp_path / "movie.mp4"
-        f.write_bytes(b"x")
-        fp = FilePaths()
-        set_filepaths(fp, f)
-        assert fp.TMP_DIR == tmp_path / "movie"
-        assert fp.TMP_DIR.is_dir()
-
-    def test_custom_tmp_dir_overrides(self, tmp_path: Path) -> None:
-        custom = tmp_path / "elsewhere"
-        fp = FilePaths()
-        set_filepaths(fp, tmp_path, tmp_dir=custom)
-        assert fp.TMP_DIR == custom
-        assert custom.is_dir()
-
-    def test_nonexistent_root_exits(self, tmp_path: Path) -> None:
-        with pytest.raises(SystemExit):
-            set_filepaths(FilePaths(), tmp_path / "does-not-exist")
-
-    def test_dot_root_exits(self) -> None:
-        with pytest.raises(SystemExit):
-            set_filepaths(FilePaths(), Path())
 
 
 class TestRemove:
@@ -57,7 +24,7 @@ class TestRemove:
 
         assert s.status.removed
         assert not f.exists()
-        assert (ws.tdir / RMV_DIR / "bad.mp4").is_file()
+        assert (ws.tmp_dir / RMV_DIR / "bad.mp4").is_file()
 
     def test_missing_source_records_processing_error(self, tmp_path: Path) -> None:
         ws = make_ws(tmp_path / "root", tmp_path / "tdir")
@@ -147,7 +114,7 @@ class TestMoveTmp:
 
         assert original.status.removed is True
         assert not ws.abs_path(original.filename).exists()
-        assert (ws.tdir / RMV_DIR / "sub" / "orig.jpg").is_file()
+        assert (ws.tmp_dir / RMV_DIR / "sub" / "orig.jpg").is_file()
         assert (root / "sub" / "orig.tif").is_file()  # conversion still placed
 
     def test_policy_remove_original_quarantines_even_without_flag(self, tmp_path: Path) -> None:

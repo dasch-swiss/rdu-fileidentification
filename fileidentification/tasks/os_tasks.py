@@ -1,11 +1,8 @@
 import shutil
-import sys
-from pathlib import Path
 
 from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
-from fileidentification.definitions.settings import LOGJSON, POLJSON, TMP_DIR
-from fileidentification.tasks.console_output import print_os_error, print_root_not_found
-from fileidentification.workspace import FilePaths, Workspace
+from fileidentification.tasks.console_output import print_os_error
+from fileidentification.workspace import Workspace
 
 
 def remove(sfinfo: SfInfo, ws: Workspace, log_tables: LogTables) -> None:
@@ -60,28 +57,3 @@ def move_tmp(
                 log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
     return write_logs
-
-
-def set_filepaths(fp: FilePaths, root_folder: Path, tmp_dir: Path | None = None) -> None:
-    """
-    Resolve and create the tmp directory and set LOGJSON / POLJSON paths on fp.
-    Defaults to <root_folder>/__fileidentification; if root_folder is a file, uses <parent>/<stem>.
-    An explicit tmp_dir overrides the default.
-    """
-    # assert rootfolder
-    if root_folder.__fspath__() == "." or not root_folder.exists():
-        print_root_not_found()
-        sys.exit(1)
-    fp.TMP_DIR = root_folder / TMP_DIR
-    # if its a file, use stem as tmp dir
-    if root_folder.is_file():
-        fp.TMP_DIR = root_folder.parent / root_folder.stem
-    # if tmp dir is passed externally
-    if tmp_dir:
-        fp.TMP_DIR = tmp_dir
-
-    if not fp.TMP_DIR.is_dir():
-        fp.TMP_DIR.mkdir(parents=True)
-
-    fp.LOGJSON = fp.TMP_DIR / LOGJSON
-    fp.POLJSON = fp.TMP_DIR / POLJSON

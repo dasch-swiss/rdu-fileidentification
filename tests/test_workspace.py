@@ -1,12 +1,16 @@
-"""Unit tests for the Workspace path calculator.
+"""Unit tests for the Workspace path module.
 
-Pure path arithmetic — no disk is touched except the single-file-target case (which needs a real file
-so `is_file()` fires) and nothing shells out. Covers the portability, cross-volume tmp, and
-duplicate-basename cases the refactor depends on.
+The frozen dataclass is pure path arithmetic — no disk, no shelling out — so it is constructed directly.
+The `for_run` factory is the impure entry point (validate root, normalize a single-file target, create the
+tmp dir); its tests touch a real tmp dir. Covers the portability, cross-volume tmp, and duplicate-basename
+cases the refactor depends on.
 """
 
 from pathlib import Path
 
+import pytest
+
+from fileidentification.definitions.settings import LOGJSON, POLJSON, TMP_DIR
 from fileidentification.workspace import Workspace
 
 
@@ -70,14 +74,44 @@ class TestCrossVolumeTdir:
         assert ws.removed_dest(Path("a.jpg")) == Path("/mnt/external/tmp/_REMOVED/a.jpg")
 
 
-class TestSingleFileTarget:
-    def test_root_folder_normalized_to_parent(self, tmp_path: Path) -> None:
+class TestDerivedPaths:
+    def test_logjson_and_poljson_derive_from_tmp_dir(self) -> None:
+        ws = Workspace(Path("/data/root"), Path("/data/root/__fileidentification"))
+        assert ws.logjson == Path("/data/root/__fileidentification") / LOGJSON
+        assert ws.poljson == Path("/data/root/__fileidentification") / POLJSON
+
+    def test_report_json_is_dated_under_tmp_dir(self) -> None:
+        ws = Workspace(Path("/data/root"), Path("/data/root/__fileidentification"))
+        assert ws.report_json("240101") == Path("/data/root/__fileidentification/240101_report.json")
+
+
+class TestForRun:
+    def test_directory_root_defaults_tmp_and_creates_it(self, tmp_path: Path) -> None:
+        ws = Workspace.for_run(tmp_path)
+        assert ws.root_folder == tmp_path
+        assert ws.tmp_dir == tmp_path / TMP_DIR
+        assert ws.tmp_dir.is_dir()
+        assert ws.logjson == tmp_path / TMP_DIR / LOGJSON
+
+    def test_file_root_normalizes_to_parent_and_uses_stem_tmp(self, tmp_path: Path) -> None:
         f = tmp_path / "solo.jpg"
         f.write_bytes(b"x")
-        ws = Workspace(f, tmp_path / "tmp")
-        assert ws.root_folder == tmp_path
+        ws = Workspace.for_run(f)
+        assert ws.root_folder == tmp_path  # single file -> parent is the root
+        assert ws.tmp_dir == tmp_path / "solo"  # stem is the default tmp dir
+        assert ws.tmp_dir.is_dir()
         assert ws.abs_path(Path("solo.jpg")) == tmp_path / "solo.jpg"
 
-    def test_directory_target_is_left_as_is(self, tmp_path: Path) -> None:
-        ws = Workspace(tmp_path, tmp_path / "tmp")
-        assert ws.root_folder == tmp_path
+    def test_custom_tmp_dir_overrides_and_is_created(self, tmp_path: Path) -> None:
+        custom = tmp_path / "elsewhere"
+        ws = Workspace.for_run(tmp_path, tmp_dir=custom)
+        assert ws.tmp_dir == custom
+        assert custom.is_dir()
+
+    def test_nonexistent_root_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="root folder not found"):
+            Workspace.for_run(tmp_path / "does-not-exist")
+
+    def test_dot_root_raises(self) -> None:
+        with pytest.raises(ValueError, match="root folder not found"):
+            Workspace.for_run(Path())
