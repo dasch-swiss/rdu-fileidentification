@@ -187,9 +187,7 @@ class FileHandler:
                     secho(f"You find the file with the log in {self.ws.working_dir(sample.filename)}")
 
     def inspect(self, to_csv: bool = False) -> None:
-        """
-        Probe all active files and write a dated report JSON without modifying the source files.
-        """
+        """Probe all active files and write a dated report JSON without modifying the source files."""
         self.ws.poljson.unlink(missing_ok=True)
         active = [s for s in self.stack if not (s.status.removed or s.dest)]
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
