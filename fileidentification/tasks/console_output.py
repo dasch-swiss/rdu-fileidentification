@@ -64,17 +64,21 @@ def print_diagnostic(log_tables: LogTables, mode: Mode) -> None:
             if FDMsg.EXTMISMATCH.name in log_tables.diagnostics:
                 secho("\n----------- Extension mismatch -----------", bold=True)
                 for sfinfo in log_tables.diagnostics[FDMsg.EXTMISMATCH.name]:
-                    secho(f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", bold=True)
+                    secho(
+                        f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", fg=colors.YELLOW, bold=True
+                    )
                     _print_logs(sfinfo.processing_logs)
             if FDMsg.WARNING.name in log_tables.diagnostics:
                 secho("\n----------- Warnings -----------", bold=True)
                 for sfinfo in log_tables.diagnostics[FDMsg.WARNING.name]:
-                    secho(f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", bold=True)
+                    secho(
+                        f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", fg=colors.YELLOW, bold=True
+                    )
                     _print_logs(sfinfo.warnings)
         if FDMsg.ERROR.name in log_tables.diagnostics:
             secho("\n----------- Errors -----------", bold=True)
             for sfinfo in log_tables.diagnostics[FDMsg.ERROR.name]:
-                secho(f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", bold=True)
+                secho(f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", fg=colors.RED, bold=True)
                 _print_logs(sfinfo.warnings)
 
 
@@ -97,7 +101,7 @@ def print_processing_errors(log_tables: LogTables) -> None:
     if log_tables.processing_errors:
         secho("\n----------- Processing errors -----------", bold=True)
         for err in log_tables.processing_errors:
-            secho(f"\n{_format_bite_size(err[1].filesize): >10}    {err[1].filename}", bold=True)
+            secho(f"\n{_format_bite_size(err[1].filesize): >10}    {err[1].filename}", fg=colors.RED, bold=True)
             _print_logs([err[0]])
 
 
