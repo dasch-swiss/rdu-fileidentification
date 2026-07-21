@@ -82,7 +82,7 @@ class FileHandler:
         for sfinfo in self.stack:
             if initial and not sfinfo.status.removed:
                 sfinfo.filename = self.ws.relativize(sfinfo.filename)
-            if not (sfinfo.status.removed or sfinfo.dest):
+            if sfinfo.is_active:
                 self.ba.append(sfinfo)
 
         print_siegfried_errors(ba=self.ba)
@@ -189,7 +189,7 @@ class FileHandler:
     def inspect(self, to_csv: bool = False) -> None:
         """Probe all active files and write a dated report JSON without modifying the source files."""
         self.ws.poljson.unlink(missing_ok=True)
-        active = [s for s in self.stack if not (s.status.removed or s.dest)]
+        active = [s for s in self.stack if s.is_active]
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Probing the files ...", total=None)
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -205,7 +205,7 @@ class FileHandler:
 
     def assert_integrity(self) -> None:
         """Probe all active files: remove corrupt ones and rename files with extension mismatches."""
-        active = [s for s in self.stack if not (s.status.removed or s.dest)]
+        active = [s for s in self.stack if s.is_active]
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Probing the files ...", total=None)
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -233,7 +233,7 @@ class FileHandler:
 
     def apply_policies(self) -> None:
         """Evaluate the policy for every active file and mark those that need conversion as pending."""
-        active = [s for s in self.stack if not (s.status.removed or s.dest)]
+        active = [s for s in self.stack if s.is_active]
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Applying policies ...", total=None)
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
