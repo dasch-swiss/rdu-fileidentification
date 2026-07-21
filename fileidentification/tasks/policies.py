@@ -93,11 +93,11 @@ def _write_policies(outpath: Path, policies: Policies, *, blank: bool, extend: b
     if blank:
         comment += " blank policies"
     else:
+        if extend:
+            comment += f" updating from {outpath}"
         comment += f" using default policies {DEFAULTPOLICIES}"
         if strict:
             comment += " in strict mode"
-        if extend:
-            comment += f" updating from {outpath}"
     jsonfile = PoliciesFile(name=outpath, comment=comment, policies=policies)
     jsonfile.name.write_text(jsonfile.model_dump_json(indent=4, exclude_none=True))
 
