@@ -3,14 +3,14 @@ import json
 import os
 import sys
 import threading
-from collections.abc import Callable, Iterable
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pygfried
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from typer import Exit, colors, secho
 
 from fileidentification.definitions.models import (
@@ -186,12 +186,24 @@ class FileHandler:
                     # the test output is not moved, so it lives in the sample's working dir
                     secho(f"You find the file with the log in {self.ws.working_dir(sample.filename)}")
 
-    def _run_parallel(self, items: Iterable[SfInfo], description: str, work: Callable[[SfInfo], object]) -> None:
-        """Run `work` over `items` on the thread pool under a transient spinner labelled `description`."""
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
-            prog.add_task(description=description, total=None)
+    def _run_parallel(self, items: list[SfInfo], description: str, work: Callable[[SfInfo], object]) -> None:
+        """
+        Run `work` over `items` on the thread pool, showing a progress bar (labelled `description`) that
+        advances as each file completes. Exceptions raised by `work` propagate via future.result().
+        """
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            transient=True,
+        ) as prog:
+            task = prog.add_task(description=description, total=len(items))
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                list(executor.map(work, items))
+                for future in as_completed([executor.submit(work, item) for item in items]):
+                    future.result()
+                    prog.advance(task)
 
     def inspect(self, to_csv: bool = False) -> None:
         """Probe all active files and write a dated report JSON without modifying the source files."""
