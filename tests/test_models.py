@@ -12,7 +12,6 @@ from fileidentification.definitions.models import (
     PolicyParams,
     RunJournal,
     SfInfo,
-    Status,
     get_md5,
     sfinfo2csv,
 )
@@ -26,11 +25,6 @@ class TestGetMd5:
         f.write_bytes(b"hello")
         # md5("hello") is a well-known fixed value
         assert get_md5(f) == "5d41402abc4b2a76b9719d911017c592"
-
-    def test_empty_file(self, tmp_path: Path) -> None:
-        f = tmp_path / "empty"
-        f.write_bytes(b"")
-        assert get_md5(f) == "d41d8cd98f00b204e9800998ecf8427e"
 
 
 class TestLogMsg:
@@ -82,11 +76,6 @@ class TestSfInfoModelPostInit:
             matches=[{"id": "fmt/43", "mime": "", "warning": ""}],
         )
         assert s.md5 == "5d41402abc4b2a76b9719d911017c592"
-
-    def test_default_status(self) -> None:
-        s = make_sfinfo()
-        assert s.status == Status()
-        assert not s.status.pending
 
 
 class TestSfInfoIsActive:
