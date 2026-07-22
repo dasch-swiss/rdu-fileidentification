@@ -124,8 +124,9 @@ class FileHandler:
             print_msg("\n --- Testing policies with a sample from the directory ---", self.mode.QUIET)
 
             for puid in puids:  # noqa: PLR1704
-                # we want the smallest file first for running the test
-                sample = self.ba.smallest_file(puid)
+                # test on a copy: convert_file mutates the sfinfo (logs, status.pending), and this is a
+                # diagnostic run that must not pollute the real stack object persisted to _log.json
+                sample = self.ba.smallest_file(puid).model_copy(deep=True)
                 secho(f"\n{puid}", fg=colors.YELLOW)
                 t_sfinfo, cmd, bin_log = convert_file(sample, self.policies, self.ws)
                 if t_sfinfo:
@@ -159,8 +160,12 @@ class FileHandler:
                     prog.advance(task)
 
     def inspect(self, to_csv: bool = False) -> None:
-        """Probe all active files and write a dated report JSON without modifying the source files."""
+        """
+        Probe all active files and write a dated report JSON without modifying the source files.
+        The scanned inventory is persisted to _log.json up front so a later run reloads it instead of rescanning.
+        """
         self.ws.poljson.unlink(missing_ok=True)
+        self.write_logs()  # persist the bare inventory so a rerun skips the pygfried scan
         active = [s for s in self.stack if s.is_active]
         self._run_parallel(
             active,

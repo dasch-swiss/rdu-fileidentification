@@ -7,7 +7,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 
-from fileidentification.definitions.settings import Bin, FDMsg, PLMsg, PVErr
+from fileidentification.definitions.settings import Bin, FDMsg, LogLevel, PLMsg, PVErr
 
 
 class LogMsg(BaseModel):
@@ -15,6 +15,7 @@ class LogMsg(BaseModel):
 
     name: str
     msg: str
+    level: LogLevel = LogLevel.INFO
     timestamp: datetime | None = None
 
     def model_post_init(self, context: Any, /) -> None:
@@ -109,18 +110,21 @@ class RunJournal(BaseModel):
 
     def diagnose(self, sfinfo: SfInfo, severity: FDMsg, msg: LogMsg) -> None:
         """
-        Record a diagnostic for the console report: append `msg` to the SfInfo's processing_logs and bucket the
-        SfInfo under `severity`. The report prints each bucketed file's full processing_logs. Thread-safe.
+        Record a diagnostic for the console report: set `msg`'s level from `severity`, append it to the SfInfo's
+        processing_logs, and bucket the SfInfo under `severity`. The report prints each bucketed file's full
+        processing_logs. Thread-safe.
         """
+        msg.level = LogLevel.ERROR if severity == FDMsg.ERROR else LogLevel.WARNING
         with self._lock:
             sfinfo.processing_logs.append(msg)
             self.diagnostics.setdefault(severity.name, []).append(sfinfo)
 
     def record_error(self, msg: LogMsg, sfinfo: SfInfo, details: list[LogMsg] | None = None) -> None:
         """
-        Thread-safely append a processing error.
+        Thread-safely append a processing error (the summary is marked error-level).
         details are extra LogMsgs (e.g. the converter's output) recorded only in the "errors" copy and not printed.
         """
+        msg.level = LogLevel.ERROR
         with self._lock:
             self.processing_errors.append((msg, sfinfo, details or []))
 

@@ -84,6 +84,14 @@ class PLMsg(StrEnum):
     SKIPPED = "file format is not in policies, skipped"
 
 
+class LogLevel(StrEnum):
+    """severity of a LogMsg entry"""
+
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+
+
 class FDMsg(StrEnum):
     """file diagnostic message"""
 

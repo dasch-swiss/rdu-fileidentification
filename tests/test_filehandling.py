@@ -408,7 +408,7 @@ class TestInspectMode:
         assert not fh.ws.poljson.exists()  # policies file deleted so report is standalone
         reports = list(fh.ws.tmp_dir.glob("*_report.json"))
         assert len(reports) == 1  # a dated report was written ...
-        assert not fh.ws.logjson.exists()  # ... instead of the canonical processing log
+        assert fh.ws.logjson.exists()  # ... and the inventory was persisted up front so a rerun skips the rescan
         assert probed == [active]  # removed files are skipped
 
 
@@ -466,3 +466,24 @@ class TestTestPolicies:
         out = capsys.readouterr().out
         assert "got fmt/5 instead" in out  # the failure reason from the sample's logs
         assert "stream error" in out  # the converter's own log
+
+    def test_does_not_mutate_the_original_sample(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # the diagnostic test runs on a copy: the real stack sample's logs and status must be untouched
+        fh = _fh_with_puids("fmt/199")
+        sample = make_sfinfo("small.mp4", puid="fmt/199", filesize=1)
+        fh.ba.puid_unique["fmt/199"] = [sample]
+        fh.policies = {
+            "fmt/199": PolicyParams(accepted=False, bin="ffmpeg", target_container="mp4", expected=["fmt/199"])
+        }
+
+        def failing(s: SfInfo, p: Policies, ws: Any) -> tuple[None, list[str], None]:
+            # mimic convert_file's side effects on the sfinfo it receives
+            s.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
+            s.status.pending = True
+            return None, ["cmd"], None
+
+        monkeypatch.setattr("fileidentification.filehandling.convert_file", failing)
+        fh._test_policies()
+
+        assert sample.processing_logs == []  # original left untouched (the copy absorbed the mutation)
+        assert sample.status.pending is False

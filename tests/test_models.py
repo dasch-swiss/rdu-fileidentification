@@ -15,7 +15,7 @@ from fileidentification.definitions.models import (
     get_md5,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import FDMsg, PLMsg, PVErr
+from fileidentification.definitions.settings import FDMsg, LogLevel, PLMsg, PVErr
 from tests.conftest import make_sfinfo
 
 
@@ -31,6 +31,9 @@ class TestLogMsg:
     def test_timestamp_autoset(self) -> None:
         msg = LogMsg(name="x", msg="y")
         assert msg.timestamp is not None
+
+    def test_default_level_is_info(self) -> None:
+        assert LogMsg(name="x", msg="y").level == LogLevel.INFO
 
     def test_timestamp_preserved(self) -> None:
         from datetime import UTC, datetime
@@ -107,6 +110,7 @@ class TestRunJournal:
         assert j.diagnostics[FDMsg.ERROR.name] == [a, b]  # files bucketed under the severity
         assert a.processing_logs[-1].msg == "corrupt a"  # message logged on the file's single log list
         assert b.processing_logs[-1].msg == "corrupt b"
+        assert a.processing_logs[-1].level == LogLevel.ERROR  # ERROR severity -> error level
 
     def test_diagnose_uses_processing_logs_for_every_severity(self) -> None:
         # extension mismatch is no longer special-cased: it writes to processing_logs like the others
@@ -115,12 +119,14 @@ class TestRunJournal:
         j.diagnose(s, FDMsg.EXTMISMATCH, LogMsg(name="filehandler", msg="wrong ext"))
         assert j.diagnostics[FDMsg.EXTMISMATCH.name] == [s]
         assert s.processing_logs[-1].msg == "wrong ext"
+        assert s.processing_logs[-1].level == LogLevel.WARNING  # non-corrupt severity -> warning level
 
     def test_error_records_returns_copies_and_leaves_originals(self) -> None:
         j = RunJournal()
         s = make_sfinfo()
         msg = LogMsg(name="x", msg="boom")
         j.record_error(msg, s)
+        assert msg.level == LogLevel.ERROR  # record_error marks the summary error-level
         dumped = j.error_records()
         assert dumped is not None
         assert msg in dumped[0].processing_logs  # error recorded in the returned (errors) copy
