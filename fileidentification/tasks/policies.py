@@ -5,11 +5,11 @@ from pathlib import Path
 
 from fileidentification.definitions.models import (
     LogMsg,
-    LogTables,
     Mode,
     Policies,
     PoliciesFile,
     PolicyParams,
+    RunJournal,
     SfInfo,
 )
 from fileidentification.definitions.settings import DEFAULTPOLICIES, FMT2EXT, FDMsg, PLMsg
@@ -151,7 +151,7 @@ def resolve_policies(
     return resolution
 
 
-def apply_policy(sfinfo: SfInfo, policies: Policies, ws: Workspace, log_tables: LogTables, strict: bool) -> None:
+def apply_policy(sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: RunJournal, strict: bool) -> None:
     """
     Decide what to do with the file based on its policy entry.
     Sets sfinfo.status.pending=True if the file needs conversion.
@@ -169,7 +169,7 @@ def apply_policy(sfinfo: SfInfo, policies: Policies, ws: Workspace, log_tables: 
         # in strict mode, move file
         if strict:
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"{PLMsg.NOTINPOLICIES}"))
-            remove(sfinfo, ws, log_tables)
+            remove(sfinfo, ws, journal)
             return
         # just flag it as skipped
         sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"{PLMsg.SKIPPED}"))
@@ -181,18 +181,17 @@ def apply_policy(sfinfo: SfInfo, policies: Policies, ws: Workspace, log_tables: 
         return
 
     # check if mp4 / mkv has correct stream (i.e. h264 and aac)
-    if puid in ["fmt/199", "fmt/569"] and _has_invalid_streams(sfinfo, puid, ws, log_tables):
+    if puid in ["fmt/199", "fmt/569"] and _has_invalid_streams(sfinfo, puid, ws, journal):
         sfinfo.status.pending = True
         return
 
 
-def _has_invalid_streams(sfinfo: SfInfo, puid: str, ws: Workspace, log_tables: LogTables) -> bool:
+def _has_invalid_streams(sfinfo: SfInfo, puid: str, ws: Workspace, journal: RunJournal) -> bool:
     """Return true if video and audio codec differ from archival standards"""
     streams = ffmpeg_media_info(ws.abs_path(sfinfo.filename))
     if not streams:
         # ffprobe read no streams for a file we meant to stream-check: record a warning for the end-of-phase report
-        sfinfo.warnings.append(LogMsg(name="ffmpeg", msg="could not read streams for the a/v stream check"))
-        log_tables.diagnostics_add(sfinfo, FDMsg.WARNING)
+        journal.diagnose(sfinfo, FDMsg.WARNING, LogMsg(name="ffmpeg", msg="could not read streams for the a/v stream check"))
         return False
     if puid in ["fmt/569"]:
         # only the video codec has to be ffv1 -> return false as soon as any stream is ffv1

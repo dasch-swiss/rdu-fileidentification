@@ -1,4 +1,4 @@
-from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
+from fileidentification.definitions.models import LogMsg, Policies, RunJournal, SfInfo
 from fileidentification.definitions.settings import FMT2EXT, FDMsg, FPMsg
 from fileidentification.tasks.os_tasks import remove
 from fileidentification.workspace import Workspace
@@ -6,35 +6,35 @@ from fileidentification.wrappers.tools import MediaTool, tool_for, tool_from_mim
 
 
 def assert_file_integrity(
-    sfinfo: SfInfo, policies: Policies, ws: Workspace, log_tables: LogTables, verbose: bool
+    sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: RunJournal, verbose: bool
 ) -> None:
     """
     Probe the file and act on the result: remove it if corrupt, rename it if the extension is wrong.
     If the format has only one known extension, the rename is done automatically;
     otherwise it is flagged in the diagnostics for a manual rename.
     """
-    res: FDMsg | None = inspect_file(sfinfo, policies, ws, log_tables, verbose)
+    res: FDMsg | None = inspect_file(sfinfo, policies, ws, journal, verbose)
     if res == FDMsg.ERROR:
-        remove(sfinfo, ws, log_tables)
+        remove(sfinfo, ws, journal)
     if res == FDMsg.EXTMISMATCH:
         if len(FMT2EXT[sfinfo.processed_as]["file_extensions"]) == 1:  # type: ignore[index]
             ext = "." + FMT2EXT[sfinfo.processed_as]["file_extensions"][-1]  # type: ignore[index]
-            _rename(sfinfo, ext, ws, log_tables)
+            _rename(sfinfo, ext, ws, journal)
         else:
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="you should manually rename the file"))
 
 
 def inspect_file(
-    sfinfo: SfInfo, policies: Policies, ws: Workspace, log_tables: LogTables, verbose: bool
+    sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: RunJournal, verbose: bool
 ) -> FDMsg | None:
     """
     Probe the file without making any filesystem changes.
     Returns ERROR if the file is corrupt, EXTMISMATCH if the extension is wrong, or None if the file is OK.
-    Populates sfinfo.media_info and sfinfo.warnings with the probe output.
+    Populates sfinfo.media_info and records any warnings / errors in the journal (which also logs them on the file).
     """
     if not sfinfo.processed_as:
         msg = LogMsg(name="filehandler", msg=f"{FPMsg.PUIDFAIL} for {sfinfo.filename}")
-        log_tables.processing_error_add(msg, sfinfo)
+        journal.record_error(msg, sfinfo)
         return None
 
     # select the tool out of the mimetype if not specified in policies: siegfried mime first, then the FMT2EXT fallback
@@ -47,25 +47,23 @@ def inspect_file(
                 sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msgm))
                 break
     # check if the file throws any error, warnings while open/processing it with the respective tool
-    if _has_error(sfinfo, tool, ws, log_tables, verbose):
+    if _has_error(sfinfo, tool, ws, journal, verbose):
         return FDMsg.ERROR
 
     if sfinfo.errors == FDMsg.EMPTYSOURCE:
-        # record as a warning so the end-of-phase report surfaces it (the WARNING bucket prints sfinfo.warnings)
-        sfinfo.warnings.append(LogMsg(name="siegfried", msg=FDMsg.EMPTYSOURCE))
-        log_tables.diagnostics_add(sfinfo, FDMsg.WARNING)
+        # record as a warning so the end-of-phase report surfaces it
+        journal.diagnose(sfinfo, FDMsg.WARNING, LogMsg(name="siegfried", msg=FDMsg.EMPTYSOURCE))
 
     # extension mismatch
     if sfinfo.matches[0]["warning"] == FDMsg.EXTMISMATCH:
         msg_txt = f"expecting one of the following ext: {list(FMT2EXT[sfinfo.processed_as]['file_extensions'])}"
-        sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg_txt))
-        log_tables.diagnostics_add(sfinfo, FDMsg.EXTMISMATCH)
+        journal.diagnose(sfinfo, FDMsg.EXTMISMATCH, LogMsg(name="filehandler", msg=msg_txt))
         return FDMsg.EXTMISMATCH
 
     return None
 
 
-def _rename(sfinfo: SfInfo, ext: str, ws: Workspace, log_tables: LogTables) -> None:
+def _rename(sfinfo: SfInfo, ext: str, ws: Workspace, journal: RunJournal) -> None:
     """
     Rename the file on disk to the given extension and update sfinfo.filename to the new portable relative path.
     If a file with the target name already exists, the MD5 prefix is appended to avoid collision.
@@ -81,10 +79,10 @@ def _rename(sfinfo: SfInfo, ext: str, ws: Workspace, log_tables: LogTables) -> N
         sfinfo.filename = ws.relativize(dest)
         sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
     except OSError as e:
-        log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
+        journal.record_error(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 
-def _has_error(sfinfo: SfInfo, tool: MediaTool | None, ws: Workspace, log_tables: LogTables, verbose: bool) -> bool:
+def _has_error(sfinfo: SfInfo, tool: MediaTool | None, ws: Workspace, journal: RunJournal, verbose: bool) -> bool:
     """
     Probe the file with the given tool and interpret the result.
     :param tool: the MediaTool used to probe the file; None or a non-probing tool (soffice) means no test.
@@ -107,11 +105,9 @@ def _has_error(sfinfo: SfInfo, tool: MediaTool | None, ws: Workspace, log_tables
     if result.specs and not sfinfo.media_info:
         sfinfo.media_info.append(LogMsg(name=tool.bin, msg=result.specs))
     if result.is_corrupt:
-        sfinfo.warnings.append(LogMsg(name=tool.bin, msg=result.warnings))
-        log_tables.diagnostics_add(sfinfo, FDMsg.ERROR)
+        journal.diagnose(sfinfo, FDMsg.ERROR, LogMsg(name=tool.bin, msg=result.warnings))
         return True
     # if warnings but file is readable
     if result.warnings:
-        sfinfo.warnings.append(LogMsg(name=tool.bin, msg=result.warnings))
-        log_tables.diagnostics_add(sfinfo, FDMsg.WARNING)
+        journal.diagnose(sfinfo, FDMsg.WARNING, LogMsg(name=tool.bin, msg=result.warnings))
     return False

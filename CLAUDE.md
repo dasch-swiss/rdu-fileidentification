@@ -59,10 +59,10 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 
 ### Key Models (`fileidentification/definitions/models.py`)
 
-- **`SfInfo`** — primary metadata object per file; wraps siegfried output and accumulates processing logs, status, warnings, and derived file info. The `processed_as` field holds the matched PUID.
+- **`SfInfo`** — primary metadata object per file; wraps siegfried output and accumulates its processing log (`processing_logs`), status, media info, and derived file info. The `processed_as` field holds the matched PUID.
 - **`PolicyParams`** — one policy entry: `bin` (ffmpeg/magick/soffice), `accepted`, `target_container`, `processing_args`, `expected` (list of PUIDs to verify output), `remove_original`
 - **`BasicAnalytics`** — groups `SfInfo` objects by PUID and tracks duplicates (by MD5)
-- **`LogTables`** — accumulates diagnostics and processing errors during a run. Thread-safe: `diagnostics_add` and `processing_error_add` both hold an internal `threading.Lock`.
+- **`RunJournal`** — the single record of what happened to each file during a run. `diagnose` writes a diagnostic (appends the message to the `SfInfo` — `processing_logs` for an extension mismatch, `warnings` otherwise — and buckets it by `FDMsg` severity for the console report); `record_error` records a processing failure; `error_records` returns the `"errors"`-section copies non-destructively (so the console and persisted views can be produced in any order). Thread-safe: `diagnose` and `record_error` hold an internal `threading.Lock`.
 - **`Mode`** — flags: `REMOVEORIGINAL`, `VERBOSE`, `STRICT`, `QUIET`
 - **`Workspace`** (`fileidentification/workspace.py`) — the single run-scoped path module; a frozen dataclass holding `root_folder` + `tmp_dir`, built once via `Workspace.for_run(root, tmp_dir)` (validates root, normalizes a single-file target, creates the tmp dir). Derives `logjson` (`_log.json`), `poljson` (`_policies.json`), and `report_json(ymd)`, plus `abs_path` / `working_dir` / `removed_dest`. `write_logs` targets `ws.logjson` by default; the read-only `inspect` mode passes `ws.report_json(ymd)` so its report stays separate from a processing run.
 
@@ -94,7 +94,7 @@ Running a converter (building and running the shell command, writing to a workin
 
 Thread-safety notes:
 - Each `SfInfo` is owned by exactly one worker — no locking needed on the object itself.
-- `LogTables` uses an internal lock for `diagnostics_add` and `processing_error_add`; always use these methods rather than appending to `processing_errors` directly.
+- `RunJournal` uses an internal lock for `diagnose` and `record_error`; always use these methods rather than mutating `diagnostics` / `processing_errors` directly.
 - `FileHandler._stack_lock` protects `self.stack.append` in `convert` (converted `SfInfo` objects appended from workers).
 - `os_tasks.remove` uses `mkdir(exist_ok=True)` to avoid races when multiple files in the same subdirectory are removed concurrently.
 

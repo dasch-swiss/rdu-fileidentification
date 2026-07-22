@@ -58,7 +58,6 @@ CSVFIELDS = [
     "modified",
     "errors",
     "processed_as",
-    "warnings",
     "media_info",
     "processing_logs",
     "derived_from",

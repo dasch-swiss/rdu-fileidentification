@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from fileidentification.definitions.models import LogTables, PolicyParams, SfInfo
+from fileidentification.definitions.models import PolicyParams, RunJournal, SfInfo
 from fileidentification.definitions.settings import RMV_DIR
 from fileidentification.tasks.os_tasks import move_tmp, remove
 from fileidentification.workspace import Workspace
@@ -20,7 +20,7 @@ class TestRemove:
         ws = make_ws(root, tmp_path / "tdir")
         s = make_sfinfo("bad.mp4")
 
-        remove(s, ws, LogTables())
+        remove(s, ws, RunJournal())
 
         assert s.status.removed
         assert not f.exists()
@@ -29,7 +29,7 @@ class TestRemove:
     def test_missing_source_records_processing_error(self, tmp_path: Path) -> None:
         ws = make_ws(tmp_path / "root", tmp_path / "tdir")
         s = make_sfinfo("gone.mp4")  # abs_path resolves under root but the file was never created
-        lt = LogTables()
+        lt = RunJournal()
 
         remove(s, ws, lt)
 
@@ -85,7 +85,7 @@ class TestMoveTmp:
         stack, original, converted, policies, root, ws = self._scenario(tmp_path)
         workdir = ws.working_file(original.filename, "orig.tif").parent
 
-        moved = move_tmp(stack, ws, policies, LogTables(), remove_original=False)
+        moved = move_tmp(stack, ws, policies, RunJournal(), remove_original=False)
 
         assert moved is True
         assert (root / "sub" / "orig.tif").is_file()
@@ -101,7 +101,7 @@ class TestMoveTmp:
         existing = root / "sub" / "orig.tif"
         existing.write_bytes(b"pre-existing")
 
-        move_tmp(stack, ws, policies, LogTables(), remove_original=False)
+        move_tmp(stack, ws, policies, RunJournal(), remove_original=False)
 
         assert existing.read_bytes() == b"pre-existing"  # untouched
         assert (root / "sub" / "orig_abc123.tif").is_file()  # md5[:6] suffix
@@ -110,7 +110,7 @@ class TestMoveTmp:
     def test_remove_original_flag_quarantines_source(self, tmp_path: Path) -> None:
         stack, original, _converted, policies, root, ws = self._scenario(tmp_path)
 
-        move_tmp(stack, ws, policies, LogTables(), remove_original=True)
+        move_tmp(stack, ws, policies, RunJournal(), remove_original=True)
 
         assert original.status.removed is True
         assert not ws.abs_path(original.filename).exists()
@@ -120,14 +120,14 @@ class TestMoveTmp:
     def test_policy_remove_original_quarantines_even_without_flag(self, tmp_path: Path) -> None:
         stack, original, _converted, policies, _root, ws = self._scenario(tmp_path, remove_in_policy=True)
 
-        move_tmp(stack, ws, policies, LogTables(), remove_original=False)
+        move_tmp(stack, ws, policies, RunJournal(), remove_original=False)
 
         assert original.status.removed is True
         assert not ws.abs_path(original.filename).exists()
 
     def test_nothing_to_move_returns_false(self) -> None:
         plain = make_sfinfo("a.jpg")  # no dest -> not a converted file
-        assert move_tmp([plain], make_ws(), {}, LogTables(), remove_original=False) is False
+        assert move_tmp([plain], make_ws(), {}, RunJournal(), remove_original=False) is False
 
     def test_move_failure_records_processing_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         stack, _original, converted, policies, _root, ws = self._scenario(tmp_path)
@@ -136,7 +136,7 @@ class TestMoveTmp:
             raise OSError
 
         monkeypatch.setattr("fileidentification.tasks.os_tasks.shutil.move", boom)
-        lt = LogTables()
+        lt = RunJournal()
 
         move_tmp(stack, ws, policies, lt, remove_original=False)
 

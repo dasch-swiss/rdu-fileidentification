@@ -259,8 +259,8 @@ class TestConvert:
         fh.convert()
 
         assert len(fh.stack) == 1  # nothing appended
-        assert fh.log_tables.processing_errors
-        err_msg = fh.log_tables.processing_errors[0][0].msg
+        assert fh.journal.processing_errors
+        err_msg = fh.journal.processing_errors[0][0].msg
         assert "conversion failed" in err_msg and "thecmd" in err_msg
 
     def test_failure_log_lands_in_errors_not_duplicated_in_files(
@@ -312,7 +312,7 @@ class TestConvert:
         fh.convert()
 
         # the summary is the failure reason (+cmd); the bin log rides along only as a detail
-        msg, _sfinfo, details = fh.log_tables.processing_errors[0]
+        msg, _sfinfo, details = fh.journal.processing_errors[0]
         assert "conversion failed" in msg.msg and "magick: boom" not in msg.msg
         assert [d.msg for d in details] == ["magick: boom"]
         # the origin (the "files" sfinfo) never receives the bin log
@@ -367,21 +367,26 @@ class TestWriteLogs:
         fh.write_logs(to_csv=False)
         assert not (tmp_path / "_log.json.csv").exists()
 
-    def test_prints_processing_errors_before_dump_clears_them(
+    def test_processing_errors_are_printed_and_persisted(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        # regression: print_processing_errors must run before dump_errors() empties the table
+        # error_records() is non-destructive, so the same error is both printed and written to "errors"
+        # regardless of order (the old print-before-dump ordering constraint is gone).
         fh = FileHandler()
         fh.ws = make_ws(tmp_path, tmp_path)
         sfinfo = make_sfinfo("sub/orig.jpg")
         fh.stack = [sfinfo]
-        fh.log_tables.processing_error_add(LogMsg(name="magick", msg="conversion failed [magick] boom"), sfinfo)
+        fh.journal.record_error(LogMsg(name="magick", msg="conversion failed [magick] boom"), sfinfo)
 
         fh.write_logs()
 
         out = capsys.readouterr().out
         assert "Processing errors" in out
         assert "conversion failed [magick] boom" in out
+        # and the same error survived into the persisted "errors" section (reading it did not clear the table)
+        data = json.loads(fh.ws.logjson.read_text())
+        errors_logs = " ".join(log["msg"] for e in data["errors"] for log in e.get("processing_logs", []))
+        assert "conversion failed [magick] boom" in errors_logs
 
 
 class TestInspectMode:
