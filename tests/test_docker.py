@@ -300,3 +300,67 @@ def test_fidr_single_file_input(stage: Callable[..., Path], fidr_image: str) -> 
     # for a file input the tmp dir is named after the file stem, not __fileidentification
     log = json.loads((work / "SampleJPGImage" / "_log.json").read_text())
     assert "fmt/43" in _puids(log)
+
+
+def test_rerun_reuses_log_and_does_not_duplicate(stage: Callable[..., Path], fidr_image: str) -> None:
+    """A second `-i` run reloads _log.json and skips files already probed — no re-probe, no duplicated logs.
+
+    Exercises the cross-invocation behaviour that in-process tests can only mock: status.probed persisted in
+    _log.json makes assert_integrity skip the file on the rerun, so its recorded warning is not appended twice.
+    """
+    name = "warn_wrong_data_type_tag.tiff"  # readable, kept, with a benign imagemagick warning
+    work = stage(name)
+
+    first = run_cli(fidr_image, work, "-i", "-v")
+    assert first.returncode == 0, first.stderr
+    rec1 = next(f for f in _read_log(work)["files"] if f["filename"] == name)
+    assert rec1["status"].get("probed") is True  # marked, and persisted to _log.json
+    warns1 = [log for log in rec1["processing_logs"] if log["name"] == "magick"]
+    assert warns1, "the imagemagick warning should be recorded on the first run"
+
+    # second run: the container (root) reads the root-written _log.json and reloads instead of rescanning
+    second = run_cli(fidr_image, work, "-i", "-v")
+    assert second.returncode == 0, second.stderr
+    rec2 = next(f for f in _read_log(work)["files"] if f["filename"] == name)
+    warns2 = [log for log in rec2["processing_logs"] if log["name"] == "magick"]
+    assert len(warns2) == len(warns1), "the rerun must not re-probe and duplicate the warning"
+
+
+def test_apply_twice_does_not_reconvert(stage: Callable[..., Path], fidr_image: str) -> None:
+    """A second `-a` run reloads _log.json and skips files already applied — no re-evaluation, no second conversion.
+
+    Without status.applied, the rerun would re-flag the original as pending and convert it again; the flag makes
+    apply_policies skip it, so exactly one converted file exists after both runs.
+    """
+    work = stage("SampleJPGImage.jpg")  # fmt/43, converted to tif by the default policy
+
+    first = run_cli(fidr_image, work, "-a")  # convert, but no -r so nothing is moved out of the working dir
+    assert first.returncode == 0, first.stderr
+    files1 = _read_log(work)["files"]
+    original = next(f for f in files1 if f["filename"] == "SampleJPGImage.jpg")
+    assert original["status"].get("applied") is True  # marked, and persisted to _log.json
+    assert len([f for f in files1 if f.get("derived_from")]) == 1  # converted exactly once
+
+    second = run_cli(fidr_image, work, "-a")
+    assert second.returncode == 0, second.stderr
+    files2 = _read_log(work)["files"]
+    assert len([f for f in files2 if f.get("derived_from")]) == 1  # still one -> the rerun did not re-convert
+
+
+def test_inspect_mode_reports_corruption_without_removing(stage: Callable[..., Path], fidr_image: str) -> None:
+    """`fidr --inspect` reports a corrupt file but — unlike `-i` — never removes or modifies it (read-only)."""
+    name = "corrupt.mp4"  # `-i` quarantines this; --inspect must only report it
+    work = stage(name)
+    proc = run_cli(fidr_image, work, "--inspect")
+    assert proc.returncode == 0, proc.stderr
+
+    assert (work / name).is_file()  # read-only: the corrupt file is NOT removed
+    assert not list((work / "__fileidentification").rglob("_REMOVED/**/*")), "nothing quarantined"
+    fid = work / "__fileidentification"
+    reports = list(fid.glob("*_report.json"))
+    assert len(reports) == 1, "a dated report should be written"
+    assert not (fid / "_policies.json").exists(), "inspect removes the policies file so the report is standalone"
+    assert (fid / "_log.json").is_file()  # the bare inventory is persisted so a later run skips the rescan
+    # the corruption is still detected and recorded (error-level) in the report — just not acted on
+    rec = next(f for f in json.loads(reports[0].read_text())["files"] if f["filename"] == name)
+    assert any(log.get("level") == "error" for log in rec.get("processing_logs", []))
