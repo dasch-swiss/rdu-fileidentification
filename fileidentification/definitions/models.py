@@ -7,7 +7,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
 
-from fileidentification.definitions.settings import Bin, FDMsg, PLMsg, PVErr
+from fileidentification.definitions.settings import Bin, FDMsg, LogLevel, PLMsg, PVErr
 
 
 class LogMsg(BaseModel):
@@ -15,6 +15,7 @@ class LogMsg(BaseModel):
 
     name: str
     msg: str
+    level: LogLevel = LogLevel.INFO
     timestamp: datetime | None = None
 
     def model_post_init(self, context: Any, /) -> None:
@@ -28,12 +29,16 @@ class Status(BaseModel):
     Processing state of a file.
     removed: moved to _REMOVED (corrupt or replaced by a conversion).
     pending: flagged for conversion but not yet converted.
-    added: this SfInfo is a conversion output that was added to the stack.
+    added: it is a conversion output that was added to the stack.
+    probed: integrity has been probed.
+    applied: policies have been applied.
     """
 
     removed: bool = False
     pending: bool = False
     added: bool = False
+    probed: bool = False
+    applied: bool = False
 
 
 # main metadata object where information is stored and added
@@ -109,18 +114,21 @@ class RunJournal(BaseModel):
 
     def diagnose(self, sfinfo: SfInfo, severity: FDMsg, msg: LogMsg) -> None:
         """
-        Record a diagnostic for the console report: append `msg` to the SfInfo's processing_logs and bucket the
-        SfInfo under `severity`. The report prints each bucketed file's full processing_logs. Thread-safe.
+        Record a diagnostic for the console report: set `msg`'s level from `severity`, append it to the SfInfo's
+        processing_logs, and bucket the SfInfo under `severity`. The report prints each bucketed file's full
+        processing_logs. Thread-safe.
         """
+        msg.level = LogLevel.ERROR if severity == FDMsg.ERROR else LogLevel.WARNING
         with self._lock:
             sfinfo.processing_logs.append(msg)
             self.diagnostics.setdefault(severity.name, []).append(sfinfo)
 
     def record_error(self, msg: LogMsg, sfinfo: SfInfo, details: list[LogMsg] | None = None) -> None:
         """
-        Thread-safely append a processing error.
+        Thread-safely append a processing error (the summary is marked error-level).
         details are extra LogMsgs (e.g. the converter's output) recorded only in the "errors" copy and not printed.
         """
+        msg.level = LogLevel.ERROR
         with self._lock:
             self.processing_errors.append((msg, sfinfo, details or []))
 
@@ -279,7 +287,7 @@ def sfinfo2csv(sfinfo: SfInfo) -> dict[str, str | int]:
     if sfinfo.media_info:
         res["media_info"] = sfinfo.media_info[0].msg
     if sfinfo.processing_logs:
-        res["processing_logs"] = " ; ".join([el.msg for el in sfinfo.processing_logs])
+        res["processing_logs"] = " ; ".join([f"{el.level}: {el.msg}" for el in sfinfo.processing_logs])
     if sfinfo.derived_from:
         res["derived_from"] = f"{sfinfo.derived_from.filename}"
     return res

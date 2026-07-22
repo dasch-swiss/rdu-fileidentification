@@ -52,17 +52,18 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 ### Data Flow
 
 1. `identify.py` — Typer CLI entrypoint; collects all flags and delegates to `FileHandler.run()`
-2. `FileHandler` (`fileidentification/filehandling.py`) — main orchestrator class; holds the processing state (`stack`, `policies`, `ba`, `log_tables`, `ws`, `mode`)
+2. `FileHandler` (`fileidentification/filehandling.py`) — main orchestrator class; holds the processing state (`stack`, `policies`, `ba`, `journal`, `ws`, `mode`)
 3. `_build_stack` populates `self.stack` — either reloading an existing `_log.json` or scanning the folder with pygfried; each file becomes an `SfInfo` object
-4. `_resolve_policies` sets `self.policies` (JSON keyed by PUID) — read from an existing file (`_read_policies`) or generated (`_gen_policies`)
-5. Tasks (integrity check, apply policies, convert, move) operate on the stack in sequence
+4. `_resolve_policies` sets `self.policies` (JSON keyed by PUID) via the `resolve_policies` module — read from the default location / an external file, or generated
+5. Tasks (integrity check, apply policies, convert, move) operate on the stack in sequence. `assert_integrity` and `apply_policies` skip files already marked `status.probed` / `status.applied`, so a re-run against a reloaded `_log.json` doesn't re-process or re-log them
 
 ### Key Models (`fileidentification/definitions/models.py`)
 
 - **`SfInfo`** — primary metadata object per file; wraps siegfried output and accumulates its processing log (`processing_logs`), status, media info, and derived file info. The `processed_as` field holds the matched PUID.
 - **`PolicyParams`** — one policy entry: `bin` (ffmpeg/magick/soffice), `accepted`, `target_container`, `processing_args`, `expected` (list of PUIDs to verify output), `remove_original`
 - **`BasicAnalytics`** — groups `SfInfo` objects by PUID and tracks duplicates (by MD5)
-- **`RunJournal`** — the single record of what happened to each file during a run. `diagnose` writes a diagnostic (appends the message to the `SfInfo`'s `processing_logs` and buckets the file by `FDMsg` severity for the console report, which prints each bucketed file's `processing_logs`); `record_error` records a processing failure; `error_records` returns the `"errors"`-section copies non-destructively (so the console and persisted views can be produced in any order). Thread-safe: `diagnose` and `record_error` hold an internal `threading.Lock`.
+- **`LogMsg`** — one timestamped log entry (`name`, `msg`, `level`, `timestamp`); `level` is a `LogLevel` (info/warning/error, default info) set by the journal and at explicit error sites.
+- **`RunJournal`** — the single record of what happened to each file during a run. `diagnose` writes a diagnostic (appends the message to the `SfInfo`'s `processing_logs`, sets its `level` from the `FDMsg` severity, and buckets the file by severity for the console report, which prints each bucketed file's `processing_logs`); `record_error` records a processing failure (marking the summary error-level); `error_records` returns the `"errors"`-section copies non-destructively (so the console and persisted views can be produced in any order). Thread-safe: `diagnose` and `record_error` hold an internal `threading.Lock`.
 - **`Mode`** — flags: `REMOVEORIGINAL`, `VERBOSE`, `STRICT`, `QUIET`
 - **`Workspace`** (`fileidentification/workspace.py`) — the single run-scoped path module; a frozen dataclass holding `root_folder` + `tmp_dir`, built once via `Workspace.for_run(root, tmp_dir)` (validates root, normalizes a single-file target, creates the tmp dir). Derives `logjson` (`_log.json`), `poljson` (`_policies.json`), and `report_json(ymd)`, plus `abs_path` / `working_dir` / `removed_dest`. `write_logs` targets `ws.logjson` by default; the read-only `inspect` mode passes `ws.report_json(ymd)` so its report stays separate from a processing run.
 
@@ -107,6 +108,6 @@ Contains alternative policy sets (e.g. `dasch_policies.json`). `just setdasch` c
 `Workspace.for_run` creates the tmp dir: `__fileidentification/` inside the target directory, `<parent>/<stem>/` for a single-file target, or a custom `--tmp-dir` (which may be on another volume). It holds:
 - `_policies.json` — generated or read-in policies
 - `_log.json` — cumulative log of all processing (appended across runs)
-- `<yymmdd>_report.json` — written by the read-only `--inspect` mode instead of `_log.json`
+- `<yymmdd>_report.json` — the read-only `--inspect` mode's findings; `--inspect` also writes the bare scanned inventory to `_log.json` up front so a rerun reloads it instead of rescanning
 - `_REMOVED/` — corrupt or removed files
 - `<filename>_<pathhash[:6]>/` — per-file conversion working directories with converted file

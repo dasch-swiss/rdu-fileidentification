@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 
 from fileidentification.definitions.models import PolicyParams
-from fileidentification.definitions.settings import Bin, FPMsg
+from fileidentification.definitions.settings import Bin, FPMsg, LogLevel
 from fileidentification.tasks import conversion as conv_mod
 from fileidentification.tasks.conversion import _add_media_info, _run_tool, _verify, convert_file
 from fileidentification.wrappers import tools
@@ -44,7 +44,7 @@ def test_missing_target_is_conversion_failure(tmp_path: Path) -> None:
     origin = make_sfinfo("sub/orig.jpg")
     result = _verify(tmp_path / "never-created.tif", origin, expected=["fmt/353"])
     assert result is None
-    assert any(FPMsg.CONVFAILED in log.msg for log in origin.processing_logs)
+    assert any(FPMsg.CONVFAILED in log.msg and log.level == LogLevel.ERROR for log in origin.processing_logs)
 
 
 def test_unexpected_format_is_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -62,6 +62,7 @@ def test_unexpected_format_is_rejected(tmp_path: Path, monkeypatch: pytest.Monke
     msgs = " ".join(log.msg for log in origin.processing_logs)
     assert FPMsg.NOTEXPECTEDFMT in msgs
     assert "fmt/353" in msgs and "fmt/43" in msgs  # expected vs. actual reported
+    assert origin.processing_logs[-1].level == LogLevel.ERROR  # unexpected-format is error-level
 
 
 def test_expected_format_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

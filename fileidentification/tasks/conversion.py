@@ -5,7 +5,7 @@ from pathlib import Path
 import pygfried
 
 from fileidentification.definitions.models import LogMsg, Policies, PolicyParams, SfInfo
-from fileidentification.definitions.settings import FPMsg
+from fileidentification.definitions.settings import FPMsg, LogLevel
 from fileidentification.workspace import Workspace
 from fileidentification.wrappers.tools import MediaTool, tool_for
 
@@ -45,12 +45,14 @@ def _verify(target: Path, sfinfo: SfInfo, expected: list[str]) -> SfInfo | None:
 
         else:
             p_error = f" did expect {expected}, got {target_sfinfo.processed_as} instead"
-            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"{FPMsg.NOTEXPECTEDFMT}{p_error}"))
+            sfinfo.processing_logs.append(
+                LogMsg(name="filehandler", msg=f"{FPMsg.NOTEXPECTEDFMT}{p_error}", level=LogLevel.ERROR)
+            )
             target_sfinfo = None
 
     else:
         # conversion error, nothing to analyse
-        sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"{FPMsg.CONVFAILED}"))
+        sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"{FPMsg.CONVFAILED}", level=LogLevel.ERROR))
 
     return target_sfinfo
 

@@ -159,6 +159,7 @@ def apply_policy(sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: Run
     Files marked accepted=True are also checked for invalid A/V streams (fmt/199, fmt/569) and flagged for
     re-encoding if needed.
     """
+    sfinfo.status.applied = True  # mark it so a re-run does not re-evaluate / re-log it
     puid = sfinfo.processed_as
     if not puid:
         return
