@@ -110,15 +110,13 @@ class TestSfInfoIsActive:
 
 
 class TestRunJournal:
-    def test_diagnose_indexes_the_pair_and_logs_the_message(self) -> None:
+    def test_diagnose_buckets_the_file_and_logs_the_message(self) -> None:
         j = RunJournal()
         a, b = make_sfinfo("a.jpg"), make_sfinfo("b.jpg")
         j.diagnose(a, FDMsg.ERROR, LogMsg(name="ffmpeg", msg="corrupt a"))
         j.diagnose(b, FDMsg.ERROR, LogMsg(name="ffmpeg", msg="corrupt b"))
-        bucket = j.diagnostics[FDMsg.ERROR.name]
-        assert [sfinfo for sfinfo, _ in bucket] == [a, b]  # files bucketed under the severity
-        assert [msg.msg for _, msg in bucket] == ["corrupt a", "corrupt b"]  # index carries the triggering message
-        assert a.processing_logs[-1].msg == "corrupt a"  # and the message is logged on the file's single log list
+        assert j.diagnostics[FDMsg.ERROR.name] == [a, b]  # files bucketed under the severity
+        assert a.processing_logs[-1].msg == "corrupt a"  # message logged on the file's single log list
         assert b.processing_logs[-1].msg == "corrupt b"
 
     def test_diagnose_uses_processing_logs_for_every_severity(self) -> None:
@@ -126,7 +124,7 @@ class TestRunJournal:
         j = RunJournal()
         s = make_sfinfo()
         j.diagnose(s, FDMsg.EXTMISMATCH, LogMsg(name="filehandler", msg="wrong ext"))
-        assert j.diagnostics[FDMsg.EXTMISMATCH.name] == [(s, s.processing_logs[-1])]
+        assert j.diagnostics[FDMsg.EXTMISMATCH.name] == [s]
         assert s.processing_logs[-1].msg == "wrong ext"
 
     def test_error_records_returns_copies_and_leaves_originals(self) -> None:

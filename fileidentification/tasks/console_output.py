@@ -57,15 +57,15 @@ def print_fmts(puids: list[str], ba: BasicAnalytics, policies: Policies, mode: M
 
 
 def _print_bucket(journal: RunJournal, severity: FDMsg, title: str) -> None:
-    """Print one diagnostics bucket: for each file, its filename and only the message that triggered it."""
-    entries = journal.diagnostics.get(severity.name)
-    if not entries:
+    """Print one diagnostics bucket: each file, then its processing logs for context."""
+    sfinfos = journal.diagnostics.get(severity.name)
+    if not sfinfos:
         return
     color = colors.RED if severity == FDMsg.ERROR else colors.YELLOW
     secho(f"\n----------- {title} -----------", bold=True)
-    for sfinfo, msg in entries:
+    for sfinfo in sfinfos:
         secho(f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", fg=color, bold=True)
-        _print_logs([msg])
+        _print_logs(sfinfo.processing_logs)
 
 
 def print_diagnostic(journal: RunJournal, mode: Mode) -> None:

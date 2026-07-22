@@ -103,18 +103,18 @@ class RunJournal(BaseModel):
     Always mutate via `diagnose` / `record_error`, which hold the internal lock.
     """
 
-    diagnostics: dict[str, list[tuple[SfInfo, LogMsg]]] = Field(default_factory=dict)
+    diagnostics: dict[str, list[SfInfo]] = Field(default_factory=dict)
     processing_errors: list[tuple[LogMsg, SfInfo, list[LogMsg]]] = Field(default_factory=list)
     _lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
 
     def diagnose(self, sfinfo: SfInfo, severity: FDMsg, msg: LogMsg) -> None:
         """
-        Record a diagnostic for the console report: append `msg` to the SfInfo's processing_logs and index the
-        (SfInfo, msg) pair under `severity`, so the report can show exactly the triggering message. Thread-safe.
+        Record a diagnostic for the console report: append `msg` to the SfInfo's processing_logs and bucket the
+        SfInfo under `severity`. The report prints each bucketed file's full processing_logs. Thread-safe.
         """
         with self._lock:
             sfinfo.processing_logs.append(msg)
-            self.diagnostics.setdefault(severity.name, []).append((sfinfo, msg))
+            self.diagnostics.setdefault(severity.name, []).append(sfinfo)
 
     def record_error(self, msg: LogMsg, sfinfo: SfInfo, details: list[LogMsg] | None = None) -> None:
         """
