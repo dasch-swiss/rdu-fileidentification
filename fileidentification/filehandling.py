@@ -55,9 +55,8 @@ class FileHandler:
 
     def _build_stack(self, root_folder: Path) -> None:
         """
-        Add sfinfos to stack.
-        Checks whether a log json at default location exists. if so, it adds the sfinfos to the stack from there,
-        otherwhise it scans the root_folder with pygfried and adds its output as sfinfos to the stack
+        Populate self.stack: reload the sfinfos from an existing _log.json at the default location if present,
+        otherwise scan root_folder with pygfried and add its output as sfinfos.
         """
         # if there is a log, try to read from there
         if self.ws.logjson.is_file():
