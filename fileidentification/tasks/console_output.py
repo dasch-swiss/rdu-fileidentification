@@ -7,7 +7,7 @@ from rich.style import Style
 from rich.table import Table
 from typer import colors, secho
 
-from fileidentification.definitions.models import BasicAnalytics, LogMsg, LogTables, Mode, Policies
+from fileidentification.definitions.models import BasicAnalytics, LogMsg, Mode, Policies, RunJournal
 from fileidentification.definitions.settings import FMT2EXT, FDMsg
 
 
@@ -56,30 +56,24 @@ def print_fmts(puids: list[str], ba: BasicAnalytics, policies: Policies, mode: M
     console.print(table)
 
 
-def print_diagnostic(log_tables: LogTables, mode: Mode) -> None:
+def _print_bucket(journal: RunJournal, severity: FDMsg, title: str) -> None:
+    """Print one diagnostics bucket: each file, then its processing logs for context."""
+    sfinfos = journal.diagnostics.get(severity.name)
+    if not sfinfos:
+        return
+    color = colors.RED if severity == FDMsg.ERROR else colors.YELLOW
+    secho(f"\n----------- {title} -----------", bold=True)
+    for sfinfo in sfinfos:
+        secho(f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", fg=color, bold=True)
+        _print_logs(sfinfo.processing_logs)
+
+
+def print_diagnostic(journal: RunJournal, mode: Mode) -> None:
     """Print corruption errors always, and (unless quiet) warnings and extension mismatches."""
-    # lists all corrupt files with the respective errors thrown
-    if log_tables.diagnostics:
-        if not mode.QUIET:
-            if FDMsg.EXTMISMATCH.name in log_tables.diagnostics:
-                secho("\n----------- Extension mismatch -----------", bold=True)
-                for sfinfo in log_tables.diagnostics[FDMsg.EXTMISMATCH.name]:
-                    secho(
-                        f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", fg=colors.YELLOW, bold=True
-                    )
-                    _print_logs(sfinfo.processing_logs)
-            if FDMsg.WARNING.name in log_tables.diagnostics:
-                secho("\n----------- Warnings -----------", bold=True)
-                for sfinfo in log_tables.diagnostics[FDMsg.WARNING.name]:
-                    secho(
-                        f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", fg=colors.YELLOW, bold=True
-                    )
-                    _print_logs(sfinfo.warnings)
-        if FDMsg.ERROR.name in log_tables.diagnostics:
-            secho("\n----------- Errors -----------", bold=True)
-            for sfinfo in log_tables.diagnostics[FDMsg.ERROR.name]:
-                secho(f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", fg=colors.RED, bold=True)
-                _print_logs(sfinfo.warnings)
+    if not mode.QUIET:
+        _print_bucket(journal, FDMsg.EXTMISMATCH, "Extension mismatch")
+        _print_bucket(journal, FDMsg.WARNING, "Warnings")
+    _print_bucket(journal, FDMsg.ERROR, "Errors")
 
 
 def print_duplicates(duplicates: dict[str, list[Path]], mode: Mode) -> None:
@@ -96,11 +90,11 @@ def print_duplicates(duplicates: dict[str, list[Path]], mode: Mode) -> None:
         secho("\n")
 
 
-def print_processing_errors(log_tables: LogTables) -> None:
+def print_processing_errors(journal: RunJournal) -> None:
     """Print files that encountered an error during conversion or filesystem operations."""
-    if log_tables.processing_errors:
+    if journal.processing_errors:
         secho("\n----------- Processing errors -----------", bold=True)
-        for err in log_tables.processing_errors:
+        for err in journal.processing_errors:
             secho(f"\n{_format_bite_size(err[1].filesize): >10}    {err[1].filename}", fg=colors.RED, bold=True)
             _print_logs([err[0]])
 
@@ -118,7 +112,6 @@ def print_msg(msg: str, quiet: bool) -> None:
 
 
 def print_root_not_found() -> None:
-    """Report that the given root folder does not exist."""
     secho("root folder not found", fg=colors.RED)
 
 

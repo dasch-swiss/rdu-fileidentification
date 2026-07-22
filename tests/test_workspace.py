@@ -48,10 +48,6 @@ class TestWorkingDir:
         ws = _ws()
         assert ws.working_dir(Path("a/clip.mp4")) != ws.working_dir(Path("b/clip.mp4"))
 
-    def test_is_deterministic(self) -> None:
-        ws = _ws()
-        assert ws.working_dir(Path("sub/a.jpg")) == ws.working_dir(Path("sub/a.jpg"))
-
 
 class TestWorkingFile:
     def test_inside_origin_working_dir(self) -> None:

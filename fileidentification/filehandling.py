@@ -17,9 +17,9 @@ from fileidentification.definitions.models import (
     BasicAnalytics,
     LogMsg,
     LogOutput,
-    LogTables,
     Mode,
     PolicyParams,
+    RunJournal,
     SfInfo,
     sfinfo2csv,
 )
@@ -46,7 +46,7 @@ class FileHandler:
     def __init__(self) -> None:
         self.mode: Mode = Mode()
         self.policies: dict[str, PolicyParams] = {}
-        self.log_tables = LogTables()
+        self.journal = RunJournal()
         self.ba = BasicAnalytics()
         self.stack: list[SfInfo] = []
         self.ws: Workspace = Workspace(Path(), Path())  # replaced in run() once root_folder / tmp are resolved
@@ -55,9 +55,8 @@ class FileHandler:
 
     def _build_stack(self, root_folder: Path) -> None:
         """
-        Add sfinfos to stack.
-        Checks whether a log json at default location exists. if so, it adds the sfinfos to the stack from there,
-        otherwhise it scans the root_folder with pygfried and adds its output as sfinfos to the stack
+        Populate self.stack: reload the sfinfos from an existing _log.json at the default location if present,
+        otherwise scan root_folder with pygfried and add its output as sfinfos.
         """
         # if there is a log, try to read from there
         if self.ws.logjson.is_file():
@@ -166,10 +165,10 @@ class FileHandler:
         self._run_parallel(
             active,
             "Probing the files ...",
-            lambda sfinfo: inspect_file(sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE),
+            lambda sfinfo: inspect_file(sfinfo, self.policies, self.ws, self.journal, self.mode.VERBOSE),
         )
 
-        print_diagnostic(log_tables=self.log_tables, mode=self.mode)
+        print_diagnostic(journal=self.journal, mode=self.mode)
         self.write_logs(to_csv=to_csv, target=self.ws.report_json(datetime.now(UTC).strftime("%y%m%d")))
 
     def assert_integrity(self) -> None:
@@ -178,10 +177,10 @@ class FileHandler:
         self._run_parallel(
             active,
             "Probing the files ...",
-            lambda sfinfo: assert_file_integrity(sfinfo, self.policies, self.ws, self.log_tables, self.mode.VERBOSE),
+            lambda sfinfo: assert_file_integrity(sfinfo, self.policies, self.ws, self.journal, self.mode.VERBOSE),
         )
 
-        print_diagnostic(log_tables=self.log_tables, mode=self.mode)
+        print_diagnostic(journal=self.journal, mode=self.mode)
 
     def _silently_reencode(self, root_folder: Path) -> None:
         """
@@ -200,7 +199,7 @@ class FileHandler:
         self._run_parallel(
             active,
             "Applying policies ...",
-            lambda sfinfo: apply_policy(sfinfo, self.policies, self.ws, self.log_tables, self.mode.STRICT),
+            lambda sfinfo: apply_policy(sfinfo, self.policies, self.ws, self.journal, self.mode.STRICT),
         )
 
     def convert(self) -> None:
@@ -227,7 +226,7 @@ class FileHandler:
                 lmsg = sfinfo.processing_logs.pop()
                 lmsg.msg += f". cmd={cmd} "
                 # the bin's log (if any) goes in as a detail: recorded in the "errors" copy but not printed
-                self.log_tables.processing_error_add(lmsg, sfinfo, [bin_log] if bin_log else None)
+                self.journal.record_error(lmsg, sfinfo, [bin_log] if bin_log else None)
 
         self._run_parallel(pending, "Converting ...", _convert_one)
 
@@ -236,7 +235,7 @@ class FileHandler:
         # move converted files from the working dir to its destination
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Moving files ...", total=None)
-            files_moved = move_tmp(self.stack, self.ws, self.policies, self.log_tables, self.mode.REMOVEORIGINAL)
+            files_moved = move_tmp(self.stack, self.ws, self.policies, self.journal, self.mode.REMOVEORIGINAL)
 
         # remove empty folders in working dir
         if self.ws.tmp_dir.is_dir():
@@ -252,9 +251,9 @@ class FileHandler:
         inspect() passes a dated report path so its read-only output stays separate from a processing run.
         """
         dest = target or self.ws.logjson
-        print_processing_errors(log_tables=self.log_tables)
+        print_processing_errors(journal=self.journal)
 
-        logoutput = LogOutput(files=self.stack, errors=self.log_tables.dump_errors(), duplicates=self.ba.duplicates)
+        logoutput = LogOutput(files=self.stack, errors=self.journal.error_records(), duplicates=self.ba.duplicates)
         dest.write_text(logoutput.model_dump_json(indent=4, exclude_none=True))
 
         if to_csv:

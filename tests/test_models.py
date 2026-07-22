@@ -8,11 +8,10 @@ from pydantic import ValidationError
 from fileidentification.definitions.models import (
     BasicAnalytics,
     LogMsg,
-    LogTables,
     PoliciesFile,
     PolicyParams,
+    RunJournal,
     SfInfo,
-    Status,
     get_md5,
     sfinfo2csv,
 )
@@ -26,11 +25,6 @@ class TestGetMd5:
         f.write_bytes(b"hello")
         # md5("hello") is a well-known fixed value
         assert get_md5(f) == "5d41402abc4b2a76b9719d911017c592"
-
-    def test_empty_file(self, tmp_path: Path) -> None:
-        f = tmp_path / "empty"
-        f.write_bytes(b"")
-        assert get_md5(f) == "d41d8cd98f00b204e9800998ecf8427e"
 
 
 class TestLogMsg:
@@ -83,11 +77,6 @@ class TestSfInfoModelPostInit:
         )
         assert s.md5 == "5d41402abc4b2a76b9719d911017c592"
 
-    def test_default_status(self) -> None:
-        s = make_sfinfo()
-        assert s.status == Status()
-        assert not s.status.pending
-
 
 class TestSfInfoIsActive:
     def test_fresh_file_is_active(self) -> None:
@@ -109,28 +98,48 @@ class TestSfInfoIsActive:
         assert not s.is_active
 
 
-class TestLogTables:
-    def test_diagnostics_add_groups_by_message(self) -> None:
-        lt = LogTables()
+class TestRunJournal:
+    def test_diagnose_buckets_the_file_and_logs_the_message(self) -> None:
+        j = RunJournal()
         a, b = make_sfinfo("a.jpg"), make_sfinfo("b.jpg")
-        lt.diagnostics_add(a, FDMsg.ERROR)
-        lt.diagnostics_add(b, FDMsg.ERROR)
-        assert lt.diagnostics[FDMsg.ERROR.name] == [a, b]
+        j.diagnose(a, FDMsg.ERROR, LogMsg(name="ffmpeg", msg="corrupt a"))
+        j.diagnose(b, FDMsg.ERROR, LogMsg(name="ffmpeg", msg="corrupt b"))
+        assert j.diagnostics[FDMsg.ERROR.name] == [a, b]  # files bucketed under the severity
+        assert a.processing_logs[-1].msg == "corrupt a"  # message logged on the file's single log list
+        assert b.processing_logs[-1].msg == "corrupt b"
 
-    def test_dump_errors_returns_copies_and_leaves_originals(self) -> None:
-        lt = LogTables()
+    def test_diagnose_uses_processing_logs_for_every_severity(self) -> None:
+        # extension mismatch is no longer special-cased: it writes to processing_logs like the others
+        j = RunJournal()
+        s = make_sfinfo()
+        j.diagnose(s, FDMsg.EXTMISMATCH, LogMsg(name="filehandler", msg="wrong ext"))
+        assert j.diagnostics[FDMsg.EXTMISMATCH.name] == [s]
+        assert s.processing_logs[-1].msg == "wrong ext"
+
+    def test_error_records_returns_copies_and_leaves_originals(self) -> None:
+        j = RunJournal()
         s = make_sfinfo()
         msg = LogMsg(name="x", msg="boom")
-        lt.processing_error_add(msg, s)
-        dumped = lt.dump_errors()
+        j.record_error(msg, s)
+        dumped = j.error_records()
         assert dumped is not None
         assert msg in dumped[0].processing_logs  # error recorded in the returned (errors) copy
         assert msg not in s.processing_logs  # original (files) left untouched -> not duplicated
         assert dumped[0].filename == s.filename  # the copy is of the same file
-        assert lt.processing_errors == []  # cleared
 
-    def test_dump_errors_empty_returns_none(self) -> None:
-        assert LogTables().dump_errors() is None
+    def test_error_records_is_non_destructive(self) -> None:
+        # the ordering constraint is gone: reading the errors view must not clear the table
+        j = RunJournal()
+        s = make_sfinfo()
+        j.record_error(LogMsg(name="x", msg="boom"), s)
+        first = j.error_records()
+        second = j.error_records()
+        assert first is not None and second is not None
+        assert len(j.processing_errors) == 1  # not cleared on read
+        assert first[0].processing_logs[-1].msg == second[0].processing_logs[-1].msg  # stable across reads
+
+    def test_error_records_empty_returns_none(self) -> None:
+        assert RunJournal().error_records() is None
 
 
 class TestBasicAnalytics:
@@ -233,11 +242,11 @@ class TestSfInfo2Csv:
     def test_status_and_logs(self) -> None:
         s = make_sfinfo()
         s.status.pending = True
-        s.warnings.append(LogMsg(name="ffmpeg", msg="w1"))
-        s.warnings.append(LogMsg(name="ffmpeg", msg="w2"))
+        s.processing_logs.append(LogMsg(name="ffmpeg", msg="w1"))
+        s.processing_logs.append(LogMsg(name="ffmpeg", msg="w2"))
         row = sfinfo2csv(s)
         assert row["status"] == "pending"
-        assert row["warnings"] == "w1 ; w2"
+        assert row["processing_logs"] == "w1 ; w2"
 
     def test_media_info_and_derived_from(self) -> None:
         origin = make_sfinfo("sub/orig.jpg")

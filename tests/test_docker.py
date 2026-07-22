@@ -151,7 +151,7 @@ def test_assert_integrity_quarantines_truncated_jpeg(stage: Callable[..., Path],
     assert list((work / "__fileidentification").rglob(f"_REMOVED/**/{name}"))
     quarantined = next(f for f in _read_log(work)["files"] if f["filename"] == name)
     assert quarantined["status"].get("removed") is True
-    assert any("premature end of data" in w["msg"] for w in quarantined.get("warnings", []))
+    assert any("premature end of data" in w["msg"] for w in quarantined.get("processing_logs", []))
 
 
 def test_convert_jpeg_to_tiff(stage: Callable[..., Path], fidr_image: str) -> None:
@@ -256,7 +256,9 @@ def test_readable_file_with_warnings_is_kept(stage: Callable[..., Path], fidr_im
     assert not list((work / "__fileidentification").rglob("_REMOVED/**/*"))
     rec = next(f for f in _read_log(work)["files"] if f["filename"] == name)
     assert not rec["status"].get("removed")
-    assert rec.get("warnings"), "the imagemagick warning should be recorded on the file"
+    assert any(log["name"] == "magick" for log in rec.get("processing_logs", [])), (
+        "the imagemagick warning should be recorded on the file"
+    )
 
 
 def test_fidr_wrapper_script(stage: Callable[..., Path], fidr_image: str) -> None:

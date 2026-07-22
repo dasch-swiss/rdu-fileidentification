@@ -1,23 +1,22 @@
 import shutil
 
-from fileidentification.definitions.models import LogMsg, LogTables, Policies, SfInfo
+from fileidentification.definitions.models import LogMsg, Policies, RunJournal, SfInfo
 from fileidentification.workspace import Workspace
 
 
-def remove(sfinfo: SfInfo, ws: Workspace, log_tables: LogTables) -> None:
-    """Move a file from its location to tmp dir / _REMOVED / ..."""
+def remove(sfinfo: SfInfo, ws: Workspace, journal: RunJournal) -> None:
+    """Move the file to _REMOVED under the tmp dir and mark it removed; record a processing error if the move fails."""
     dest = ws.removed_dest(sfinfo.filename)
     dest.parent.mkdir(parents=True, exist_ok=True)
     try:
         shutil.move(ws.abs_path(sfinfo.filename), dest)
         sfinfo.status.removed = True
-        #  sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="file removed"))
     except OSError as e:
-        log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
+        journal.record_error(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
 
 def move_tmp(
-    stack: list[SfInfo], ws: Workspace, policies: Policies, log_tables: LogTables, remove_original: bool
+    stack: list[SfInfo], ws: Workspace, policies: Policies, journal: RunJournal, remove_original: bool
 ) -> bool:
     """
     Move converted files from the tmp working directory next to their originals.
@@ -34,7 +33,7 @@ def move_tmp(
             if policies[sfinfo.derived_from.processed_as].remove_original or remove_original:  # type: ignore[index, union-attr]
                 derived_from = next(sfi for sfi in stack if sfi.filename == sfinfo.derived_from.filename)  # type: ignore[union-attr]
                 if ws.abs_path(derived_from.filename).is_file():
-                    remove(derived_from, ws, log_tables)
+                    remove(derived_from, ws, journal)
             # the converted file still sits in its working dir; its final home is abs_path(filename)
             source = ws.working_file(sfinfo.derived_from.filename, sfinfo.filename.name)  # type: ignore[union-attr]
             abs_dest = ws.abs_path(sfinfo.filename)
@@ -51,6 +50,6 @@ def move_tmp(
                 sfinfo.status.added = True
                 sfinfo.dest = None
             except OSError as e:
-                log_tables.processing_error_add(LogMsg(name="filehandler", msg=str(e)), sfinfo)
+                journal.record_error(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
     return write_logs

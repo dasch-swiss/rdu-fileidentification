@@ -11,7 +11,7 @@ from fileidentification.definitions.settings import Bin, FDMsg, PLMsg, PVErr
 
 
 class LogMsg(BaseModel):
-    """A single timestamped log entry attached to an SfInfo (media_info, warnings, processing_logs)."""
+    """A single timestamped log entry attached to an SfInfo (media_info, processing_logs)."""
 
     name: str
     msg: str
@@ -51,7 +51,6 @@ class SfInfo(BaseModel):
     status: Status = Field(default_factory=Status)
     processed_as: str | None = None
     media_info: list[LogMsg] = Field(default_factory=list[LogMsg])
-    warnings: list[LogMsg] = Field(default_factory=list[LogMsg])
     processing_logs: list[LogMsg] = Field(default_factory=list[LogMsg])
     # if converted
     derived_from: Self | None = None
@@ -98,28 +97,26 @@ class LogOutput(BaseModel):
     errors: list[SfInfo] | None = None
 
 
-class LogTables(BaseModel):
+class RunJournal(BaseModel):
     """
-    Run-wide collector for diagnostics and processing errors, shared across worker threads.
-    diagnostics: SfInfo objects bucketed by FDMsg name (corrupt, warning, extension mismatch) for the console report.
-    processing_errors: (summary LogMsg, SfInfo, detail LogMsgs) tuples for failures that abort a file's processing.
-    Only the summary is printed; the details (e.g. the converter's log) are added to the SfInfo copy in the
-    "errors" section by dump_errors, never to the original in "files". Always mutate via diagnostics_add /
-    processing_error_add, which hold the internal lock.
+    Run-wide record of what happened to each file, shared across worker threads.
+    Always mutate via `diagnose` / `record_error`, which hold the internal lock.
     """
 
     diagnostics: dict[str, list[SfInfo]] = Field(default_factory=dict)
     processing_errors: list[tuple[LogMsg, SfInfo, list[LogMsg]]] = Field(default_factory=list)
     _lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
 
-    def diagnostics_add(self, sfinfo: SfInfo, fdgm: FDMsg) -> None:
-        """Thread-safely append sfinfo to the diagnostics bucket identified by the FDMsg name."""
+    def diagnose(self, sfinfo: SfInfo, severity: FDMsg, msg: LogMsg) -> None:
+        """
+        Record a diagnostic for the console report: append `msg` to the SfInfo's processing_logs and bucket the
+        SfInfo under `severity`. The report prints each bucketed file's full processing_logs. Thread-safe.
+        """
         with self._lock:
-            if fdgm.name not in self.diagnostics:
-                self.diagnostics[fdgm.name] = []
-            self.diagnostics[fdgm.name].append(sfinfo)
+            sfinfo.processing_logs.append(msg)
+            self.diagnostics.setdefault(severity.name, []).append(sfinfo)
 
-    def processing_error_add(self, msg: LogMsg, sfinfo: SfInfo, details: list[LogMsg] | None = None) -> None:
+    def record_error(self, msg: LogMsg, sfinfo: SfInfo, details: list[LogMsg] | None = None) -> None:
         """
         Thread-safely append a processing error.
         details are extra LogMsgs (e.g. the converter's output) recorded only in the "errors" copy and not printed.
@@ -127,20 +124,19 @@ class LogTables(BaseModel):
         with self._lock:
             self.processing_errors.append((msg, sfinfo, details or []))
 
-    def dump_errors(self) -> list[SfInfo] | None:
+    def error_records(self) -> list[SfInfo] | None:
         """
         Return a copy of each SfInfo that hit a processing error, with the summary LogMsg and any detail LogMsgs
         appended to its processing_logs. The originals (which also live in the stack / _log.json "files") are left
         untouched, so the error entry and its details are recorded only in the "errors" section, not in "files".
+        Non-destructive: callers may print the errors and build the persisted copy in either order.
         """
         if not self.processing_errors:
             return None
-        result = [
+        return [
             sfinfo.model_copy(update={"processing_logs": [*sfinfo.processing_logs, msg, *details]})
             for msg, sfinfo, details in self.processing_errors
         ]
-        self.processing_errors.clear()
-        return result
 
 
 class BasicAnalytics(BaseModel):
@@ -282,8 +278,6 @@ def sfinfo2csv(sfinfo: SfInfo) -> dict[str, str | int]:
         res["processed_as"] = sfinfo.processed_as
     if sfinfo.media_info:
         res["media_info"] = sfinfo.media_info[0].msg
-    if sfinfo.warnings:
-        res["warnings"] = " ; ".join([el.msg for el in sfinfo.warnings])
     if sfinfo.processing_logs:
         res["processing_logs"] = " ; ".join([el.msg for el in sfinfo.processing_logs])
     if sfinfo.derived_from:
