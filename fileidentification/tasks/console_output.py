@@ -112,7 +112,6 @@ def print_msg(msg: str, quiet: bool) -> None:
 
 
 def print_root_not_found() -> None:
-    """Report that the given root folder does not exist."""
     secho("root folder not found", fg=colors.RED)
 
 
