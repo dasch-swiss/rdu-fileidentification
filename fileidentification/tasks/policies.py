@@ -191,7 +191,9 @@ def _has_invalid_streams(sfinfo: SfInfo, puid: str, ws: Workspace, journal: RunJ
     streams = ffmpeg_media_info(ws.abs_path(sfinfo.filename))
     if not streams:
         # ffprobe read no streams for a file we meant to stream-check: record a warning for the end-of-phase report
-        journal.diagnose(sfinfo, FDMsg.WARNING, LogMsg(name="ffmpeg", msg="could not read streams for the a/v stream check"))
+        journal.diagnose(
+            sfinfo, FDMsg.WARNING, LogMsg(name="ffmpeg", msg="could not read streams for the a/v stream check")
+        )
         return False
     if puid in ["fmt/569"]:
         # only the video codec has to be ffv1 -> return false as soon as any stream is ffv1

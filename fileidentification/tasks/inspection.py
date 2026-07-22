@@ -24,9 +24,7 @@ def assert_file_integrity(
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="you should manually rename the file"))
 
 
-def inspect_file(
-    sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: RunJournal, verbose: bool
-) -> FDMsg | None:
+def inspect_file(sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: RunJournal, verbose: bool) -> FDMsg | None:
     """
     Probe the file without making any filesystem changes.
     Returns ERROR if the file is corrupt, EXTMISMATCH if the extension is wrong, or None if the file is OK.
