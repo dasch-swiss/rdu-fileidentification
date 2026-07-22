@@ -49,9 +49,8 @@ class TestMoveTmp:
         root/sub/orig.jpg                             original file
         tdir/orig.jpg_<hash>/orig.tif                 converted file, in its working dir (to be moved)
 
-        The converted SfInfo's filename is already its relative home (sub/orig.tif); the physical file
-        lives at ws.working_file(original.filename, "orig.tif"). Returns (stack, original, converted,
-        policies, root, ws).
+        The converted SfInfo's filename is its physical location relative to tmp_dir (its working dir);
+        dest is the future home dir (sub). Returns (stack, original, converted, policies, root, ws).
         """
         root = tmp_path / "root"
         (root / "sub").mkdir(parents=True)
@@ -61,14 +60,15 @@ class TestMoveTmp:
 
         original = make_sfinfo("sub/orig.jpg", puid="fmt/43", md5="aaaaaa")
 
-        converted = make_sfinfo("sub/orig.tif", puid="fmt/353", md5=conv_md5, mime="image/tiff")
-        converted.dest = Path("sub")
-        converted.derived_from = original
-
-        # place the physical converted file where move_tmp will look for it
-        workfile = ws.working_file(original.filename, "orig.tif")
+        # place the physical converted file in the origin's working dir under tmp_dir
+        workfile = ws.working_dir(original.filename) / "orig.tif"
         workfile.parent.mkdir(parents=True)
         workfile.write_bytes(b"converted")
+
+        converted = make_sfinfo("sub/orig.tif", puid="fmt/353", md5=conv_md5, mime="image/tiff")
+        converted.filename = workfile.relative_to(ws.tmp_dir)  # tmp-relative physical location
+        converted.dest = Path("sub")
+        converted.derived_from = original
 
         policies = {
             "fmt/43": PolicyParams(
@@ -83,7 +83,7 @@ class TestMoveTmp:
 
     def test_moves_converted_file_next_to_original(self, tmp_path: Path) -> None:
         stack, original, converted, policies, root, ws = self._scenario(tmp_path)
-        workdir = ws.working_file(original.filename, "orig.tif").parent
+        workdir = ws.working_dir(original.filename)
 
         moved = move_tmp(stack, ws, policies, RunJournal(), remove_original=False)
 

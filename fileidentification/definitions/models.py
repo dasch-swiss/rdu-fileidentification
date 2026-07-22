@@ -46,7 +46,8 @@ class SfInfo(BaseModel):
     """file info object mapped from siegfried output, gets extended while processing."""
 
     # output from siegfried
-    filename: Path
+    filename: Path  # portable, relative to root_folder — except a converted file awaiting move (dest set),
+    # whose filename is its working-dir location relative to tmp_dir until move_tmp relocates it
     filesize: int
     modified: str
     errors: str
@@ -59,7 +60,7 @@ class SfInfo(BaseModel):
     processing_logs: list[LogMsg] = Field(default_factory=list[LogMsg])
     # if converted
     derived_from: Self | None = None
-    dest: Path | None = None
+    dest: Path | None = None  # future home dir (relative to root_folder); set until move_tmp relocates the file
 
     def model_post_init(self, context: Any, /) -> None:
         """Derive the fields not provided by siegfried: status, processed_as, md5"""
