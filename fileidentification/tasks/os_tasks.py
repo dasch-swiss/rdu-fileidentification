@@ -34,9 +34,10 @@ def move_tmp(
                 derived_from = next(sfi for sfi in stack if sfi.filename == sfinfo.derived_from.filename)  # type: ignore[union-attr]
                 if ws.abs_path(derived_from.filename).is_file():
                     remove(derived_from, ws, journal)
-            # the converted file still sits in its working dir; its final home is abs_path(filename)
-            source = ws.working_file(sfinfo.derived_from.filename, sfinfo.filename.name)  # type: ignore[union-attr]
-            abs_dest = ws.abs_path(sfinfo.filename)
+            # filename is the converted file's location in the working dir (relative to tmp_dir); dest is its
+            # future home dir next to the original
+            source = ws.tmp_dir / sfinfo.filename
+            abs_dest = ws.abs_path(sfinfo.dest / sfinfo.filename.name)
             # append hash to filename if the path already exists
             if abs_dest.is_file():
                 abs_dest = abs_dest.parent / f"{sfinfo.filename.stem}_{sfinfo.md5[:6]}{sfinfo.filename.suffix}"

@@ -49,13 +49,6 @@ class TestWorkingDir:
         assert ws.working_dir(Path("a/clip.mp4")) != ws.working_dir(Path("b/clip.mp4"))
 
 
-class TestWorkingFile:
-    def test_inside_origin_working_dir(self) -> None:
-        ws = _ws()
-        origin = Path("sub/orig.jpg")
-        assert ws.working_file(origin, "orig.tif") == ws.working_dir(origin) / "orig.tif"
-
-
 class TestRemovedDest:
     def test_under_removed_preserving_subpath(self) -> None:
         assert _ws().removed_dest(Path("sub/a.jpg")) == Path("/data/root/__fileidentification/_REMOVED/sub/a.jpg")

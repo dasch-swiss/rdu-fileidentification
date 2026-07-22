@@ -79,10 +79,6 @@ class Workspace:
         path_hash = hashlib.md5(str(filename).encode()).hexdigest()[:6]  # noqa: S324
         return self.tmp_dir / f"{filename.name}_{path_hash}"
 
-    def working_file(self, origin_filename: Path, output_name: str) -> Path:
-        """Where a converted file physically sits before it is moved: inside its origin's working dir."""
-        return self.working_dir(origin_filename) / output_name
-
     def removed_dest(self, filename: Path) -> Path:
         """Location under _REMOVED for a corrupt / replaced file (the relative subpath is preserved)."""
         return self.tmp_dir / RMV_DIR / filename

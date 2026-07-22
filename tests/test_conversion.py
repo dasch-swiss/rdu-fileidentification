@@ -42,7 +42,7 @@ def _patch_identify(monkeypatch: pytest.MonkeyPatch, target: Path, puid: str) ->
 def test_missing_target_is_conversion_failure(tmp_path: Path) -> None:
     """No output file on disk -> conversion failed, original logs CONVFAILED."""
     origin = make_sfinfo("sub/orig.jpg")
-    result = _verify(tmp_path / "never-created.tif", origin, expected=["fmt/353"])
+    result = _verify(tmp_path / "never-created.tif", origin, expected=["fmt/353"], ws=make_ws(tmp_path, tmp_path))
     assert result is None
     assert any(FPMsg.CONVFAILED in log.msg and log.level == LogLevel.ERROR for log in origin.processing_logs)
 
@@ -55,7 +55,7 @@ def test_unexpected_format_is_rejected(tmp_path: Path, monkeypatch: pytest.Monke
 
     origin = make_sfinfo("sub/orig.jpg")
     origin.status.pending = True
-    result = _verify(target, origin, expected=["fmt/353"])
+    result = _verify(target, origin, expected=["fmt/353"], ws=make_ws(tmp_path, tmp_path))
 
     assert result is None
     assert origin.status.pending is True  # left pending: conversion did not succeed
@@ -73,12 +73,14 @@ def test_expected_format_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyP
 
     origin = make_sfinfo("sub/orig.jpg")
     origin.status.pending = True
-    result = _verify(target, origin, expected=["fmt/152", "fmt/353"])  # matches the second listed PUID
+    # tmp_dir = tmp_path, so the target's tmp-relative location is just "orig.tif"
+    result = _verify(target, origin, expected=["fmt/152", "fmt/353"], ws=make_ws(tmp_path, tmp_path))
 
     assert result is not None
     assert result.processed_as == "fmt/353"
     assert result.derived_from is origin
-    assert result.dest == Path("sub")  # placed next to the original
+    assert result.filename == Path("orig.tif")  # points at its physical location relative to tmp_dir
+    assert result.dest == Path("sub")  # future home dir, next to the original
     assert origin.status.pending is False  # original is now resolved
 
 
@@ -120,16 +122,17 @@ class TestAddMediaInfo:
 
 def test_convert_file_strips_abs_paths_from_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """convert_file removes root_folder/tdir prefixes from the tool log before attaching it."""
+    root, tdir = tmp_path / "root", tmp_path / "tdir"
+    ws = make_ws(root, tdir)
     origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
     origin.status.pending = True
-    ws = make_ws("/root", "/tmp/tdir")
 
-    target = tmp_path / "orig.tif"
+    target = tdir / "orig.tif"  # the converted file sits under tmp_dir
+    target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(b"data")
     _patch_identify(monkeypatch, target, puid="fmt/353")
-    monkeypatch.setattr(
-        conv_mod, "_run_tool", lambda s, a, tool, ws: (target, "the cmd", "/root/sub/orig.jpg -> /tmp/tdir/out")
-    )
+    logtext = f"{root}/sub/orig.jpg -> {tdir}/out"
+    monkeypatch.setattr(conv_mod, "_run_tool", lambda s, a, tool, ws: (target, "the cmd", logtext))
     monkeypatch.setattr(conv_mod, "_add_media_info", lambda s, t, p: None)
 
     policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}

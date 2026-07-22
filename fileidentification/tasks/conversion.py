@@ -23,7 +23,7 @@ def _add_media_info(sfinfo: SfInfo, tool: MediaTool | None, path: Path) -> None:
         sfinfo.media_info.append(media_info)
 
 
-def _verify(target: Path, sfinfo: SfInfo, expected: list[str]) -> SfInfo | None:
+def _verify(target: Path, sfinfo: SfInfo, expected: list[str], ws: Workspace) -> SfInfo | None:
     """
     Identify the converted file with pygfried and verify it matches the expected format.
     Returns an SfInfo for the new file (linked back to the origin via derived_from) on success, or None if the
@@ -36,10 +36,10 @@ def _verify(target: Path, sfinfo: SfInfo, expected: list[str]) -> SfInfo | None:
         target_sfinfo = SfInfo(**pygfried.identify(f"{target}", detailed=True)["files"][0])  # type: ignore[arg-type]
         # only add postprocessing information if conversion was successful
         if target_sfinfo.processed_as in expected:
+            # filename points at where the file physically is (relative to tmp_dir, in its working dir);
+            # dest holds the future home next to the original. move_tmp relocates it and rewrites filename.
+            target_sfinfo.filename = target.relative_to(ws.tmp_dir)
             target_sfinfo.dest = sfinfo.filename.parent
-            # normalize the converted file to its portable relative home straight away; the physical file still
-            # sits in the working dir until move_tmp (reachable via ws.working_file(derived_from, filename.name)).
-            target_sfinfo.filename = sfinfo.filename.parent / target.name
             target_sfinfo.derived_from = sfinfo
             sfinfo.status.pending = False
 
@@ -98,7 +98,7 @@ def convert_file(sfinfo: SfInfo, policies: Policies, ws: Workspace) -> tuple[SfI
         processing_log = LogMsg(name=f"{args.bin}", msg=logtext)
 
     # create an SfInfo for target and verify output, add codec and processing logs
-    target_sfinfo = _verify(target_path, sfinfo, args.expected)
+    target_sfinfo = _verify(target_path, sfinfo, args.expected, ws)
     if target_sfinfo:
         _add_media_info(target_sfinfo, tool, target_path)
         if processing_log:
