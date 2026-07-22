@@ -5,13 +5,12 @@ from fileidentification.workspace import Workspace
 
 
 def remove(sfinfo: SfInfo, ws: Workspace, journal: RunJournal) -> None:
-    """Move a file from its location to tmp dir / _REMOVED / ..."""
+    """Move the file to _REMOVED under the tmp dir and mark it removed; record a processing error if the move fails."""
     dest = ws.removed_dest(sfinfo.filename)
     dest.parent.mkdir(parents=True, exist_ok=True)
     try:
         shutil.move(ws.abs_path(sfinfo.filename), dest)
         sfinfo.status.removed = True
-        #  sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="file removed"))
     except OSError as e:
         journal.record_error(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
