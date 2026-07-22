@@ -52,10 +52,10 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 ### Data Flow
 
 1. `identify.py` — Typer CLI entrypoint; collects all flags and delegates to `FileHandler.run()`
-2. `FileHandler` (`fileidentification/filehandling.py`) — main orchestrator class; holds the processing state (`stack`, `policies`, `ba`, `log_tables`, `ws`, `mode`)
+2. `FileHandler` (`fileidentification/filehandling.py`) — main orchestrator class; holds the processing state (`stack`, `policies`, `ba`, `journal`, `ws`, `mode`)
 3. `_build_stack` populates `self.stack` — either reloading an existing `_log.json` or scanning the folder with pygfried; each file becomes an `SfInfo` object
-4. `_resolve_policies` sets `self.policies` (JSON keyed by PUID) — read from an existing file (`_read_policies`) or generated (`_gen_policies`)
-5. Tasks (integrity check, apply policies, convert, move) operate on the stack in sequence
+4. `_resolve_policies` sets `self.policies` (JSON keyed by PUID) via the `resolve_policies` module — read from the default location / an external file, or generated
+5. Tasks (integrity check, apply policies, convert, move) operate on the stack in sequence. `assert_integrity` and `apply_policies` skip files already marked `status.probed` / `status.applied`, so a re-run against a reloaded `_log.json` doesn't re-process or re-log them
 
 ### Key Models (`fileidentification/definitions/models.py`)
 

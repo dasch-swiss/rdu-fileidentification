@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 
 from fileidentification.definitions.models import PolicyParams, RunJournal
-from fileidentification.definitions.settings import Bin, FDMsg, FPMsg, REencMsg
+from fileidentification.definitions.settings import Bin, FDMsg, FPMsg, LogLevel, REencMsg
 from fileidentification.tasks import inspection as insp
 from fileidentification.tasks.inspection import _has_error, _rename, assert_file_integrity, inspect_file
 from fileidentification.wrappers import tools
@@ -78,6 +78,8 @@ class TestInspectFileOutcomes:
         assert inspect_file(s, {}, WS, lt, verbose=False) is None
         assert len(lt.processing_errors) == 1
         assert FPMsg.PUIDFAIL in lt.processing_errors[0][0].msg
+        # PUIDFAIL also persists on the file itself (error-level) so it survives a reload on a later run
+        assert any(FPMsg.PUIDFAIL in log.msg and log.level == LogLevel.ERROR for log in s.processing_logs)
 
     def test_empty_source_is_flagged_but_not_an_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(insp, "_has_error", lambda *a, **k: False)
@@ -229,3 +231,10 @@ class TestAssertFileIntegrity:
         s = make_sfinfo(puid="fmt/43")
         assert_file_integrity(s, {}, WS, RunJournal(), verbose=False)
         assert not calls["removed"] and not calls["renamed"]
+
+    def test_marks_probed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # so a later run skips it; set even when the verdict is clean
+        self._spy(monkeypatch, None)
+        s = make_sfinfo(puid="fmt/43")
+        assert_file_integrity(s, {}, WS, RunJournal(), verbose=False)
+        assert s.status.probed is True

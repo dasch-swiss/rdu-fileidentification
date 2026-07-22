@@ -55,6 +55,13 @@ def test_accepted_file_stays() -> None:
     assert not s.status.pending
 
 
+def test_marks_applied() -> None:
+    # so a later run skips it
+    s = make_sfinfo()
+    apply_policy(s, {"fmt/43": ACCEPTED}, WS, RunJournal(), strict=False)
+    assert s.status.applied is True
+
+
 def test_not_accepted_marks_pending() -> None:
     s = make_sfinfo()
     apply_policy(s, {"fmt/43": CONVERT}, WS, RunJournal(), strict=False)

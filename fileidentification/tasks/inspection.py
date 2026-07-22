@@ -1,5 +1,5 @@
 from fileidentification.definitions.models import LogMsg, Policies, RunJournal, SfInfo
-from fileidentification.definitions.settings import FMT2EXT, FDMsg, FPMsg
+from fileidentification.definitions.settings import FMT2EXT, FDMsg, FPMsg, LogLevel
 from fileidentification.tasks.os_tasks import remove
 from fileidentification.workspace import Workspace
 from fileidentification.wrappers.tools import MediaTool, tool_for, tool_from_mime
@@ -13,6 +13,7 @@ def assert_file_integrity(
     If the format has only one known extension, the rename is done automatically;
     otherwise it is flagged in the diagnostics for a manual rename.
     """
+    sfinfo.status.probed = True  # mark it so a re-run does not re-probe / re-log it
     res: FDMsg | None = inspect_file(sfinfo, policies, ws, journal, verbose)
     if res == FDMsg.ERROR:
         remove(sfinfo, ws, journal)
@@ -31,7 +32,8 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: Run
     Populates sfinfo.media_info and records any warnings / errors in the journal (which also logs them on the file).
     """
     if not sfinfo.processed_as:
-        msg = LogMsg(name="filehandler", msg=f"{FPMsg.PUIDFAIL} for {sfinfo.filename}")
+        msg = LogMsg(name="filehandler", msg=f"{FPMsg.PUIDFAIL} for {sfinfo.filename}", level=LogLevel.ERROR)
+        sfinfo.processing_logs.append(msg)  # make it persistent in _log.json
         journal.record_error(msg, sfinfo)
         return None
 

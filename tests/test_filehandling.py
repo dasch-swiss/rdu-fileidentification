@@ -129,6 +129,37 @@ class TestConvertNoPending:
         assert all(not s.status.added for s in fh.stack)
 
 
+class TestSkipAlreadyProcessed:
+    """assert_integrity / apply_policies skip files already probed / applied on an earlier run (the marking
+    itself is done inside assert_file_integrity / apply_policy — see test_inspection / test_policies).
+    """
+
+    def test_assert_integrity_skips_already_probed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        fh = FileHandler()
+        fresh, done = make_sfinfo("a.jpg"), make_sfinfo("b.jpg")
+        done.status.probed = True  # already probed on a previous run
+        fh.stack = [fresh, done]
+        seen: list[SfInfo] = []
+        monkeypatch.setattr("fileidentification.filehandling.assert_file_integrity", lambda s, *a: seen.append(s))
+        monkeypatch.setattr("fileidentification.filehandling.print_diagnostic", lambda **k: None)
+
+        fh.assert_integrity()
+
+        assert seen == [fresh]  # the already-probed file was not re-probed
+
+    def test_apply_policies_skips_already_applied(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        fh = FileHandler()
+        fresh, done = make_sfinfo("a.jpg"), make_sfinfo("b.jpg")
+        done.status.applied = True  # policies already applied on a previous run
+        fh.stack = [fresh, done]
+        seen: list[SfInfo] = []
+        monkeypatch.setattr("fileidentification.filehandling.apply_policy", lambda s, *a: seen.append(s))
+
+        fh.apply_policies()
+
+        assert seen == [fresh]  # the already-applied file was not re-evaluated
+
+
 class TestRunTriggersReencode:
     """run() with assert_integrity=True and apply=False must call _silently_reencode."""
 

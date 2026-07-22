@@ -29,12 +29,16 @@ class Status(BaseModel):
     Processing state of a file.
     removed: moved to _REMOVED (corrupt or replaced by a conversion).
     pending: flagged for conversion but not yet converted.
-    added: this SfInfo is a conversion output that was added to the stack.
+    added: it is a conversion output that was added to the stack.
+    probed: integrity has been probed.
+    applied: policies have been applied.
     """
 
     removed: bool = False
     pending: bool = False
     added: bool = False
+    probed: bool = False
+    applied: bool = False
 
 
 # main metadata object where information is stored and added
@@ -283,7 +287,7 @@ def sfinfo2csv(sfinfo: SfInfo) -> dict[str, str | int]:
     if sfinfo.media_info:
         res["media_info"] = sfinfo.media_info[0].msg
     if sfinfo.processing_logs:
-        res["processing_logs"] = " ; ".join([el.msg for el in sfinfo.processing_logs])
+        res["processing_logs"] = " ; ".join([f"{el.level}: {el.msg}" for el in sfinfo.processing_logs])
     if sfinfo.derived_from:
         res["derived_from"] = f"{sfinfo.derived_from.filename}"
     return res

@@ -252,7 +252,7 @@ class TestSfInfo2Csv:
         s.processing_logs.append(LogMsg(name="ffmpeg", msg="w2"))
         row = sfinfo2csv(s)
         assert row["status"] == "pending"
-        assert row["processing_logs"] == "w1 ; w2"
+        assert row["processing_logs"] == "info: w1 ; info: w2"  # each entry is prefixed with its level
 
     def test_media_info_and_derived_from(self) -> None:
         origin = make_sfinfo("sub/orig.jpg")
@@ -262,5 +262,5 @@ class TestSfInfo2Csv:
         s.derived_from = origin
         row = sfinfo2csv(s)
         assert row["media_info"] == "TIFF 10x10"
-        assert row["processing_logs"] == "converted"
+        assert row["processing_logs"] == "info: converted"
         assert row["derived_from"] == "sub/orig.jpg"

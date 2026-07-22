@@ -160,10 +160,7 @@ class FileHandler:
                     prog.advance(task)
 
     def inspect(self, to_csv: bool = False) -> None:
-        """
-        Probe all active files and write a dated report JSON without modifying the source files.
-        The scanned inventory is persisted to _log.json up front so a later run reloads it instead of rescanning.
-        """
+        """Probe all active files and write a dated report JSON without modifying the source files."""
         self.ws.poljson.unlink(missing_ok=True)
         self.write_logs()  # persist the bare inventory so a rerun skips the pygfried scan
         active = [s for s in self.stack if s.is_active]
@@ -177,8 +174,8 @@ class FileHandler:
         self.write_logs(to_csv=to_csv, target=self.ws.report_json(datetime.now(UTC).strftime("%y%m%d")))
 
     def assert_integrity(self) -> None:
-        """Probe all active files: remove corrupt ones and rename files with extension mismatches."""
-        active = [s for s in self.stack if s.is_active]
+        """Probe active, not-yet-probed files: remove corrupt ones and rename files with extension mismatches."""
+        active = [s for s in self.stack if s.is_active and not s.status.probed]
         self._run_parallel(
             active,
             "Probing the files ...",
@@ -199,8 +196,8 @@ class FileHandler:
         self.remove_tmp(root_folder)
 
     def apply_policies(self) -> None:
-        """Evaluate the policy for every active file and mark those that need conversion as pending."""
-        active = [s for s in self.stack if s.is_active]
+        """Evaluate the policy for active, not-yet-applied files and mark those that need conversion as pending."""
+        active = [s for s in self.stack if s.is_active and not s.status.applied]
         self._run_parallel(
             active,
             "Applying policies ...",
