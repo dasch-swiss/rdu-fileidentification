@@ -273,27 +273,6 @@ class TestConvert:
 
         assert spy.entered == 0  # non-soffice bins run unserialized (nullcontext)
 
-    def test_failure_records_processing_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        fh = FileHandler()
-        pending = make_sfinfo("sub/orig.jpg", puid="fmt/43")
-        pending.status.pending = True
-        fh.stack = [pending]
-        fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", bin="magick")}
-
-        def failing_convert(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], None]:
-            # convert_file leaves a diagnostic on the origin before signalling failure
-            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
-            return None, ["thecmd"], None
-
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", failing_convert)
-
-        fh.convert()
-
-        assert len(fh.stack) == 1  # nothing appended
-        assert fh.journal.processing_errors
-        err_msg = fh.journal.processing_errors[0][0].msg
-        assert "conversion failed" in err_msg and "thecmd" in err_msg
-
     def test_failure_log_lands_in_errors_not_duplicated_in_files(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
