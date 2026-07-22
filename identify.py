@@ -3,6 +3,7 @@ from typing import Annotated
 
 import typer
 
+from fileidentification.definitions.models import Mode
 from fileidentification.filehandling import FileHandler
 
 
@@ -97,9 +98,11 @@ def main(
     to_csv: Annotated[bool, typer.Option("--csv", help="get a csv out of the log.json.")] = False,
     inspect: Annotated[bool, typer.Option("--inspect", help="inspect the files without any modification.")] = False,
 ) -> None:
+    mode = Mode(REMOVEORIGINAL=remove_original, VERBOSE=mode_verbose, STRICT=mode_strict, QUIET=mode_quiet)
     fh = FileHandler()
     fh.run(
         root_folder=root_folder,
+        mode=mode,
         assert_integrity=assert_integrity,
         apply=apply,
         convert=convert,
@@ -110,10 +113,6 @@ def main(
         extend=extend,
         test_puid=test_puid,
         test_policies=test_policies,
-        remove_original=remove_original,
-        mode_strict=mode_strict,
-        mode_verbose=mode_verbose,
-        mode_quiet=mode_quiet,
         to_csv=to_csv,
         inspect=inspect,
     )

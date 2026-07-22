@@ -268,35 +268,29 @@ class FileHandler:
     def run(  # noqa: C901 flat task orchestration; complexity is from the flag branches, not nesting
         self,
         root_folder: Path | str,
-        assert_integrity: bool = True,
-        apply: bool = True,
-        remove_tmp: bool = True,
+        mode: Mode,
+        *,
+        assert_integrity: bool = False,
+        apply: bool = False,
+        remove_tmp: bool = False,
         convert: bool = False,
         policies_path: Path | None = None,
         blank: bool = False,
         extend: bool = False,
         test_puid: str | None = None,
         test_policies: bool = False,
-        remove_original: bool = False,
-        mode_strict: bool = False,
-        mode_verbose: bool = True,
-        mode_quiet: bool = True,
         to_csv: bool = False,
         tmp_dir: Path | None = None,
         inspect: bool = False,
     ) -> None:
         root_folder = Path(root_folder)
+        self.mode = mode
         # resolve the run's paths (validates the root, normalizes a single-file target, creates the tmp dir)
         try:
             self.ws = Workspace.for_run(root_folder, tmp_dir)
         except ValueError:
             print_root_not_found()
             raise Exit(1) from None
-        # set the mode
-        self.mode.REMOVEORIGINAL = remove_original
-        self.mode.VERBOSE = mode_verbose
-        self.mode.STRICT = mode_strict
-        self.mode.QUIET = mode_quiet
         # generate a list of SfInfo objects out of the target folder
         self._build_stack(root_folder)
         # the stack is now complete; from here on, persist it on any failure so a restart

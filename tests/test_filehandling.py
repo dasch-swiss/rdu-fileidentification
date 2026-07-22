@@ -11,7 +11,7 @@ from typing import Any, Self
 
 import pytest
 
-from fileidentification.definitions.models import LogMsg, Policies, PolicyParams, SfInfo
+from fileidentification.definitions.models import LogMsg, Mode, Policies, PolicyParams, SfInfo
 from fileidentification.filehandling import FileHandler
 from tests.conftest import fake_identify_payload, make_sfinfo, make_ws
 
@@ -176,7 +176,7 @@ class TestRunTriggersReencode:
         monkeypatch.setattr(fh, "remove_tmp", lambda root: order.append("remove_tmp"))
         monkeypatch.setattr(fh, "write_logs", lambda to_csv=False: order.append("logs"))
 
-        fh.run(root_folder=tmp_path, assert_integrity=True, apply=False, remove_tmp=False)
+        fh.run(root_folder=tmp_path, mode=Mode(), assert_integrity=True, apply=False, remove_tmp=False)
 
         assert "assert" in order
         assert "reencode" in order
@@ -194,7 +194,7 @@ class TestRunTriggersReencode:
         monkeypatch.setattr(fh, "remove_tmp", lambda root: None)
         monkeypatch.setattr(fh, "write_logs", lambda to_csv=False: None)
 
-        fh.run(root_folder=tmp_path, assert_integrity=True, apply=True, remove_tmp=False)
+        fh.run(root_folder=tmp_path, mode=Mode(), assert_integrity=True, apply=True, remove_tmp=False)
 
         assert "reencode" not in order
         assert "apply" in order
