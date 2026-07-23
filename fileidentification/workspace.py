@@ -1,14 +1,10 @@
 """
-The Workspace: the single run-scoped path module. Built once per run by `Workspace.for_run` from the CLI
-root_folder and an optional tmp dir, then never mutated.
+The Workspace: the single run-scoped path module, built once per run by `Workspace.for_run` and never mutated.
 
-Portability comes from the relative `filename` stored in _log.json — the Workspace only resolves that portable
-name against wherever the run happens to be right now. `tmp_dir` may live on a different volume (--tmp-dir /
-external drive), so it is kept independent of root_folder.
-
-The frozen dataclass itself is pure path math: no I/O, no validation, no branching. All of that (validating the
-root, making the single-file decision, creating the tmp dir) lives in the `for_run` factory, so a plain
-`Workspace(root, tmp)` is safe to construct in tests without touching the filesystem.
+A file's portable relative `filename` (as stored in _log.json) is resolved against wherever the run currently
+lives; `tmp_dir` is kept independent of `root_folder` so it can sit on another volume (--tmp-dir). The frozen
+dataclass is pure path math — all I/O and the single-file decision live in `for_run`, so a plain
+`Workspace(root, tmp)` is safe to build in tests.
 """
 
 import hashlib

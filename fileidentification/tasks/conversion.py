@@ -12,9 +12,8 @@ from fileidentification.wrappers.tools import MediaTool, tool_for
 
 def _add_media_info(sfinfo: SfInfo, tool: MediaTool | None, path: Path) -> None:
     """
-    Attach technical metadata (codec/stream info) of the converted file to sfinfo.media_info, if tool supports it.
-    `path` is the physical location of the file to probe (the working-dir output), not sfinfo.filename, which by
-    now holds the file's future relative home.
+    Attach the converted file's technical metadata (codec/stream info) to sfinfo.media_info, if the tool has any.
+    `path` is the physical file to probe — sfinfo.filename is a relative path, not usable for probing here.
     """
     if tool is None:
         return
@@ -78,10 +77,9 @@ def _run_tool(sfinfo: SfInfo, args: PolicyParams, tool: MediaTool, ws: Workspace
 
 def convert_file(sfinfo: SfInfo, policies: Policies, ws: Workspace) -> tuple[SfInfo | None, list[str], LogMsg | None]:
     """
-    Convert a file according to its policy, then re-identify and verify the output.
-    Returns (target_sfinfo, [cmd], bin_log): target_sfinfo is the SfInfo of the verified converted file, or None
-    if the conversion failed or produced an unexpected format; cmd is the converter command string (for logging);
-    bin_log is the converter's log output on failure (for the caller to attach to the error), else None.
+    Convert a file per its policy, then re-identify and verify the output. Returns (target_sfinfo, [cmd], bin_log):
+    the verified converted SfInfo or None (failure / unexpected format); the command string (for logging); and the
+    converter's log on failure for the caller to attach, else None.
     """
 
     args: PolicyParams = policies[sfinfo.processed_as]  # type: ignore[index]

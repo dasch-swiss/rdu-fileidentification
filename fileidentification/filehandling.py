@@ -55,11 +55,8 @@ class FileHandler:
 
     def _build_stack(self, root_folder: Path) -> None:
         """
-        Populate self.stack: reload the sfinfos from an existing _log.json at the default location if present,
-        otherwise scan root_folder with pygfried and add its output as sfinfos.
-
-        Takes the original root_folder (not ws.root_folder): for a single-file target ws.root_folder is the
-        parent, so only the original path distinguishes a single-file scan from a directory scan.
+        Populate self.stack: reload from an existing _log.json if present, else scan root_folder with pygfried.
+        Takes the original root_folder (ws.root_folder is the parent for a single-file target)
         """
         # if there is a log, try to read from there
         if self.ws.logjson.is_file():
@@ -90,10 +87,7 @@ class FileHandler:
 
     # policies stuff
     def _resolve_policies(self, policies_path: Path | None = None, blank: bool = False, extend: bool = False) -> None:
-        """
-        Set self.policies for the run via the policy-resolution module (generate, read the default location, or
-        read an external file). A missing or invalid external file is fatal: persist state, then exit.
-        """
+        """Set self.policies for the run via the policy-resolution module. write log (state) on policy error"""
         try:
             resolution = resolve_policies(
                 self.ba.puid_unique,
@@ -144,10 +138,7 @@ class FileHandler:
                 secho(f"You find the file (if any) in {self.ws.working_dir(sample.filename)}")
 
     def _run_parallel(self, items: list[SfInfo], description: str, work: Callable[[SfInfo], object]) -> None:
-        """
-        Run `work` over `items` on the thread pool, showing a progress bar (labelled `description`) that
-        advances as each file completes. Exceptions raised by `work` propagate via future.result().
-        """
+        """Run `work` over `items` on the thread pool, Exceptions raised by `work` propagate via future.result()"""
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -189,8 +180,7 @@ class FileHandler:
 
     def _silently_reencode(self) -> None:
         """
-        Silently convert and clean up files that were flagged for re-encoding during integrity check
-        (e.g. non-intra slices in IDR NAL units) without producing console output.
+        Silently convert and clean up files that were flagged for re-encoding during integrity check.
         Called when -i is used without -a.
         """
         self.mode.QUIET = True

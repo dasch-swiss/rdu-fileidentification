@@ -29,13 +29,6 @@ def build_policies(
 ) -> tuple[Policies, list[str]]:
     """
     Build the policy map for the encountered puids. Pure: no file I/O, no shared-state mutation.
-
-    blank: one accept-by-default entry per puid (no default lookup).
-    Otherwise each puid takes its default policy; puids without a default get an empty fallback policy
-    (unless in strict mode, where they are dropped).
-    extend: puids already present in `existing` keep their existing (hand-tuned) policy.
-    remove_original mode is propagated onto every resulting policy.
-
     Returns (policies, blank_puids) where blank_puids are the puids that received an empty fallback policy.
     """
     policies: Policies = {}
@@ -115,13 +108,10 @@ def resolve_policies(
     """
     Resolve the policy map for a run and return it (no shared-state mutation).
 
-    Picks one source: the default location (_policies.json) if present, an external file passed via
-    policies_path, or a freshly generated map from the default policies (optionally blank). extend then merges
-    the filetypes found in the folder onto the resolved map, keeping any hand-tuned entries. A generated or
-    extended map is (re)written to poljson; reading an existing map does not write.
-
-    emit receives human-readable progress messages (no-op by default). Raises PolicyError if an external
-    policies file is missing or invalid.
+    either the default location (_policies.json) if present, an external file passed via policies_path
+    or a freshly generated map from the default policies (optionally blank).
+    extend merges the filetypes found in the folder onto the resolved map if not already present.
+    A generated or extended map is (re)written to default location; only reading an existing map does not write.
     """
     # a policies.json at the default location and no external one passed -> read from there
     if not policies_path and poljson.is_file():
@@ -153,11 +143,8 @@ def resolve_policies(
 
 def apply_policy(sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: RunJournal, strict: bool) -> None:
     """
-    Decide what to do with the file based on its policy entry.
-    Sets sfinfo.status.pending=True if the file needs conversion.
-    In strict mode, files with no policy entry are moved to _REMOVED; otherwise they are skipped with a log entry.
-    Files marked accepted=True are also checked for invalid A/V streams (fmt/199, fmt/569) and flagged for
-    re-encoding if needed.
+    Flag files for conversion ; in strict mode move an unlisted format to _REMOVED (else skip with a log).
+    Accepted A/V (fmt/199, fmt/569) is stream-checked.
     """
     sfinfo.status.applied = True  # mark it so a re-run does not re-evaluate / re-log it
     puid = sfinfo.processed_as

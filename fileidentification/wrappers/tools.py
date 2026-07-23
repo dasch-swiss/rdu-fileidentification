@@ -1,10 +1,7 @@
 """
-The MediaTool seam: one interface over the external tools (ffmpeg, imagemagick, soffice).
-
-Every place that used to dispatch on the ``bin`` string with its own ``match`` — building the conversion command,
-probing for corruption, extracting media info — now goes through a MediaTool adapter, so each tool's quirks live
-with the tool. Resolve a tool with ``tool_for`` (from a policy's bin) or ``tool_from_mime`` (from a mimetype);
-both return None when no tool applies.
+The MediaTool seam: one interface over the external tools (ffmpeg, imagemagick, soffice), so each tool's quirks
+(command shape, corruption probe, media info) live with the tool. Resolve one with ``tool_for`` (from a policy's
+bin) or ``tool_from_mime`` (from a mimetype); both return None when no tool applies.
 """
 
 import json
