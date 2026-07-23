@@ -51,7 +51,7 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 
 ### Data Flow
 
-1. `identify.py` — Typer CLI entrypoint; collects all flags and delegates to `FileHandler.run()`
+1. `identify.py` — Typer CLI entrypoint; collects the flags (assembling the mode flags into a `Mode`) and delegates to `FileHandler.run(root_folder, mode, ...)`
 2. `FileHandler` (`fileidentification/filehandling.py`) — main orchestrator class; holds the processing state (`stack`, `policies`, `ba`, `journal`, `ws`, `mode`)
 3. `_build_stack` populates `self.stack` — either reloading an existing `_log.json` or scanning the folder with pygfried; each file becomes an `SfInfo` object
 4. `_resolve_policies` sets `self.policies` (JSON keyed by PUID) via the `resolve_policies` module — read from the default location / an external file, or generated
@@ -59,7 +59,7 @@ just dasch          # DaSCH-specific: use dasch_policies.json as default, then d
 
 ### Key Models (`fileidentification/definitions/models.py`)
 
-- **`SfInfo`** — primary metadata object per file; wraps siegfried output and accumulates its processing log (`processing_logs`), status, media info, and derived file info. The `processed_as` field holds the matched PUID.
+- **`SfInfo`** — primary metadata object per file; wraps siegfried output and accumulates its processing log (`processing_logs`), `status`, `media_info`, and derived info; `processed_as` holds the matched PUID. `status` flags drive the lifecycle — `probed`/`applied` gate re-processing on a rerun, `pending` → converted (`dest` set) → `added` or `removed`. `filename` is a portable path relative to `root_folder`, **except** a converted file awaiting move (`dest` set), whose `filename` is its working-dir location relative to `tmp_dir` until `move_tmp` relocates it.
 - **`PolicyParams`** — one policy entry: `bin` (ffmpeg/magick/soffice), `accepted`, `target_container`, `processing_args`, `expected` (list of PUIDs to verify output), `remove_original`
 - **`BasicAnalytics`** — groups `SfInfo` objects by PUID and tracks duplicates (by MD5)
 - **`LogMsg`** — one timestamped log entry (`name`, `msg`, `level`, `timestamp`); `level` is a `LogLevel` (info/warning/error, default info) set by the journal and at explicit error sites.
