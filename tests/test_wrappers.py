@@ -125,6 +125,31 @@ class TestImagemagick:
         assert std_err == ""
         assert specs == "TIFF 30x20"
 
+    def test_libtiff_can_not_read_spelling_is_corrupt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # regex `can ?not read` catches libtiff's spaced spelling, which the old
+        # exact substring "identify: Cannot read" missed.
+        self._patch(monkeypatch, stderr="identify: i.tif: Can not read TIFF directory count.")
+        corrupt, _, _ = im.imagemagick_collect_warnings(Path("i.tif"), verbose=False)
+        assert corrupt is True
+
+    def test_premature_end_warning_is_corrupt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # a truncated JPEG surfaces only as a *warning* (identify exits 0); we
+        # still flag it via the message.
+        self._patch(monkeypatch, stderr="identify: Premature end of JPEG file")
+        corrupt, _, _ = im.imagemagick_collect_warnings(Path("i.jpg"), verbose=False)
+        assert corrupt is True
+
+    def test_magick_prefix_is_matched(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # patterns are prefix-agnostic: `magick:`/`convert:` output matches too.
+        self._patch(monkeypatch, stderr="magick: corrupt image")
+        corrupt, _, _ = im.imagemagick_collect_warnings(Path("i.gif"), verbose=False)
+        assert corrupt is True
+
+    def test_unknown_tiff_tag_is_not_corrupt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._patch(monkeypatch, stderr="identify: Unknown field with tag 42112 (0xa480) encountered.")
+        corrupt, _, _ = im.imagemagick_collect_warnings(Path("i.tif"), verbose=True)
+        assert corrupt is False
+
     def test_media_info_returns_stdout(self, monkeypatch: pytest.MonkeyPatch) -> None:
         calls = self._patch(monkeypatch, stdout="JPEG 100x100")
         assert im.imagemagick_media_info(Path("i.jpg")) == "JPEG 100x100"
