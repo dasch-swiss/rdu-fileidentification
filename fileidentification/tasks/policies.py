@@ -60,7 +60,7 @@ def build_policies(
                 blank_puids.remove(puid)
         # propagate remove_original mode
         if puid in policies and mode.REMOVEORIGINAL:
-            policies[puid].remove_original = mode.REMOVEORIGINAL
+            policies[puid].remove_original = True
 
     return policies, blank_puids
 

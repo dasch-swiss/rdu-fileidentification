@@ -57,6 +57,9 @@ class FileHandler:
         """
         Populate self.stack: reload the sfinfos from an existing _log.json at the default location if present,
         otherwise scan root_folder with pygfried and add its output as sfinfos.
+
+        Takes the original root_folder (not ws.root_folder): for a single-file target ws.root_folder is the
+        parent, so only the original path distinguishes a single-file scan from a directory scan.
         """
         # if there is a log, try to read from there
         if self.ws.logjson.is_file():
@@ -77,7 +80,7 @@ class FileHandler:
 
         # relativize freshly scanned filenames (portable form), run basic analytics
         for sfinfo in self.stack:
-            if initial and not sfinfo.status.removed:
+            if initial:
                 sfinfo.filename = self.ws.relativize(sfinfo.filename)
             if sfinfo.is_active:
                 self.ba.append(sfinfo)
@@ -184,7 +187,7 @@ class FileHandler:
 
         print_diagnostic(journal=self.journal, mode=self.mode)
 
-    def _silently_reencode(self, root_folder: Path) -> None:
+    def _silently_reencode(self) -> None:
         """
         Silently convert and clean up files that were flagged for re-encoding during integrity check
         (e.g. non-intra slices in IDR NAL units) without producing console output.
@@ -193,7 +196,7 @@ class FileHandler:
         self.mode.QUIET = True
         self.mode.REMOVEORIGINAL = True
         self.convert()
-        self.remove_tmp(root_folder)
+        self.remove_tmp()
 
     def apply_policies(self) -> None:
         """Evaluate the policy for active, not-yet-applied files and mark those that need conversion as pending."""
@@ -232,7 +235,7 @@ class FileHandler:
 
         self._run_parallel(pending, "Converting ...", _convert_one)
 
-    def remove_tmp(self, root_folder: Path) -> None:
+    def remove_tmp(self) -> None:
         """Move converted files from the tmp dir to their destinations and clean up empty tmp folders."""
         # move converted files from the working dir to its destination
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
@@ -242,10 +245,10 @@ class FileHandler:
         # remove empty folders in working dir
         if self.ws.tmp_dir.is_dir():
             for path, _, _ in os.walk(self.ws.tmp_dir, topdown=False):
-                if len(os.listdir(path)) == 0:  # noqa: PTH208
+                if not os.listdir(path):  # noqa: PTH208
                     Path(path).rmdir()
         if files_moved:
-            print_msg(f"\nMoved the files from {self.ws.tmp_dir.stem} to {root_folder.stem} ...", self.mode.QUIET)
+            print_msg(f"\nMoved converted files from {self.ws.tmp_dir} to {self.ws.root_folder} ...", self.mode.QUIET)
 
     def write_logs(self, to_csv: bool = False, target: Path | None = None) -> None:
         """
@@ -262,7 +265,7 @@ class FileHandler:
             with open(f"{dest}.csv", "w") as f:  # noqa: PTH123
                 w = csv.DictWriter(f, CSVFIELDS)
                 w.writeheader()
-                [w.writerow(sfinfo2csv(el)) for el in self.stack]
+                w.writerows(sfinfo2csv(el) for el in self.stack)
 
     # default run, has a typer interface for the params in identify.py
     def run(  # noqa: C901 flat task orchestration; complexity is from the flag branches, not nesting
@@ -304,9 +307,8 @@ class FileHandler:
                 return
             if assert_integrity:
                 self.assert_integrity()
-                if not apply:
-                    # this triggers -qarx (to catch fixes with reencoding)
-                    self._silently_reencode(root_folder)
+                if not apply:  # this triggers -qarx (to catch fixes with reencoding)
+                    self._silently_reencode()
             # policies testing
             if test_puid:
                 self._test_policies(puid=test_puid)
@@ -320,7 +322,7 @@ class FileHandler:
                 self.convert()
             # remove tmp files
             if remove_tmp:
-                self.remove_tmp(root_folder)
+                self.remove_tmp()
             self.write_logs(to_csv=to_csv)
         except Exception:
             if self.stack:

@@ -35,10 +35,7 @@ def print_fmts(puids: list[str], ba: BasicAnalytics, policies: Policies, mode: M
     table.add_column("Policy")
 
     for puid in puids:
-        bytes_size: int = 0
-        for sfinfo in ba.puid_unique[puid]:
-            bytes_size += sfinfo.filesize
-        size = _format_bite_size(bytes_size)
+        size = _format_bite_size(sum(s.filesize for s in ba.puid_unique[puid]))
         po = ""
         style = Style(color=colors.WHITE)
         if puid not in policies:
@@ -83,9 +80,9 @@ def print_duplicates(duplicates: dict[str, list[Path]], mode: Mode) -> None:
     if duplicates:
         secho("\n----------- Duplicates -----------", bold=True)
         secho("\nBased on their MD5 checksum, the following files are duplicates:")
-        for k in duplicates:  # noqa: PLC0206
+        for k, paths in duplicates.items():
             secho(f"\nMD5 {k}: ", bold=True)
-            for path in duplicates[k]:
+            for path in paths:
                 secho(f"- {path}")
         secho("\n")
 
@@ -94,9 +91,9 @@ def print_processing_errors(journal: RunJournal) -> None:
     """Print files that encountered an error during conversion or filesystem operations."""
     if journal.processing_errors:
         secho("\n----------- Processing errors -----------", bold=True)
-        for err in journal.processing_errors:
-            secho(f"\n{_format_bite_size(err[1].filesize): >10}    {err[1].filename}", fg=colors.RED, bold=True)
-            _print_logs([err[0]])
+        for msg, sfinfo, _ in journal.processing_errors:
+            secho(f"\n{_format_bite_size(sfinfo.filesize): >10}    {sfinfo.filename}", fg=colors.RED, bold=True)
+            _print_logs([msg])
 
 
 def _print_logs(logs: list[LogMsg]) -> None:

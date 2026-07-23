@@ -63,9 +63,7 @@ class SfInfo(BaseModel):
     dest: Path | None = None  # future home dir (relative to root_folder); set until move_tmp relocates the file
 
     def model_post_init(self, context: Any, /) -> None:
-        """Derive the fields not provided by siegfried: status, processed_as, md5"""
-        if not self.status:
-            self.status = Status()
+        """Derive the fields not provided by siegfried: processed_as, md5"""
         if not self.processed_as:
             self.processed_as = self._fetch_puid()
         if not self.md5:
@@ -163,12 +161,8 @@ class BasicAnalytics(BaseModel):
     def append(self, sfinfo: SfInfo) -> None:
         """Index sfinfo by PUID and MD5, and record it in siegfried_errors if siegfried reported a read error."""
         if sfinfo.processed_as:
-            if sfinfo.md5 not in self.filehashes:
-                self.filehashes[sfinfo.md5] = []
-            self.filehashes[sfinfo.md5].append(sfinfo.filename)
-            if sfinfo.processed_as not in self.puid_unique:
-                self.puid_unique[sfinfo.processed_as] = []
-            self.puid_unique[sfinfo.processed_as].append(sfinfo)
+            self.filehashes.setdefault(sfinfo.md5, []).append(sfinfo.filename)
+            self.puid_unique.setdefault(sfinfo.processed_as, []).append(sfinfo)
         if sfinfo.errors and sfinfo.errors != FDMsg.EMPTYSOURCE:
             self.siegfried_errors.append(sfinfo)
 

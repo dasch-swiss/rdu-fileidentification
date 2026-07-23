@@ -111,13 +111,13 @@ class TestSilentlyReencode:
         fh = FileHandler()
         calls: list[str] = []
         monkeypatch.setattr(fh, "convert", lambda: calls.append("convert"))
-        monkeypatch.setattr(fh, "remove_tmp", lambda root: calls.append(f"remove_tmp:{root}"))
+        monkeypatch.setattr(fh, "remove_tmp", lambda: calls.append("remove_tmp"))
 
-        fh._silently_reencode(Path("/some/root"))
+        fh._silently_reencode()
 
         assert fh.mode.QUIET is True
         assert fh.mode.REMOVEORIGINAL is True
-        assert calls == ["convert", "remove_tmp:/some/root"]
+        assert calls == ["convert", "remove_tmp"]
 
 
 class TestConvertNoPending:
@@ -170,10 +170,10 @@ class TestRunTriggersReencode:
         monkeypatch.setattr(fh, "_build_stack", lambda root: order.append("build"))
         monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: order.append("policies"))
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
-        monkeypatch.setattr(fh, "_silently_reencode", lambda root: order.append("reencode"))
+        monkeypatch.setattr(fh, "_silently_reencode", lambda: order.append("reencode"))
         monkeypatch.setattr(fh, "apply_policies", lambda: order.append("apply"))
         monkeypatch.setattr(fh, "convert", lambda: order.append("convert"))
-        monkeypatch.setattr(fh, "remove_tmp", lambda root: order.append("remove_tmp"))
+        monkeypatch.setattr(fh, "remove_tmp", lambda: order.append("remove_tmp"))
         monkeypatch.setattr(fh, "write_logs", lambda to_csv=False: order.append("logs"))
 
         fh.run(root_folder=tmp_path, mode=Mode(), assert_integrity=True, apply=False, remove_tmp=False)
@@ -188,10 +188,10 @@ class TestRunTriggersReencode:
         monkeypatch.setattr(fh, "_build_stack", lambda root: None)
         monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: None)
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
-        monkeypatch.setattr(fh, "_silently_reencode", lambda root: order.append("reencode"))
+        monkeypatch.setattr(fh, "_silently_reencode", lambda: order.append("reencode"))
         monkeypatch.setattr(fh, "apply_policies", lambda: order.append("apply"))
         monkeypatch.setattr(fh, "convert", lambda: order.append("convert"))
-        monkeypatch.setattr(fh, "remove_tmp", lambda root: None)
+        monkeypatch.setattr(fh, "remove_tmp", lambda: None)
         monkeypatch.setattr(fh, "write_logs", lambda to_csv=False: None)
 
         fh.run(root_folder=tmp_path, mode=Mode(), assert_integrity=True, apply=True, remove_tmp=False)
@@ -349,7 +349,7 @@ class TestRemoveTmpCleanup:
         (fh.ws.tmp_dir / "keep" / "file.log").write_bytes(b"x")
         fh.stack = []  # nothing to move
 
-        fh.remove_tmp(tmp_path)
+        fh.remove_tmp()
 
         assert not (fh.ws.tmp_dir / "empty").exists()  # empty tree pruned bottom-up
         assert (fh.ws.tmp_dir / "keep" / "file.log").is_file()  # non-empty folder untouched
