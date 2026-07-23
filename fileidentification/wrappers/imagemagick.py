@@ -1,14 +1,19 @@
+import re
 import subprocess
 from pathlib import Path
 
 from fileidentification.definitions.settings import ErrMsgIM
+
+# Compile the corruption patterns once. Anything that matches means the file is
+# not, or only partially, readable (see ErrMsgIM).
+_CORRUPT_PATTERNS = [re.compile(pattern, re.IGNORECASE) for pattern in ErrMsgIM]
 
 
 def imagemagick_collect_warnings(file: Path, verbose: bool) -> tuple[bool, str, str]:
     """
     Probe the file with magick identify.
     Returns a tuple (is_corrupt, warnings, specs):
-      is_corrupt: True if the warnings contain an ErrMsgIM indicating an unreadable / partially readable file;
+      is_corrupt: True if the warnings match an ErrMsgIM pattern indicating an unreadable / partially readable file;
       warnings: identify's stderr output (paths stripped);
       specs: the image technical metadata string (format, dimensions, bit depth, channels).
     """
@@ -21,8 +26,8 @@ def imagemagick_collect_warnings(file: Path, verbose: bool) -> tuple[bool, str, 
     specs = res.stdout.replace(f"{file.parent}/", "")
     std_err = res.stderr.replace(f"{file.parent}/", "")
 
-    # check if the warnings have an error that the file is not or only partially readable
-    if std_err and any(msg in std_err for msg in ErrMsgIM):
+    # check if the warnings match a pattern indicating the file is not or only partially readable
+    if std_err and any(pattern.search(std_err) for pattern in _CORRUPT_PATTERNS):
         return True, std_err, specs
     return False, std_err, specs
 

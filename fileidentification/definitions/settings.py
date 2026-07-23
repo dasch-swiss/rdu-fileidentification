@@ -116,16 +116,25 @@ class REencMsg(StrEnum):
 
 
 class ErrMsgIM(StrEnum):
-    """text in warnings that indicate that the file is not or only partially readable"""
+    """
+    Regex substrings in ImageMagick's stderr that indicate a file is not, or
+    only partially, readable
+    """
 
-    magic01 = "identify: Cannot read"
-    magic02 = "identify: Sanity check on directory count failed"
-    magic03 = "identify: Failed to read directory"
-    magic04 = "identify: insufficient image data in file "
-    magic05 = "premature end of data segment"
-    magic06 = "identify: Premature end of "
-    magic07 = "identify: Extra content at the end of the document "
-    magic08 = "identify: Read Exception "
-    magic09 = "identify: tEXt: CRC error "
-    magic10 = "identify: Read Exception "
-    magic11 = "identify: corrupt image "
+    cannot_read = r"can ?not read"
+    directory_count = r"sanity check on directory count failed"
+    read_directory = r"failed to read directory"
+    insufficient_data = r"insufficient image data"
+    premature_end = r"premature end of"
+    unexpected_eof = r"unexpected end[- ]of[- ]file"
+    short_read = r"expected \d+ bytes; found \d+ bytes"
+    extra_content = r"extra content at the end of the document"
+    parser_error = r"parser error"  # libxml2 (SVG) malformed markup
+    read_exception = r"read exception"
+    crc_error = r"crc error"
+    corrupt_image = r"corrupt image"
+    corrupt_jpeg = r"corrupt jpeg data"
+    invalid_jpeg = r"invalid jpeg file structure|missing sos marker"
+    improper_header = r"improper image header"
+    unable_to_read = r"unable to (read|decode|open)"
+    zero_size = r"negative or zero image size"

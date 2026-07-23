@@ -20,6 +20,7 @@ Behaviour:
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from collections.abc import Callable, Iterator
@@ -28,11 +29,24 @@ from typing import Any
 
 import pytest
 
+from fileidentification.definitions.settings import ErrMsgIM
+
 pytestmark = pytest.mark.docker
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TESTDATA = REPO_ROOT / "testdata"
 IMAGE = os.environ.get("FIDR_IMAGE", "fileidentification")
+
+# Corrupt image fixtures + the compiled ErrMsgIM patterns, used by the
+# ImageMagick output-drift canary below. The fixture list is read from disk at
+# collection time so dropping a file in testdata/corrupt/ auto-adds a case.
+CORRUPT_DIR = TESTDATA / "corrupt"
+CORRUPT_FIXTURES = (
+    sorted(p.name for p in CORRUPT_DIR.iterdir() if p.is_file())
+    if CORRUPT_DIR.is_dir()
+    else []
+)
+_CORRUPT_PATTERNS = [re.compile(pattern, re.IGNORECASE) for pattern in ErrMsgIM]
 
 
 def _docker_ready() -> bool:
@@ -72,6 +86,13 @@ def _reclaim_ownership(image: str, path: Path) -> None:
 def run_cli(image: str, work: Path, *flags: str) -> subprocess.CompletedProcess[str]:
     """Run the CLI inside the container against the mounted work dir."""
     cmd = ["docker", "run", "--rm", "-v", f"{work}:{work}", image, *flags, str(work)]
+    return subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+
+def run_identify(image: str, target: Path, *flags: str) -> subprocess.CompletedProcess[str]:
+    """Run the container's `identify` binary directly to test the shipped ImageMagick's raw output"""
+    work = target.parent
+    cmd = ["docker", "run", "--rm", "--entrypoint", "identify", "-v", f"{work}:{work}", image, *flags, str(target)]
     return subprocess.run(cmd, capture_output=True, text=True, check=False)
 
 
@@ -364,3 +385,17 @@ def test_inspect_mode_reports_corruption_without_removing(stage: Callable[..., P
     # the corruption is still detected and recorded (error-level) in the report — just not acted on
     rec = next(f for f in json.loads(reports[0].read_text())["files"] if f["filename"] == name)
     assert any(log.get("level") == "error" for log in rec.get("processing_logs", []))
+
+
+@pytest.mark.parametrize("name", CORRUPT_FIXTURES)
+def test_imagemagick_output_still_matches_errmsgim(stage: Callable[..., Path], fidr_image: str, name: str) -> None:
+    """Drift canary: the shipped ImageMagick still emits, for every corrupt
+    fixture, a diagnostic that an ErrMsgIM pattern matches.
+    """
+    work = stage(f"corrupt/{name}")
+    res = run_identify(fidr_image, work / name, "-verbose", "-regard-warnings")
+    assert res.stderr.strip(), f"identify produced no diagnostic for {name} (rc={res.returncode})"
+    assert any(p.search(res.stderr) for p in _CORRUPT_PATTERNS), (
+        f"no ErrMsgIM pattern matched ImageMagick's output for {name} — "
+        f"its wording may have changed with the IM version:\n{res.stderr}"
+    )
