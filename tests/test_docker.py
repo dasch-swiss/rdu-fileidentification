@@ -42,7 +42,7 @@ IMAGE = os.environ.get("FIDR_IMAGE", "fileidentification")
 # collection time so dropping a file in testdata/corrupt/ auto-adds a case.
 CORRUPT_DIR = TESTDATA / "corrupt"
 CORRUPT_FIXTURES = (
-    sorted(p.name for p in CORRUPT_DIR.iterdir() if p.is_file())
+    sorted(p.name for p in CORRUPT_DIR.iterdir() if p.is_file() and not p.name.startswith("."))
     if CORRUPT_DIR.is_dir()
     else []
 )
@@ -387,15 +387,49 @@ def test_inspect_mode_reports_corruption_without_removing(stage: Callable[..., P
     assert any(log.get("level") == "error" for log in rec.get("processing_logs", []))
 
 
-@pytest.mark.parametrize("name", CORRUPT_FIXTURES)
-def test_imagemagick_output_still_matches_errmsgim(stage: Callable[..., Path], fidr_image: str, name: str) -> None:
-    """Drift canary: the shipped ImageMagick still emits, for every corrupt
-    fixture, a diagnostic that an ErrMsgIM pattern matches.
+def _diagnose_not_quarantined(image: str, work: Path, name: str, rec: dict[str, Any] | None) -> str:
     """
-    work = stage(f"corrupt/{name}")
-    res = run_identify(fidr_image, work / name, "-verbose", "-regard-warnings")
-    assert res.stderr.strip(), f"identify produced no diagnostic for {name} (rc={res.returncode})"
-    assert any(p.search(res.stderr) for p in _CORRUPT_PATTERNS), (
-        f"no ErrMsgIM pattern matched ImageMagick's output for {name} — "
-        f"its wording may have changed with the IM version:\n{res.stderr}"
-    )
+    Only called on failure of test_corrupt_folder_is_quarantined.
+    Runs the container's `identify` directly on the file
+    and reports which ErrMsgIM patterns matched its stderr
+    """
+    removed = bool(rec and rec["status"].get("removed"))
+    errlog = bool(rec and any(m.get("level") == "error" for m in rec.get("processing_logs", [])))
+    lines = [f"{name}: removed={removed} error_logged={errlog} in_log={rec is not None}"]
+    found = next(iter(work.rglob(name)), None)  # still in place, or moved under _REMOVED/
+    if found is None:
+        lines.append("    (file not found on disk)")
+        return "\n".join(lines)
+    res = run_identify(image, found, "-verbose", "-regard-warnings")
+    matched = [p.pattern for p in _CORRUPT_PATTERNS if p.search(res.stderr)]
+    lines.append(f"    identify stderr: {res.stderr.strip()!r}")
+    lines.append(f"    ErrMsgIM matched: {matched or 'NONE — ImageMagick output changed, update ErrMsgIM'}")
+    return "\n".join(lines)
+
+
+def test_corrupt_folder_is_quarantined(stage: Callable[..., Path], fidr_image: str) -> None:
+    """`fidr -i -v` on the corrupt fixtures quarantines every corrupt image."""
+
+    good = "SampleJPGImage.jpg"  # negative control: a valid image must survive
+    work = stage(good, *(f"corrupt/{name}" for name in CORRUPT_FIXTURES))
+    proc = run_cli(fidr_image, work, "-i", "-v")
+    assert proc.returncode == 0, proc.stderr
+
+    by_name = {Path(f["filename"]).name: f for f in _read_log(work)["files"]}
+    fid = work / "__fileidentification"
+
+    problems = [
+        _diagnose_not_quarantined(fidr_image, work, name, by_name.get(name))
+        for name in CORRUPT_FIXTURES
+        if not (
+            (rec := by_name.get(name))
+            and rec["status"].get("removed")
+            and any(m.get("level") == "error" for m in rec.get("processing_logs", []))
+            and list(fid.rglob(f"_REMOVED/**/{name}"))
+        )
+    ]
+    assert not problems, "corrupt files not quarantined as expected:\n" + "\n".join(problems)
+
+    # negative control: the valid image is untouched
+    assert (work / good).is_file(), f"{good} should not be removed"
+    assert by_name[good]["status"].get("removed") is False
