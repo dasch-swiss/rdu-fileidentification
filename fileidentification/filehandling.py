@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pygfried
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
-from typer import Exit, colors, secho
 
 from fileidentification.definitions.models import (
     BasicAnalytics,
@@ -24,10 +23,11 @@ from fileidentification.definitions.settings import CSVFIELDS, MAX_WORKERS, PYG_
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
+    print_error,
     print_fmts,
     print_msg,
+    print_policy_test,
     print_processing_errors,
-    print_root_not_found,
     print_siegfried_errors,
 )
 from fileidentification.tasks.conversion import convert_file
@@ -95,7 +95,7 @@ class FileHandler:
                 emit=lambda msg: print_msg(msg, self.mode.QUIET),
             )
         except PolicyError as e:
-            secho(str(e), fg=colors.RED)
+            print_error(str(e))
             self.write_logs()
             sys.exit(1)
 
@@ -113,24 +113,15 @@ class FileHandler:
 
         if not puids:
             print_msg("No files found that should be converted with given policies", self.mode.QUIET)
-        else:
-            print_msg("\n --- Testing policies with a sample from the directory ---", self.mode.QUIET)
+            return
 
-            for puid in puids:  # noqa: PLR1704
-                # test on a copy: convert_file mutates the sfinfo (logs, status.pending), and this is a
-                # diagnostic run that must not pollute the real stack object persisted to _log.json
-                sample = self.ba.smallest_file(puid).model_copy(deep=True)
-                secho(f"\n{puid}", fg=colors.YELLOW)
-                res = convert_file(sample, self.policies, self.ws)
-                if res.converted:
-                    secho(f"{res.cmd}", fg=colors.GREEN, bold=True)
-                else:
-                    # the conversion test failed: surface why (this path is interactive, so print it now)
-                    secho(f"{res.error.msg if res.error else 'conversion failed'}", fg=colors.RED, bold=True)
-                    secho(f"{res.cmd}")
-                    if res.bin_log:
-                        secho(f"{res.bin_log.name}: {res.bin_log.msg}")
-                secho(f"You find the file (if any) in {self.ws.working_dir(sample.filename)}")
+        print_msg("Testing policies ...", self.mode.QUIET)
+        for puid in puids:  # noqa: PLR1704
+            # test on a copy: convert_file mutates the sfinfo (logs, status.pending), and this is a
+            # diagnostic run that must not pollute the real stack object persisted to _log.json
+            sample = self.ba.smallest_file(puid).model_copy(deep=True)
+            result = convert_file(sample, self.policies, self.ws)
+            print_policy_test(puid, result, self.ws.working_dir(sample.filename))
 
     def _run_parallel(self, items: list[SfInfo], description: str, work: Callable[[SfInfo], object]) -> None:
         """Run `work` over `items` on the thread pool, Exceptions raised by `work` propagate via future.result()"""
@@ -264,8 +255,8 @@ class FileHandler:
         try:
             self.ws = Workspace.for_run(root_folder, tmp_dir)
         except ValueError:
-            print_root_not_found()
-            raise Exit(1) from None
+            print_error("root folder not found")
+            sys.exit(1)
         # generate a list of SfInfo objects out of the target folder
         self._build_stack(root_folder)
         # the stack is now complete; from here on, persist it on any failure so a restart
