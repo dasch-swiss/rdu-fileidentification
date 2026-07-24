@@ -32,8 +32,8 @@ def ffmpeg_collect_warnings(file: Path, verbose: bool) -> tuple[bool, str, str]:
     return False, std_out, specs
 
 
-def ffmpeg_media_info(file: Path) -> dict[str, Any] | None:
-    """Return the per-stream codec/technical metadata from ffprobe, or None if ffprobe fails."""
+def ffmpeg_media_info(file: Path) -> list[dict[str, Any]] | None:
+    """Return the per-stream codec/technical metadata from ffprobe (one dict per stream), or None if ffprobe fails."""
     cmd: list[str] = [
         "ffprobe",
         str(file),
@@ -47,6 +47,6 @@ def ffmpeg_media_info(file: Path) -> dict[str, Any] | None:
     ]
     res = subprocess.run(cmd, check=False, capture_output=True)
     if res.returncode == 0:
-        streams: dict[str, Any] = json.loads(res.stdout)["streams"]
+        streams: list[dict[str, Any]] = json.loads(res.stdout)["streams"]
         return streams
     return None

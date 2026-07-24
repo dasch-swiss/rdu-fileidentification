@@ -185,12 +185,12 @@ def _has_invalid_streams(sfinfo: SfInfo, puid: str, ws: Workspace, journal: RunJ
         return False
     if puid in ["fmt/569"]:
         # only the video codec has to be ffv1 -> return false as soon as any stream is ffv1
-        return all(stream["codec_name"] not in ["ffv1"] for stream in streams)  # type: ignore[index]
+        return all(stream["codec_name"] not in ["ffv1"] for stream in streams)
     if puid in ["fmt/199"]:
         # video codec has to be h264, audio codec aac -> return true if any a/v stream does not match
         for stream in streams:
-            if stream["codec_type"] not in ["video", "audio"]:  # type: ignore[index]
+            if stream["codec_type"] not in ["video", "audio"]:
                 continue
-            if stream["codec_name"] not in ["h264", "aac"]:  # type: ignore[index]
+            if stream["codec_name"] not in ["h264", "aac"]:
                 return True
     return False
