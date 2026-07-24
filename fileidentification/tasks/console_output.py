@@ -25,6 +25,8 @@ def print_siegfried_errors(ba: BasicAnalytics) -> None:
     console.rule("[bold red]siegfried read errors", style="red", align="left")
     for sfinfo in ba.siegfried_errors:
         console.print(Text(f"{sfinfo.filename}\n{sfinfo.errors}", style="red"), soft_wrap=True)
+        console.line()
+    console.line()
 
 
 def print_fmts(puids: list[str], ba: BasicAnalytics, policies: Policies, mode: Mode) -> None:
@@ -36,7 +38,7 @@ def print_fmts(puids: list[str], ba: BasicAnalytics, policies: Policies, mode: M
     if mode.QUIET:
         return
     table = Table(
-        title="File formats found",
+        title="",
         box=box.SIMPLE,
         title_style="bold",
         title_justify="left",
@@ -74,15 +76,18 @@ def _print_bucket(journal: RunJournal, severity: FDMsg, title: str) -> None:
     style = "red" if severity == FDMsg.ERROR else "yellow"
     console.line()
     console.rule(f"[bold {style}]{title}", style=style, align="left")
+    console.line()
     for sfinfo in sfinfos:
         _print_file_header(sfinfo.filename, sfinfo.filesize, style)
         _print_logs(sfinfo.processing_logs)
+        console.line()
+    console.line()
 
 
 def print_diagnostic(journal: RunJournal, mode: Mode) -> None:
     """Print corruption errors always, and (unless quiet) warnings and extension mismatches."""
     if not mode.QUIET:
-        _print_bucket(journal, FDMsg.EXTMISMATCH, "Extension mismatch")
+        _print_bucket(journal, FDMsg.EXTMISMATCH, "Extension Mismatch")
         _print_bucket(journal, FDMsg.WARNING, "Warnings")
     _print_bucket(journal, FDMsg.ERROR, "Errors")
 
@@ -92,13 +97,15 @@ def print_duplicates(duplicates: dict[str, list[Path]], mode: Mode) -> None:
     if mode.QUIET or not duplicates:
         return
     console.line()
-    console.rule("[bold]Duplicates", align="left")
-    console.print("Based on their MD5 checksum, the following files are duplicates:")
+    console.print("Duplicates", style="bold")
+    console.line()
     for md5, paths in duplicates.items():
-        tree = Tree(Text(f"MD5 {md5}", style="bold"))
+        tree = Tree(Text(f"MD5 {md5}"))
         for path in paths:
-            tree.add(Text(f"{path}", style="dim"))
+            tree.add(Text(f"{path}"))
         console.print(tree)
+        console.line()
+    console.line()
 
 
 def print_processing_errors(journal: RunJournal) -> None:
@@ -106,10 +113,12 @@ def print_processing_errors(journal: RunJournal) -> None:
     if not journal.processing_errors:
         return
     console.line()
-    console.rule("[bold red]Processing errors", style="red", align="left")
+    console.rule("[bold red]Processing Errors", style="red", align="left")
+    console.line()
     for msg, sfinfo, _ in journal.processing_errors:
         _print_file_header(sfinfo.filename, sfinfo.filesize, "red")
         _print_logs([msg])
+    console.line()
 
 
 def _print_file_header(filename: Path, filesize: int, style: str) -> None:
