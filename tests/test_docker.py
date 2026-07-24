@@ -1,21 +1,9 @@
-"""End-to-end tests that drive the shipped Docker image and CLI.
+"""End-to-end tests that drive the shipped Docker image and CLI (ENTRYPOINT identify.py), exercising the real
+delivery artifact with its bundled ffmpeg / imagemagick / libreoffice.
 
-Instead of constructing a FileHandler in-process, these run the real
-``fileidentification`` container the same way production does (the image's
-ENTRYPOINT is ``identify.py``), so they exercise the actual delivery artifact
-together with the bundled ffmpeg / imagemagick / libreoffice binaries.
-
-They are marked ``docker`` — run the fast suite with ``pytest -m "not docker"``.
-
-Behaviour:
-* The whole module is skipped when Docker is unavailable.
-* The ``fileidentification`` image is built once per session if it is missing
-  (set ``FIDR_NO_BUILD=1`` to require a pre-built image, e.g. in CI where a
-  separate step builds it; set ``FIDR_IMAGE`` to use a different tag).
-* Each test copies the files it needs into a tmp dir that is bind-mounted into
-  the container; the container writes its output back there. The container runs
-  as root (as in production), so file ownership is reclaimed after each test to
-  let pytest clean up.
+Marked ``docker`` (run the fast suite with ``pytest -m "not docker"``). Skipped when Docker is unavailable; the
+image is built once per session if missing (FIDR_NO_BUILD=1 requires a pre-built one, FIDR_IMAGE picks a tag).
+Each test bind-mounts a tmp dir; the container runs as root, so ownership is reclaimed afterwards for cleanup.
 """
 
 import json

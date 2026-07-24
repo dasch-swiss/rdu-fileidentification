@@ -1,21 +1,17 @@
 import csv
 import json
-import os
 import sys
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pygfried
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
-from typer import Exit, colors, secho
 
 from fileidentification.definitions.models import (
     BasicAnalytics,
-    LogMsg,
     LogOutput,
     Mode,
     PolicyParams,
@@ -23,14 +19,15 @@ from fileidentification.definitions.models import (
     SfInfo,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import CSVFIELDS, MAX_WORKERS, PYG_WORKERS, Bin
+from fileidentification.definitions.settings import CSVFIELDS, MAX_WORKERS, PYG_WORKERS
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
+    print_error,
     print_fmts,
     print_msg,
+    print_policy_test,
     print_processing_errors,
-    print_root_not_found,
     print_siegfried_errors,
 )
 from fileidentification.tasks.conversion import convert_file
@@ -51,16 +48,15 @@ class FileHandler:
         self.stack: list[SfInfo] = []
         self.ws: Workspace = Workspace(Path(), Path())  # replaced in run() once root_folder / tmp are resolved
         self._stack_lock = threading.Lock()
-        self._soffice_lock = threading.Semaphore(1)
 
     def _build_stack(self, root_folder: Path) -> None:
         """
-        Populate self.stack: reload the sfinfos from an existing _log.json at the default location if present,
-        otherwise scan root_folder with pygfried and add its output as sfinfos.
+        Populate self.stack: reload from an existing _log.json if present, else scan root_folder with pygfried.
+        Takes the original root_folder (ws.root_folder is the parent for a single-file target)
         """
-        # if there is a log, try to read from there
+        # if there is a log, try to read from there (through the same LogOutput model write_logs writes)
         if self.ws.logjson.is_file():
-            self.stack.extend([SfInfo(**metadata) for metadata in json.loads(self.ws.logjson.read_text())["files"]])
+            self.stack.extend(LogOutput(**json.loads(self.ws.logjson.read_text())).files or [])
 
         # scan the root_folder with pygfried only when nothing was reloaded; those files then need relativizing
         initial = not self.stack
@@ -77,7 +73,7 @@ class FileHandler:
 
         # relativize freshly scanned filenames (portable form), run basic analytics
         for sfinfo in self.stack:
-            if initial and not sfinfo.status.removed:
+            if initial:
                 sfinfo.filename = self.ws.relativize(sfinfo.filename)
             if sfinfo.is_active:
                 self.ba.append(sfinfo)
@@ -87,10 +83,7 @@ class FileHandler:
 
     # policies stuff
     def _resolve_policies(self, policies_path: Path | None = None, blank: bool = False, extend: bool = False) -> None:
-        """
-        Set self.policies for the run via the policy-resolution module (generate, read the default location, or
-        read an external file). A missing or invalid external file is fatal: persist state, then exit.
-        """
+        """Set self.policies for the run via the policy-resolution module. write log (state) on policy error"""
         try:
             resolution = resolve_policies(
                 self.ba.puid_unique,
@@ -102,7 +95,7 @@ class FileHandler:
                 emit=lambda msg: print_msg(msg, self.mode.QUIET),
             )
         except PolicyError as e:
-            secho(str(e), fg=colors.RED)
+            print_error(str(e))
             self.write_logs()
             sys.exit(1)
 
@@ -120,31 +113,18 @@ class FileHandler:
 
         if not puids:
             print_msg("No files found that should be converted with given policies", self.mode.QUIET)
-        else:
-            print_msg("\n --- Testing policies with a sample from the directory ---", self.mode.QUIET)
+            return
 
-            for puid in puids:  # noqa: PLR1704
-                # test on a copy: convert_file mutates the sfinfo (logs, status.pending), and this is a
-                # diagnostic run that must not pollute the real stack object persisted to _log.json
-                sample = self.ba.smallest_file(puid).model_copy(deep=True)
-                secho(f"\n{puid}", fg=colors.YELLOW)
-                t_sfinfo, cmd, bin_log = convert_file(sample, self.policies, self.ws)
-                if t_sfinfo:
-                    secho(f"{cmd}", fg=colors.GREEN, bold=True)
-                else:
-                    # the conversion test failed: surface why (this path is interactive, so print it now)
-                    reason = sample.processing_logs[-1].msg if sample.processing_logs else "conversion failed"
-                    secho(f"{reason}", fg=colors.RED, bold=True)
-                    secho(f"{cmd}")
-                    if bin_log:
-                        secho(f"{bin_log.name}: {bin_log.msg}")
-                secho(f"You find the file (if any) in {self.ws.working_dir(sample.filename)}")
+        print_msg("Testing policies ...", self.mode.QUIET)
+        for puid in puids:  # noqa: PLR1704
+            # test on a copy: convert_file mutates the sfinfo (logs, status.pending), and this is a
+            # diagnostic run that must not pollute the real stack object persisted to _log.json
+            sample = self.ba.smallest_file(puid).model_copy(deep=True)
+            result = convert_file(sample, self.policies, self.ws)
+            print_policy_test(puid, result, self.ws.working_dir(sample.filename))
 
     def _run_parallel(self, items: list[SfInfo], description: str, work: Callable[[SfInfo], object]) -> None:
-        """
-        Run `work` over `items` on the thread pool, showing a progress bar (labelled `description`) that
-        advances as each file completes. Exceptions raised by `work` propagate via future.result().
-        """
+        """Run `work` over `items` on the thread pool, Exceptions raised by `work` propagate via future.result()"""
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -184,16 +164,15 @@ class FileHandler:
 
         print_diagnostic(journal=self.journal, mode=self.mode)
 
-    def _silently_reencode(self, root_folder: Path) -> None:
+    def _silently_reencode(self) -> None:
         """
-        Silently convert and clean up files that were flagged for re-encoding during integrity check
-        (e.g. non-intra slices in IDR NAL units) without producing console output.
+        Silently convert and clean up files that were flagged for re-encoding during integrity check.
         Called when -i is used without -a.
         """
         self.mode.QUIET = True
         self.mode.REMOVEORIGINAL = True
         self.convert()
-        self.remove_tmp(root_folder)
+        self.remove_tmp()
 
     def apply_policies(self) -> None:
         """Evaluate the policy for active, not-yet-applied files and mark those that need conversion as pending."""
@@ -214,38 +193,25 @@ class FileHandler:
             return
 
         def _convert_one(sfinfo: SfInfo) -> None:
-            # soffice cannot run concurrent instances, so serialize its conversions through the lock
-            soffice = self.policies[sfinfo.processed_as].bin == Bin.SOFFICE  # type: ignore[index]
-            ctx = self._soffice_lock if soffice else nullcontext()
-            with ctx:
-                conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies, self.ws)
-            if conv_sfinfo:
-                msg = f"converted -> {conv_sfinfo.filename}"
-                sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
+            res = convert_file(sfinfo, self.policies, self.ws)
+            if res.converted:
                 with self._stack_lock:
-                    self.stack.append(conv_sfinfo)
-            else:
-                lmsg = sfinfo.processing_logs.pop()
-                lmsg.msg += f". cmd={cmd} "
+                    self.stack.append(res.converted)
+            elif res.error:
+                res.error.msg += f". cmd={res.cmd} "
                 # the bin's log (if any) goes in as a detail: recorded in the "errors" copy but not printed
-                self.journal.record_error(lmsg, sfinfo, [bin_log] if bin_log else None)
+                self.journal.record_error(res.error, sfinfo, [res.bin_log] if res.bin_log else None)
 
         self._run_parallel(pending, "Converting ...", _convert_one)
 
-    def remove_tmp(self, root_folder: Path) -> None:
+    def remove_tmp(self) -> None:
         """Move converted files from the tmp dir to their destinations and clean up empty tmp folders."""
         # move converted files from the working dir to its destination
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Moving files ...", total=None)
             files_moved = move_tmp(self.stack, self.ws, self.policies, self.journal, self.mode.REMOVEORIGINAL)
-
-        # remove empty folders in working dir
-        if self.ws.tmp_dir.is_dir():
-            for path, _, _ in os.walk(self.ws.tmp_dir, topdown=False):
-                if len(os.listdir(path)) == 0:  # noqa: PTH208
-                    Path(path).rmdir()
         if files_moved:
-            print_msg(f"\nMoved the files from {self.ws.tmp_dir.stem} to {root_folder.stem} ...", self.mode.QUIET)
+            print_msg(f"\nMoved converted files from {self.ws.tmp_dir} to {self.ws.root_folder} ...", self.mode.QUIET)
 
     def write_logs(self, to_csv: bool = False, target: Path | None = None) -> None:
         """
@@ -262,7 +228,7 @@ class FileHandler:
             with open(f"{dest}.csv", "w") as f:  # noqa: PTH123
                 w = csv.DictWriter(f, CSVFIELDS)
                 w.writeheader()
-                [w.writerow(sfinfo2csv(el)) for el in self.stack]
+                w.writerows(sfinfo2csv(el) for el in self.stack)
 
     # default run, has a typer interface for the params in identify.py
     def run(  # noqa: C901 flat task orchestration; complexity is from the flag branches, not nesting
@@ -289,8 +255,8 @@ class FileHandler:
         try:
             self.ws = Workspace.for_run(root_folder, tmp_dir)
         except ValueError:
-            print_root_not_found()
-            raise Exit(1) from None
+            print_error("root folder not found")
+            sys.exit(1)
         # generate a list of SfInfo objects out of the target folder
         self._build_stack(root_folder)
         # the stack is now complete; from here on, persist it on any failure so a restart
@@ -304,9 +270,8 @@ class FileHandler:
                 return
             if assert_integrity:
                 self.assert_integrity()
-                if not apply:
-                    # this triggers -qarx (to catch fixes with reencoding)
-                    self._silently_reencode(root_folder)
+                if not apply:  # this triggers -qarx (to catch fixes with reencoding)
+                    self._silently_reencode()
             # policies testing
             if test_puid:
                 self._test_policies(puid=test_puid)
@@ -320,7 +285,7 @@ class FileHandler:
                 self.convert()
             # remove tmp files
             if remove_tmp:
-                self.remove_tmp(root_folder)
+                self.remove_tmp()
             self.write_logs(to_csv=to_csv)
         except Exception:
             if self.stack:

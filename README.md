@@ -320,7 +320,7 @@ Update the file format names and extensions of the PUIDs according to <https://w
 uv sync --extra update_fmt && uv run update.py
 ```
 
-creates an updated version of `fileidentification/definitions/fmt2ext.json`.
+creates an updated version of `fileidentification/definitions/fmt_info.json`.
 If you use the Docker-based version, don't forget to rebuild the Docker image after updating the PUIDs.
 
 ## Useful Links

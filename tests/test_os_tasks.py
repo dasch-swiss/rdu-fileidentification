@@ -125,9 +125,22 @@ class TestMoveTmp:
         assert original.status.removed is True
         assert not ws.abs_path(original.filename).exists()
 
-    def test_nothing_to_move_returns_false(self) -> None:
+    def test_removes_the_live_origin_not_the_derived_from_snapshot(self, tmp_path: Path) -> None:
+        # on a reload, converted.derived_from is a distinct snapshot; the live stack entry must be the one marked
+        stack, original, converted, policies, _root, ws = self._scenario(tmp_path, remove_in_policy=True)
+        snapshot = original.model_copy(deep=True)  # same filename, different object (as after loading _log.json)
+        converted.derived_from = snapshot
+
+        move_tmp(stack, ws, policies, RunJournal(), remove_original=False)
+
+        assert original.status.removed is True  # the live stack entry (persists to _log.json)
+        assert snapshot.status.removed is False  # the snapshot was resolved away, not mutated
+        assert not ws.abs_path(original.filename).exists()
+
+    def test_nothing_to_move_returns_false(self, tmp_path: Path) -> None:
         plain = make_sfinfo("a.jpg")  # no dest -> not a converted file
-        assert move_tmp([plain], make_ws(), {}, RunJournal(), remove_original=False) is False
+        ws = make_ws(tmp_path, tmp_path / "tmp")  # a real, accessible tmp dir (move_tmp prunes it at the end)
+        assert move_tmp([plain], ws, {}, RunJournal(), remove_original=False) is False
 
     def test_move_failure_records_processing_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         stack, _original, converted, policies, _root, ws = self._scenario(tmp_path)

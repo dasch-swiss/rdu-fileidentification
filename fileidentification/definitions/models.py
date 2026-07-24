@@ -63,9 +63,7 @@ class SfInfo(BaseModel):
     dest: Path | None = None  # future home dir (relative to root_folder); set until move_tmp relocates the file
 
     def model_post_init(self, context: Any, /) -> None:
-        """Derive the fields not provided by siegfried: status, processed_as, md5"""
-        if not self.status:
-            self.status = Status()
+        """Derive the fields not provided by siegfried: processed_as, md5"""
         if not self.processed_as:
             self.processed_as = self._fetch_puid()
         if not self.md5:
@@ -98,7 +96,7 @@ class SfInfo(BaseModel):
 class LogOutput(BaseModel):
     """Top-level structure written to _log.json: all files, processing errors, and duplicates."""
 
-    duplicates: dict[str, list[Path]] | None
+    duplicates: dict[str, list[Path]] | None = None
     files: list[SfInfo] | None = None
     errors: list[SfInfo] | None = None
 
@@ -136,9 +134,7 @@ class RunJournal(BaseModel):
     def error_records(self) -> list[SfInfo] | None:
         """
         Return a copy of each SfInfo that hit a processing error, with the summary LogMsg and any detail LogMsgs
-        appended to its processing_logs. The originals (which also live in the stack / _log.json "files") are left
-        untouched, so the error entry and its details are recorded only in the "errors" section, not in "files".
-        Non-destructive: callers may print the errors and build the persisted copy in either order.
+        appended to its processing_logs.
         """
         if not self.processing_errors:
             return None
@@ -163,12 +159,8 @@ class BasicAnalytics(BaseModel):
     def append(self, sfinfo: SfInfo) -> None:
         """Index sfinfo by PUID and MD5, and record it in siegfried_errors if siegfried reported a read error."""
         if sfinfo.processed_as:
-            if sfinfo.md5 not in self.filehashes:
-                self.filehashes[sfinfo.md5] = []
-            self.filehashes[sfinfo.md5].append(sfinfo.filename)
-            if sfinfo.processed_as not in self.puid_unique:
-                self.puid_unique[sfinfo.processed_as] = []
-            self.puid_unique[sfinfo.processed_as].append(sfinfo)
+            self.filehashes.setdefault(sfinfo.md5, []).append(sfinfo.filename)
+            self.puid_unique.setdefault(sfinfo.processed_as, []).append(sfinfo)
         if sfinfo.errors and sfinfo.errors != FDMsg.EMPTYSOURCE:
             self.siegfried_errors.append(sfinfo)
 
@@ -185,14 +177,10 @@ class BasicAnalytics(BaseModel):
 # models for policies
 class PolicyParams(BaseModel):
     """
-    One policy entry, keyed by PUID in a policies.json.
-    accepted=True means the format is kept as-is; accepted=False means it must be converted, in which case
-    bin, target_container and expected are required (enforced by assert_conv_args).
-    bin: the converter to use (ffmpeg / magick / soffice).
-    target_container: the output file extension / container to convert to.
-    processing_args: extra arguments passed to the converter (no ';', see allowed_args).
-    expected: PUIDs the converted file is verified against to confirm the conversion succeeded.
-    remove_original: whether the source file is moved to _REMOVED after a successful conversion.
+    One policy entry, keyed by PUID in a policies.json. accepted=True keeps the format as-is; accepted=False must
+    convert, requiring bin (ffmpeg/magick/soffice), target_container and expected.
+    processing_args: extra converter args. expected: PUIDs the output is verified
+    against. remove_original: move the source to _REMOVED after a successful conversion.
     """
 
     format_name: str = Field(default_factory=str)

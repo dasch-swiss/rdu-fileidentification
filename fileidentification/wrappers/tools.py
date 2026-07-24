@@ -1,10 +1,7 @@
 """
-The MediaTool seam: one interface over the external tools (ffmpeg, imagemagick, soffice).
-
-Every place that used to dispatch on the ``bin`` string with its own ``match`` — building the conversion command,
-probing for corruption, extracting media info — now goes through a MediaTool adapter, so each tool's quirks live
-with the tool. Resolve a tool with ``tool_for`` (from a policy's bin) or ``tool_from_mime`` (from a mimetype);
-both return None when no tool applies.
+The MediaTool seam: one interface over the external tools (ffmpeg, imagemagick, soffice), so each tool's quirks
+(command shape, corruption probe, media info) live with the tool. Resolve one with ``tool_for`` (from a policy's
+bin) or ``tool_from_mime`` (from a mimetype); both return None when no tool applies.
 """
 
 import json
@@ -41,9 +38,11 @@ class MediaTool(ABC):
     """
     An external tool (ffmpeg / imagemagick / soffice) behind a single interface.
     ``bin`` is the executable key used in policies and as the log label for probe output.
+    ``serial`` marks a tool that cannot run concurrent instances (the conversion module serializes it).
     """
 
     bin: str
+    serial: bool = False
 
     @abstractmethod
     def build_command(self, source: Path, args: PolicyParams, target: Path, wdir: Path) -> list[str]:
@@ -100,9 +99,10 @@ class Imagemagick(MediaTool):
 
 
 class Soffice(MediaTool):
-    """LibreOffice (soffice): office documents. Must run one conversion at a time (serialized by the caller)."""
+    """LibreOffice (soffice): office documents. Must run one conversion at a time (serial)."""
 
     bin = Bin.SOFFICE
+    serial = True
 
     def build_command(self, source: Path, args: PolicyParams, target: Path, wdir: Path) -> list[str]:
         soffice_filter = f"pdf{PDFSETTINGS}" if args.target_container == "pdf" else args.target_container

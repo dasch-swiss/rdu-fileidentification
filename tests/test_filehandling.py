@@ -7,12 +7,13 @@ assert on control flow and mode handling rather than on actual conversions.
 import json
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Self
+from typing import Any
 
 import pytest
 
 from fileidentification.definitions.models import LogMsg, Mode, Policies, PolicyParams, SfInfo
 from fileidentification.filehandling import FileHandler
+from fileidentification.tasks.conversion import ConversionResult
 from tests.conftest import fake_identify_payload, make_sfinfo, make_ws
 
 
@@ -30,20 +31,6 @@ def _fake_pygfried(puid: str = "fmt/43") -> SimpleNamespace:
         return {"files": [identify(f"{f}")["files"][0] for f in sorted(Path(path).glob("**/*")) if f.is_file()]}
 
     return SimpleNamespace(identify=identify, identify_dir=identify_dir)
-
-
-class _LockSpy:
-    """A context manager that counts how many times it is entered."""
-
-    def __init__(self) -> None:
-        self.entered = 0
-
-    def __enter__(self) -> Self:
-        self.entered += 1
-        return self
-
-    def __exit__(self, *_exc: object) -> None:
-        return None
 
 
 class TestBuildStack:
@@ -111,13 +98,13 @@ class TestSilentlyReencode:
         fh = FileHandler()
         calls: list[str] = []
         monkeypatch.setattr(fh, "convert", lambda: calls.append("convert"))
-        monkeypatch.setattr(fh, "remove_tmp", lambda root: calls.append(f"remove_tmp:{root}"))
+        monkeypatch.setattr(fh, "remove_tmp", lambda: calls.append("remove_tmp"))
 
-        fh._silently_reencode(Path("/some/root"))
+        fh._silently_reencode()
 
         assert fh.mode.QUIET is True
         assert fh.mode.REMOVEORIGINAL is True
-        assert calls == ["convert", "remove_tmp:/some/root"]
+        assert calls == ["convert", "remove_tmp"]
 
 
 class TestConvertNoPending:
@@ -170,10 +157,10 @@ class TestRunTriggersReencode:
         monkeypatch.setattr(fh, "_build_stack", lambda root: order.append("build"))
         monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: order.append("policies"))
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
-        monkeypatch.setattr(fh, "_silently_reencode", lambda root: order.append("reencode"))
+        monkeypatch.setattr(fh, "_silently_reencode", lambda: order.append("reencode"))
         monkeypatch.setattr(fh, "apply_policies", lambda: order.append("apply"))
         monkeypatch.setattr(fh, "convert", lambda: order.append("convert"))
-        monkeypatch.setattr(fh, "remove_tmp", lambda root: order.append("remove_tmp"))
+        monkeypatch.setattr(fh, "remove_tmp", lambda: order.append("remove_tmp"))
         monkeypatch.setattr(fh, "write_logs", lambda to_csv=False: order.append("logs"))
 
         fh.run(root_folder=tmp_path, mode=Mode(), assert_integrity=True, apply=False, remove_tmp=False)
@@ -188,10 +175,10 @@ class TestRunTriggersReencode:
         monkeypatch.setattr(fh, "_build_stack", lambda root: None)
         monkeypatch.setattr(fh, "_resolve_policies", lambda *a, **k: None)
         monkeypatch.setattr(fh, "assert_integrity", lambda: order.append("assert"))
-        monkeypatch.setattr(fh, "_silently_reencode", lambda root: order.append("reencode"))
+        monkeypatch.setattr(fh, "_silently_reencode", lambda: order.append("reencode"))
         monkeypatch.setattr(fh, "apply_policies", lambda: order.append("apply"))
         monkeypatch.setattr(fh, "convert", lambda: order.append("convert"))
-        monkeypatch.setattr(fh, "remove_tmp", lambda root: None)
+        monkeypatch.setattr(fh, "remove_tmp", lambda: None)
         monkeypatch.setattr(fh, "write_logs", lambda to_csv=False: None)
 
         fh.run(root_folder=tmp_path, mode=Mode(), assert_integrity=True, apply=True, remove_tmp=False)
@@ -230,48 +217,14 @@ class TestConvert:
 
         converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
         converted.filename = Path("sub/orig.tif")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p, ws: (converted, ["cmd"], None))
+        monkeypatch.setattr(
+            "fileidentification.filehandling.convert_file",
+            lambda s, p, ws: ConversionResult(converted=converted, cmd="cmd"),
+        )
 
         fh.convert()
 
-        assert converted in fh.stack
-        assert any("converted ->" in log.msg for log in pending.processing_logs)
-
-    def test_soffice_conversion_is_serialized_by_the_lock(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        # soffice cannot run concurrent instances, so its conversions must go through _soffice_lock.
-        fh = FileHandler()
-        pending = make_sfinfo("sub/legacy.doc", puid="fmt/40")
-        pending.status.pending = True
-        fh.stack = [pending]
-        fh.policies = {
-            "fmt/40": PolicyParams(accepted=False, bin="soffice", target_container="docx", expected=["fmt/412"])
-        }
-        converted = make_sfinfo("sub/legacy.docx", puid="fmt/412")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p, ws: (converted, ["cmd"], None))
-
-        spy = _LockSpy()
-        fh._soffice_lock = spy  # type: ignore[assignment]
-        fh.convert()
-
-        assert spy.entered == 1  # the soffice branch acquired the serialization lock
-        assert converted in fh.stack
-
-    def test_non_soffice_conversion_skips_the_lock(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        fh = FileHandler()
-        pending = make_sfinfo("sub/orig.jpg", puid="fmt/43")
-        pending.status.pending = True
-        fh.stack = [pending]
-        fh.policies = {
-            "fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
-        }
-        converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p, ws: (converted, ["cmd"], None))
-
-        spy = _LockSpy()
-        fh._soffice_lock = spy  # type: ignore[assignment]
-        fh.convert()
-
-        assert spy.entered == 0  # non-soffice bins run unserialized (nullcontext)
+        assert converted in fh.stack  # the "converted ->" log is written by _verify (see test_conversion)
 
     def test_failure_log_lands_in_errors_not_duplicated_in_files(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -284,9 +237,12 @@ class TestConvert:
         fh.stack = [origin]
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", bin="magick")}
 
-        def failing_convert(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], LogMsg]:
-            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
-            return None, ["thecmd"], LogMsg(name="magick", msg="magick boom detail")
+        def failing_convert(sfinfo: SfInfo, policies: Policies, ws: Any) -> ConversionResult:
+            # convert_file returns the failure reason (and bin log) for the caller to record; it does not touch sfinfo
+            reason = LogMsg(name="filehandler", msg="conversion failed")
+            return ConversionResult(
+                converted=None, cmd="thecmd", error=reason, bin_log=LogMsg(name="magick", msg="magick boom detail")
+            )
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", failing_convert)
 
@@ -349,7 +305,7 @@ class TestRemoveTmpCleanup:
         (fh.ws.tmp_dir / "keep" / "file.log").write_bytes(b"x")
         fh.stack = []  # nothing to move
 
-        fh.remove_tmp(tmp_path)
+        fh.remove_tmp()
 
         assert not (fh.ws.tmp_dir / "empty").exists()  # empty tree pruned bottom-up
         assert (fh.ws.tmp_dir / "keep" / "file.log").is_file()  # non-empty folder untouched
@@ -433,9 +389,9 @@ class TestTestPolicies:
         }
         seen: list[SfInfo] = []
 
-        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], None]:
+        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> ConversionResult:
             seen.append(sfinfo)
-            return None, ["cmd"], None
+            return ConversionResult(converted=None, cmd="cmd")
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", record)
 
@@ -447,9 +403,9 @@ class TestTestPolicies:
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", accepted=True)}
         called: list[SfInfo] = []
 
-        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], None]:
+        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> ConversionResult:
             called.append(sfinfo)
-            return None, ["cmd"], None
+            return ConversionResult(converted=None, cmd="cmd")
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", record)
         fh._test_policies()
@@ -461,20 +417,22 @@ class TestTestPolicies:
         # a failing sample test must still surface the failure (this path prints immediately, no progress bar)
         fh = _fh_with_puids("fmt/199")
         sample = make_sfinfo("small.mp4", puid="fmt/199", filesize=1)
-        sample.processing_logs.append(LogMsg(name="filehandler", msg="did expect ['fmt/199'], got fmt/5 instead"))
         fh.ba.puid_unique["fmt/199"] = [sample]
         fh.policies = {
             "fmt/199": PolicyParams(accepted=False, bin="ffmpeg", target_container="mp4", expected=["fmt/199"])
         }
+        reason = LogMsg(name="filehandler", msg="did expect ['fmt/199'], got fmt/5 instead")
         monkeypatch.setattr(
             "fileidentification.filehandling.convert_file",
-            lambda s, p, ws: (None, ["ffmpeg -i in out"], LogMsg(name="ffmpeg", msg="stream error")),
+            lambda s, p, ws: ConversionResult(
+                converted=None, cmd="ffmpeg -i in out", error=reason, bin_log=LogMsg(name="ffmpeg", msg="stream error")
+            ),
         )
 
         fh._test_policies()
 
         out = capsys.readouterr().out
-        assert "got fmt/5 instead" in out  # the failure reason from the sample's logs
+        assert "got fmt/5 instead" in out  # the failure reason returned by convert_file
         assert "stream error" in out  # the converter's own log
 
     def test_does_not_mutate_the_original_sample(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -486,11 +444,11 @@ class TestTestPolicies:
             "fmt/199": PolicyParams(accepted=False, bin="ffmpeg", target_container="mp4", expected=["fmt/199"])
         }
 
-        def failing(s: SfInfo, p: Policies, ws: Any) -> tuple[None, list[str], None]:
+        def failing(s: SfInfo, p: Policies, ws: Any) -> ConversionResult:
             # mimic convert_file's side effects on the sfinfo it receives
             s.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
             s.status.pending = True
-            return None, ["cmd"], None
+            return ConversionResult(converted=None, cmd="cmd")
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", failing)
         fh._test_policies()

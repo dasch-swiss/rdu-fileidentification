@@ -7,10 +7,10 @@ from bs4 import BeautifulSoup
 from lxml import etree  # type: ignore[import-untyped]
 from typer import colors, secho
 
-from fileidentification.definitions.settings import FMTJSN, DroidSigURL
+from fileidentification.definitions.settings import FMTJSON, DroidSigURL
 
 
-def write_fmt2ext(link: str) -> None:
+def write_fmt_info(link: str) -> None:
     # tmp xml_filname
     xml_filename = Path(f"droid_{link[-8:]}")
 
@@ -48,16 +48,16 @@ def write_fmt2ext(link: str) -> None:
 
         puids[puid] = format_info
 
-    FMTJSN.write_text(json.dumps(puids, indent=4, ensure_ascii=False))
+    FMTJSON.write_text(json.dumps(puids, indent=4, ensure_ascii=False))
     secho(
-        f"extensions, mimetypes and names updated to {link[-8:-4]} in {FMTJSN}",
+        f"extensions, mimetypes and names updated to {link[-8:-4]} in {FMTJSON}",
         fg=colors.GREEN,
     )
 
 
 def update_signatures() -> None:
     # get the latest signaturefile link
-    secho(f"... updating {FMTJSN}")
+    secho(f"... updating {FMTJSON}")
     url = DroidSigURL.NALIST
     res = requests.get(url, timeout=10)
     if res.status_code != 200:
@@ -76,7 +76,7 @@ def update_signatures() -> None:
         secho(f"could not parse links out of {url}", fg=colors.RED)
         raise typer.Exit(1)
     # update fm
-    write_fmt2ext(link=link)  # type: ignore[arg-type]
+    write_fmt_info(link=link)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":
