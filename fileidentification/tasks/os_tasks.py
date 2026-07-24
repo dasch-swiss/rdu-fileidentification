@@ -1,7 +1,18 @@
+import os
 import shutil
+from pathlib import Path
 
 from fileidentification.definitions.models import LogMsg, Policies, RunJournal, SfInfo
 from fileidentification.workspace import Workspace
+
+
+def prune_empty_dirs(root: Path) -> None:
+    """Recursively remove empty directories under `root` (bottom-up); no-op if `root` isn't a directory."""
+    if not root.is_dir():
+        return
+    for path, _, _ in os.walk(root, topdown=False):
+        if not os.listdir(path):  # noqa: PTH208
+            Path(path).rmdir()
 
 
 def remove(sfinfo: SfInfo, ws: Workspace, journal: RunJournal) -> None:
@@ -44,13 +55,13 @@ def move_tmp(
             # move the file
             try:
                 shutil.move(source, abs_dest)
-                if source.parent.is_dir():
-                    shutil.rmtree(source.parent)
                 # set the (possibly collision-renamed) relative path in sfinfo.filename, set flags
                 sfinfo.filename = sfinfo.dest / abs_dest.name
                 sfinfo.status.added = True
                 sfinfo.dest = None
             except OSError as e:
                 journal.record_error(LogMsg(name="filehandler", msg=str(e)), sfinfo)
+
+    prune_empty_dirs(ws.tmp_dir)
 
     return write_logs

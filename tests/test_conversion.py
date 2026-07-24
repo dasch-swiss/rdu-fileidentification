@@ -82,6 +82,7 @@ def test_expected_format_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert result.filename == Path("orig.tif")  # points at its physical location relative to tmp_dir
     assert result.dest == Path("sub")  # future home dir, next to the original
     assert origin.status.pending is False  # original is now resolved
+    assert any("converted ->" in log.msg for log in origin.processing_logs)  # success logged on the origin
 
 
 class TestAddMediaInfo:

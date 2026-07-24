@@ -41,6 +41,7 @@ def _verify(target: Path, sfinfo: SfInfo, expected: list[str], ws: Workspace) ->
             target_sfinfo.dest = sfinfo.filename.parent
             target_sfinfo.derived_from = sfinfo
             sfinfo.status.pending = False
+            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=f"converted -> {target_sfinfo.filename}"))
 
         else:
             p_error = f" did expect {expected}, got {target_sfinfo.processed_as} instead"

@@ -234,8 +234,7 @@ class TestConvert:
 
         fh.convert()
 
-        assert converted in fh.stack
-        assert any("converted ->" in log.msg for log in pending.processing_logs)
+        assert converted in fh.stack  # the "converted ->" log is written by _verify (see test_conversion)
 
     def test_soffice_conversion_is_serialized_by_the_lock(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # soffice cannot run concurrent instances, so its conversions must go through _soffice_lock.

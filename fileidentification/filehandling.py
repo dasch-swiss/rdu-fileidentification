@@ -1,6 +1,5 @@
 import csv
 import json
-import os
 import sys
 import threading
 from collections.abc import Callable
@@ -15,7 +14,6 @@ from typer import Exit, colors, secho
 
 from fileidentification.definitions.models import (
     BasicAnalytics,
-    LogMsg,
     LogOutput,
     Mode,
     PolicyParams,
@@ -213,8 +211,6 @@ class FileHandler:
             with ctx:
                 conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies, self.ws)
             if conv_sfinfo:
-                msg = f"converted -> {conv_sfinfo.filename}"
-                sfinfo.processing_logs.append(LogMsg(name="filehandler", msg=msg))
                 with self._stack_lock:
                     self.stack.append(conv_sfinfo)
             else:
@@ -231,12 +227,6 @@ class FileHandler:
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as prog:
             prog.add_task(description="Moving files ...", total=None)
             files_moved = move_tmp(self.stack, self.ws, self.policies, self.journal, self.mode.REMOVEORIGINAL)
-
-        # remove empty folders in working dir
-        if self.ws.tmp_dir.is_dir():
-            for path, _, _ in os.walk(self.ws.tmp_dir, topdown=False):
-                if not os.listdir(path):  # noqa: PTH208
-                    Path(path).rmdir()
         if files_moved:
             print_msg(f"\nMoved converted files from {self.ws.tmp_dir} to {self.ws.root_folder} ...", self.mode.QUIET)
 
