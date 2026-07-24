@@ -107,6 +107,7 @@ def print_duplicates(duplicates: dict[str, list[Path]], mode: Mode) -> None:
         console.line()
     console.line()
 
+
 def print_processing_errors(journal: RunJournal) -> None:
     """Print files that encountered an error during conversion or filesystem operations."""
     if not journal.processing_errors:
@@ -118,6 +119,7 @@ def print_processing_errors(journal: RunJournal) -> None:
         _print_file_header(sfinfo.filename, sfinfo.filesize, "red")
         _print_logs([msg])
     console.line()
+
 
 def _print_file_header(filename: Path, filesize: int, style: str) -> None:
     """Print a file's name (in the section color) with its size dimmed alongside."""

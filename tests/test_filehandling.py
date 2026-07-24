@@ -347,7 +347,7 @@ class TestWriteLogs:
         fh.write_logs()
 
         out = capsys.readouterr().out
-        assert "Processing errors" in out
+        assert "Processing Errors" in out
         assert "conversion failed [magick] boom" in out
         # and the same error survived into the persisted "errors" section (reading it did not clear the table)
         data = json.loads(fh.ws.logjson.read_text())
