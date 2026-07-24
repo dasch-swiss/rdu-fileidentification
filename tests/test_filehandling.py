@@ -218,7 +218,8 @@ class TestConvert:
         converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
         converted.filename = Path("sub/orig.tif")
         monkeypatch.setattr(
-            "fileidentification.filehandling.convert_file", lambda s, p, ws: ConversionResult(converted=converted, cmd="cmd")
+            "fileidentification.filehandling.convert_file",
+            lambda s, p, ws: ConversionResult(converted=converted, cmd="cmd"),
         )
 
         fh.convert()
@@ -239,7 +240,9 @@ class TestConvert:
         def failing_convert(sfinfo: SfInfo, policies: Policies, ws: Any) -> ConversionResult:
             # convert_file returns the failure reason (and bin log) for the caller to record; it does not touch sfinfo
             reason = LogMsg(name="filehandler", msg="conversion failed")
-            return ConversionResult(converted=None, cmd="thecmd", error=reason, bin_log=LogMsg(name="magick", msg="magick boom detail"))
+            return ConversionResult(
+                converted=None, cmd="thecmd", error=reason, bin_log=LogMsg(name="magick", msg="magick boom detail")
+            )
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", failing_convert)
 

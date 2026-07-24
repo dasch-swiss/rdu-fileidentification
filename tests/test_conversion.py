@@ -56,7 +56,9 @@ def _patch_identify(monkeypatch: pytest.MonkeyPatch, target: Path, puid: str) ->
 def test_missing_target_is_conversion_failure(tmp_path: Path) -> None:
     """No output file on disk -> (None, reason) with CONVFAILED; the origin's log is left untouched."""
     origin = make_sfinfo("sub/orig.jpg")
-    result, reason = _verify(tmp_path / "never-created.tif", origin, expected=["fmt/353"], ws=make_ws(tmp_path, tmp_path))
+    result, reason = _verify(
+        tmp_path / "never-created.tif", origin, expected=["fmt/353"], ws=make_ws(tmp_path, tmp_path)
+    )
     assert result is None
     assert reason is not None and FPMsg.CONVFAILED in reason.msg and reason.level == LogLevel.ERROR
     assert origin.processing_logs == []  # reason is returned for the caller to record, not written to the origin
@@ -239,7 +241,9 @@ class TestRunTool:
         assert shlex.quote(str(ws.abs_path(s.filename))) in cmd_str
         assert "'" in cmd_str  # the space forced shell quoting
 
-    def test_serial_tool_takes_the_lock(self, capture_cmd: list[list[str]], monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_serial_tool_takes_the_lock(
+        self, capture_cmd: list[list[str]], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         # a serial tool (soffice) runs its subprocess under the module lock; a non-serial one does not
         spy = _LockSpy()
         monkeypatch.setattr(conv_mod, "_serial_lock", spy)
