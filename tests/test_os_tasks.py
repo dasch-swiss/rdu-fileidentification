@@ -137,9 +137,10 @@ class TestMoveTmp:
         assert snapshot.status.removed is False  # the snapshot was resolved away, not mutated
         assert not ws.abs_path(original.filename).exists()
 
-    def test_nothing_to_move_returns_false(self) -> None:
+    def test_nothing_to_move_returns_false(self, tmp_path: Path) -> None:
         plain = make_sfinfo("a.jpg")  # no dest -> not a converted file
-        assert move_tmp([plain], make_ws(), {}, RunJournal(), remove_original=False) is False
+        ws = make_ws(tmp_path, tmp_path / "tmp")  # a real, accessible tmp dir (move_tmp prunes it at the end)
+        assert move_tmp([plain], ws, {}, RunJournal(), remove_original=False) is False
 
     def test_move_failure_records_processing_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         stack, _original, converted, policies, _root, ws = self._scenario(tmp_path)
