@@ -32,14 +32,14 @@ def move_tmp(
     """
     Move converted files from the tmp working directory next to their originals.
     If remove_original is set (or the policy has remove_original=True), the source file is moved to _REMOVED.
-    Returns True if any files were moved (i.e. logs should be written).
+    Returns True if any files were moved (so the caller can report it).
     """
-    write_logs: bool = False
+    moved: bool = False
 
     for sfinfo in stack:
         # if it has a dest, it needs to be moved
         if sfinfo.dest:
-            write_logs = True
+            moved = True
             # remove the original if its mentioned and flag it accordingly
             if policies[sfinfo.derived_from.processed_as].remove_original or remove_original:  # type: ignore[index, union-attr]
                 derived_from = next(sfi for sfi in stack if sfi.filename == sfinfo.derived_from.filename)  # type: ignore[union-attr]
@@ -64,4 +64,4 @@ def move_tmp(
 
     prune_empty_dirs(ws.tmp_dir)
 
-    return write_logs
+    return moved

@@ -54,9 +54,9 @@ class FileHandler:
         Populate self.stack: reload from an existing _log.json if present, else scan root_folder with pygfried.
         Takes the original root_folder (ws.root_folder is the parent for a single-file target)
         """
-        # if there is a log, try to read from there
+        # if there is a log, try to read from there (through the same LogOutput model write_logs writes)
         if self.ws.logjson.is_file():
-            self.stack.extend([SfInfo(**metadata) for metadata in json.loads(self.ws.logjson.read_text())["files"]])
+            self.stack.extend(LogOutput(**json.loads(self.ws.logjson.read_text())).files or [])
 
         # scan the root_folder with pygfried only when nothing was reloaded; those files then need relativizing
         initial = not self.stack

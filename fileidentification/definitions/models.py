@@ -96,7 +96,7 @@ class SfInfo(BaseModel):
 class LogOutput(BaseModel):
     """Top-level structure written to _log.json: all files, processing errors, and duplicates."""
 
-    duplicates: dict[str, list[Path]] | None
+    duplicates: dict[str, list[Path]] | None = None
     files: list[SfInfo] | None = None
     errors: list[SfInfo] | None = None
 
