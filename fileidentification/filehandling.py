@@ -121,16 +121,15 @@ class FileHandler:
                 # diagnostic run that must not pollute the real stack object persisted to _log.json
                 sample = self.ba.smallest_file(puid).model_copy(deep=True)
                 secho(f"\n{puid}", fg=colors.YELLOW)
-                t_sfinfo, cmd, bin_log = convert_file(sample, self.policies, self.ws)
-                if t_sfinfo:
-                    secho(f"{cmd}", fg=colors.GREEN, bold=True)
+                res = convert_file(sample, self.policies, self.ws)
+                if res.converted:
+                    secho(f"{res.cmd}", fg=colors.GREEN, bold=True)
                 else:
                     # the conversion test failed: surface why (this path is interactive, so print it now)
-                    reason = sample.processing_logs[-1].msg if sample.processing_logs else "conversion failed"
-                    secho(f"{reason}", fg=colors.RED, bold=True)
-                    secho(f"{cmd}")
-                    if bin_log:
-                        secho(f"{bin_log.name}: {bin_log.msg}")
+                    secho(f"{res.error.msg if res.error else 'conversion failed'}", fg=colors.RED, bold=True)
+                    secho(f"{res.cmd}")
+                    if res.bin_log:
+                        secho(f"{res.bin_log.name}: {res.bin_log.msg}")
                 secho(f"You find the file (if any) in {self.ws.working_dir(sample.filename)}")
 
     def _run_parallel(self, items: list[SfInfo], description: str, work: Callable[[SfInfo], object]) -> None:
@@ -203,15 +202,14 @@ class FileHandler:
             return
 
         def _convert_one(sfinfo: SfInfo) -> None:
-            conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies, self.ws)
-            if conv_sfinfo:
+            res = convert_file(sfinfo, self.policies, self.ws)
+            if res.converted:
                 with self._stack_lock:
-                    self.stack.append(conv_sfinfo)
-            else:
-                lmsg = sfinfo.processing_logs.pop()
-                lmsg.msg += f". cmd={cmd} "
+                    self.stack.append(res.converted)
+            elif res.error:
+                res.error.msg += f". cmd={res.cmd} "
                 # the bin's log (if any) goes in as a detail: recorded in the "errors" copy but not printed
-                self.journal.record_error(lmsg, sfinfo, [bin_log] if bin_log else None)
+                self.journal.record_error(res.error, sfinfo, [res.bin_log] if res.bin_log else None)
 
         self._run_parallel(pending, "Converting ...", _convert_one)
 

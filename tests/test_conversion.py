@@ -54,11 +54,12 @@ def _patch_identify(monkeypatch: pytest.MonkeyPatch, target: Path, puid: str) ->
 
 
 def test_missing_target_is_conversion_failure(tmp_path: Path) -> None:
-    """No output file on disk -> conversion failed, original logs CONVFAILED."""
+    """No output file on disk -> (None, reason) with CONVFAILED; the origin's log is left untouched."""
     origin = make_sfinfo("sub/orig.jpg")
-    result = _verify(tmp_path / "never-created.tif", origin, expected=["fmt/353"], ws=make_ws(tmp_path, tmp_path))
+    result, reason = _verify(tmp_path / "never-created.tif", origin, expected=["fmt/353"], ws=make_ws(tmp_path, tmp_path))
     assert result is None
-    assert any(FPMsg.CONVFAILED in log.msg and log.level == LogLevel.ERROR for log in origin.processing_logs)
+    assert reason is not None and FPMsg.CONVFAILED in reason.msg and reason.level == LogLevel.ERROR
+    assert origin.processing_logs == []  # reason is returned for the caller to record, not written to the origin
 
 
 def test_unexpected_format_is_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -69,14 +70,14 @@ def test_unexpected_format_is_rejected(tmp_path: Path, monkeypatch: pytest.Monke
 
     origin = make_sfinfo("sub/orig.jpg")
     origin.status.pending = True
-    result = _verify(target, origin, expected=["fmt/353"], ws=make_ws(tmp_path, tmp_path))
+    result, reason = _verify(target, origin, expected=["fmt/353"], ws=make_ws(tmp_path, tmp_path))
 
     assert result is None
     assert origin.status.pending is True  # left pending: conversion did not succeed
-    msgs = " ".join(log.msg for log in origin.processing_logs)
-    assert FPMsg.NOTEXPECTEDFMT in msgs
-    assert "fmt/353" in msgs and "fmt/43" in msgs  # expected vs. actual reported
-    assert origin.processing_logs[-1].level == LogLevel.ERROR  # unexpected-format is error-level
+    assert reason is not None and reason.level == LogLevel.ERROR  # unexpected-format is error-level
+    assert FPMsg.NOTEXPECTEDFMT in reason.msg
+    assert "fmt/353" in reason.msg and "fmt/43" in reason.msg  # expected vs. actual reported
+    assert origin.processing_logs == []  # reason is returned for the caller to record, not written to the origin
 
 
 def test_expected_format_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -88,9 +89,10 @@ def test_expected_format_is_accepted(tmp_path: Path, monkeypatch: pytest.MonkeyP
     origin = make_sfinfo("sub/orig.jpg")
     origin.status.pending = True
     # tmp_dir = tmp_path, so the target's tmp-relative location is just "orig.tif"
-    result = _verify(target, origin, expected=["fmt/152", "fmt/353"], ws=make_ws(tmp_path, tmp_path))
+    result, reason = _verify(target, origin, expected=["fmt/152", "fmt/353"], ws=make_ws(tmp_path, tmp_path))
 
     assert result is not None
+    assert reason is None  # success: no failure reason
     assert result.processed_as == "fmt/353"
     assert result.derived_from is origin
     assert result.filename == Path("orig.tif")  # points at its physical location relative to tmp_dir
@@ -151,19 +153,19 @@ def test_convert_file_strips_abs_paths_from_log(tmp_path: Path, monkeypatch: pyt
     monkeypatch.setattr(conv_mod, "_add_media_info", lambda s, t, p: None)
 
     policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
-    result, cmds, bin_log = convert_file(origin, policies, ws)
+    res = convert_file(origin, policies, ws)
 
-    assert result is not None
-    assert cmds == ["the cmd"]
-    assert bin_log is None  # consumed by the successful target
-    log = next(log for log in result.processing_logs if log.name == "magick")
+    assert res.converted is not None
+    assert res.cmd == "the cmd"
+    assert res.error is None and res.bin_log is None  # success: log attached to the target, nothing left to record
+    log = next(log for log in res.converted.processing_logs if log.name == "magick")
     assert log.msg == "sub/orig.jpg -> out"  # both absolute prefixes stripped
 
 
 def test_convert_file_returns_bin_log_on_failure_without_touching_origin(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """On failure the bin's log is returned (for the "errors" copy) and is not added to the origin sfinfo."""
+    """On failure the reason and the bin's log both travel back to the caller; the origin sfinfo is untouched."""
     origin = make_sfinfo("sub/orig.jpg", puid="fmt/43")
     origin.status.pending = True
     ws = make_ws("/root", "/tmp/tdir")
@@ -174,15 +176,14 @@ def test_convert_file_returns_bin_log_on_failure_without_touching_origin(
     )
 
     policies = {"fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])}
-    result, _, bin_log = convert_file(origin, policies, ws)
+    res = convert_file(origin, policies, ws)
 
-    assert result is None
-    # the failure reason is recorded on the origin, but the bin log is NOT (it only travels back to the caller)
-    assert FPMsg.CONVFAILED in origin.processing_logs[-1].msg
-    assert not any(log.name == "magick" for log in origin.processing_logs)
-    assert bin_log is not None
-    assert bin_log.name == "magick"
-    assert bin_log.msg == "magick: some fatal error"
+    assert res.converted is None
+    assert res.error is not None and FPMsg.CONVFAILED in res.error.msg  # the failure summary travels back to the caller
+    assert origin.processing_logs == []  # the origin is left untouched
+    assert res.bin_log is not None
+    assert res.bin_log.name == "magick"
+    assert res.bin_log.msg == "magick: some fatal error"
 
 
 class TestRunTool:

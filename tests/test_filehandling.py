@@ -13,6 +13,7 @@ import pytest
 
 from fileidentification.definitions.models import LogMsg, Mode, Policies, PolicyParams, SfInfo
 from fileidentification.filehandling import FileHandler
+from fileidentification.tasks.conversion import ConversionResult
 from tests.conftest import fake_identify_payload, make_sfinfo, make_ws
 
 
@@ -216,7 +217,9 @@ class TestConvert:
 
         converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
         converted.filename = Path("sub/orig.tif")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p, ws: (converted, ["cmd"], None))
+        monkeypatch.setattr(
+            "fileidentification.filehandling.convert_file", lambda s, p, ws: ConversionResult(converted=converted, cmd="cmd")
+        )
 
         fh.convert()
 
@@ -233,9 +236,10 @@ class TestConvert:
         fh.stack = [origin]
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", bin="magick")}
 
-        def failing_convert(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], LogMsg]:
-            sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
-            return None, ["thecmd"], LogMsg(name="magick", msg="magick boom detail")
+        def failing_convert(sfinfo: SfInfo, policies: Policies, ws: Any) -> ConversionResult:
+            # convert_file returns the failure reason (and bin log) for the caller to record; it does not touch sfinfo
+            reason = LogMsg(name="filehandler", msg="conversion failed")
+            return ConversionResult(converted=None, cmd="thecmd", error=reason, bin_log=LogMsg(name="magick", msg="magick boom detail"))
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", failing_convert)
 
@@ -382,9 +386,9 @@ class TestTestPolicies:
         }
         seen: list[SfInfo] = []
 
-        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], None]:
+        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> ConversionResult:
             seen.append(sfinfo)
-            return None, ["cmd"], None
+            return ConversionResult(converted=None, cmd="cmd")
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", record)
 
@@ -396,9 +400,9 @@ class TestTestPolicies:
         fh.policies = {"fmt/43": PolicyParams(format_name="JPEG", accepted=True)}
         called: list[SfInfo] = []
 
-        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> tuple[None, list[str], None]:
+        def record(sfinfo: SfInfo, policies: Policies, ws: Any) -> ConversionResult:
             called.append(sfinfo)
-            return None, ["cmd"], None
+            return ConversionResult(converted=None, cmd="cmd")
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", record)
         fh._test_policies()
@@ -410,20 +414,22 @@ class TestTestPolicies:
         # a failing sample test must still surface the failure (this path prints immediately, no progress bar)
         fh = _fh_with_puids("fmt/199")
         sample = make_sfinfo("small.mp4", puid="fmt/199", filesize=1)
-        sample.processing_logs.append(LogMsg(name="filehandler", msg="did expect ['fmt/199'], got fmt/5 instead"))
         fh.ba.puid_unique["fmt/199"] = [sample]
         fh.policies = {
             "fmt/199": PolicyParams(accepted=False, bin="ffmpeg", target_container="mp4", expected=["fmt/199"])
         }
+        reason = LogMsg(name="filehandler", msg="did expect ['fmt/199'], got fmt/5 instead")
         monkeypatch.setattr(
             "fileidentification.filehandling.convert_file",
-            lambda s, p, ws: (None, ["ffmpeg -i in out"], LogMsg(name="ffmpeg", msg="stream error")),
+            lambda s, p, ws: ConversionResult(
+                converted=None, cmd="ffmpeg -i in out", error=reason, bin_log=LogMsg(name="ffmpeg", msg="stream error")
+            ),
         )
 
         fh._test_policies()
 
         out = capsys.readouterr().out
-        assert "got fmt/5 instead" in out  # the failure reason from the sample's logs
+        assert "got fmt/5 instead" in out  # the failure reason returned by convert_file
         assert "stream error" in out  # the converter's own log
 
     def test_does_not_mutate_the_original_sample(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -435,11 +441,11 @@ class TestTestPolicies:
             "fmt/199": PolicyParams(accepted=False, bin="ffmpeg", target_container="mp4", expected=["fmt/199"])
         }
 
-        def failing(s: SfInfo, p: Policies, ws: Any) -> tuple[None, list[str], None]:
+        def failing(s: SfInfo, p: Policies, ws: Any) -> ConversionResult:
             # mimic convert_file's side effects on the sfinfo it receives
             s.processing_logs.append(LogMsg(name="filehandler", msg="conversion failed"))
             s.status.pending = True
-            return None, ["cmd"], None
+            return ConversionResult(converted=None, cmd="cmd")
 
         monkeypatch.setattr("fileidentification.filehandling.convert_file", failing)
         fh._test_policies()
