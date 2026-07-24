@@ -34,33 +34,35 @@ def move_tmp(
     If remove_original is set (or the policy has remove_original=True), the source file is moved to _REMOVED.
     Returns True if any files were moved (so the caller can report it).
     """
+    by_filename = {sfinfo.filename: sfinfo for sfinfo in stack}
     moved: bool = False
 
     for sfinfo in stack:
-        # if it has a dest, it needs to be moved
-        if sfinfo.dest:
-            moved = True
-            # remove the original if its mentioned and flag it accordingly
-            if policies[sfinfo.derived_from.processed_as].remove_original or remove_original:  # type: ignore[index, union-attr]
-                derived_from = next(sfi for sfi in stack if sfi.filename == sfinfo.derived_from.filename)  # type: ignore[union-attr]
-                if ws.abs_path(derived_from.filename).is_file():
-                    remove(derived_from, ws, journal)
-            # filename is the converted file's location in the working dir (relative to tmp_dir); dest is its
-            # future home dir next to the original
-            source = ws.tmp_dir / sfinfo.filename
-            abs_dest = ws.abs_path(sfinfo.dest / sfinfo.filename.name)
-            # append hash to filename if the path already exists
-            if abs_dest.is_file():
-                abs_dest = abs_dest.parent / f"{sfinfo.filename.stem}_{sfinfo.md5[:6]}{sfinfo.filename.suffix}"
-            # move the file
-            try:
-                shutil.move(source, abs_dest)
-                # set the (possibly collision-renamed) relative path in sfinfo.filename, set flags
-                sfinfo.filename = sfinfo.dest / abs_dest.name
-                sfinfo.status.added = True
-                sfinfo.dest = None
-            except OSError as e:
-                journal.record_error(LogMsg(name="filehandler", msg=str(e)), sfinfo)
+        # only converted files awaiting a move carry a dest (their future home dir next to the original)
+        if not sfinfo.dest:
+            continue
+        moved = True
+        # remove the original if the origin's policy or the run flag says so
+        # fetch the live stack entry to set removed flag properly for the status log
+        if policies[sfinfo.derived_from.processed_as].remove_original or remove_original:  # type: ignore[union-attr, index]
+            live_origin = by_filename.get(sfinfo.derived_from.filename)  # type: ignore[union-attr]
+            if live_origin and ws.abs_path(live_origin.filename).is_file():
+                remove(live_origin, ws, journal)
+        # filename is the converted file's location in the working dir (relative to tmp_dir)
+        source = ws.tmp_dir / sfinfo.filename
+        abs_dest = ws.abs_path(sfinfo.dest / sfinfo.filename.name)
+        # append hash to filename if the path already exists
+        if abs_dest.is_file():
+            abs_dest = abs_dest.parent / f"{sfinfo.filename.stem}_{sfinfo.md5[:6]}{sfinfo.filename.suffix}"
+        # move the file
+        try:
+            shutil.move(source, abs_dest)
+            # set the (possibly collision-renamed) relative path in sfinfo.filename, set flags
+            sfinfo.filename = sfinfo.dest / abs_dest.name
+            sfinfo.status.added = True
+            sfinfo.dest = None
+        except OSError as e:
+            journal.record_error(LogMsg(name="filehandler", msg=str(e)), sfinfo)
 
     prune_empty_dirs(ws.tmp_dir)
 
