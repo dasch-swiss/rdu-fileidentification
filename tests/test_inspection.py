@@ -24,7 +24,7 @@ WS = make_ws()
 
 
 class TestInspectFileBinSelection:
-    """inspect_file picks the probing tool from the policy, then the siegfried mime, then FMT2EXT."""
+    """inspect_file picks the probing tool from the policy, then the siegfried mime, then FMT_INFO."""
 
     @staticmethod
     def _capture_tool(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
@@ -56,16 +56,16 @@ class TestInspectFileBinSelection:
         inspect_file(s, {}, WS, RunJournal(), verbose=False)
         assert captured["tool"].bin == Bin.FFMPEG
 
-    def test_bin_from_fmt2ext_when_no_siegfried_mime(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_bin_from_fmt_info_when_no_siegfried_mime(self, monkeypatch: pytest.MonkeyPatch) -> None:
         captured = self._capture_tool(monkeypatch)
-        # empty siegfried mime forces the FMT2EXT fallback; fmt/43 is image/jpeg there
+        # empty siegfried mime forces the FMT_INFO fallback; fmt/43 is image/jpeg there
         s = make_sfinfo(puid="fmt/43", mime="")
         inspect_file(s, {}, WS, RunJournal(), verbose=False)
         assert captured["tool"].bin == Bin.MAGICK
 
     def test_no_bin_when_no_mime_anywhere(self, monkeypatch: pytest.MonkeyPatch) -> None:
         captured = self._capture_tool(monkeypatch)
-        # fmt/569 (Matroska) has no mime key in FMT2EXT and we pass no siegfried mime
+        # fmt/569 (Matroska) has no mime key in FMT_INFO and we pass no siegfried mime
         s = make_sfinfo(puid="fmt/569", mime="")
         inspect_file(s, {}, WS, RunJournal(), verbose=False)
         assert captured["tool"] is None

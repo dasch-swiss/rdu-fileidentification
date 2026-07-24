@@ -1,5 +1,5 @@
 from fileidentification.definitions.models import LogMsg, Policies, RunJournal, SfInfo
-from fileidentification.definitions.settings import FMT2EXT, FDMsg, FPMsg, LogLevel
+from fileidentification.definitions.settings import FMT_INFO, FDMsg, FPMsg, LogLevel
 from fileidentification.tasks.os_tasks import remove
 from fileidentification.workspace import Workspace
 from fileidentification.wrappers.tools import MediaTool, tool_for, tool_from_mime
@@ -18,8 +18,8 @@ def assert_file_integrity(
     if res == FDMsg.ERROR:
         remove(sfinfo, ws, journal)
     if res == FDMsg.EXTMISMATCH:
-        if len(FMT2EXT[sfinfo.processed_as]["file_extensions"]) == 1:  # type: ignore[index]
-            ext = "." + FMT2EXT[sfinfo.processed_as]["file_extensions"][-1]  # type: ignore[index]
+        if len(FMT_INFO[sfinfo.processed_as].file_extensions) == 1:  # type: ignore[index]
+            ext = "." + FMT_INFO[sfinfo.processed_as].file_extensions[-1]  # type: ignore[index]
             _rename(sfinfo, ext, ws, journal)
         else:
             sfinfo.processing_logs.append(LogMsg(name="filehandler", msg="you should manually rename the file"))
@@ -37,10 +37,10 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: Run
         journal.record_error(msg, sfinfo)
         return None
 
-    # select the tool out of the mimetype if not specified in policies: siegfried mime first, then the FMT2EXT fallback
+    # select the tool out of the mimetype if not specified in policies: siegfried mime first, then the FMT_INFO fallback
     tool = tool_for(policies[sfinfo.processed_as].bin) if sfinfo.processed_as in policies else None
     if not tool:
-        for mime in (sfinfo.matches[0]["mime"], FMT2EXT[sfinfo.processed_as].get("mime", "")):
+        for mime in (sfinfo.matches[0]["mime"], FMT_INFO[sfinfo.processed_as].mime):
             tool = tool_from_mime(mime)
             if tool:
                 msgm = f"bin not specified in policies, using {tool.bin} according to the file mimetype for probing"
@@ -56,7 +56,7 @@ def inspect_file(sfinfo: SfInfo, policies: Policies, ws: Workspace, journal: Run
 
     # extension mismatch
     if sfinfo.matches[0]["warning"] == FDMsg.EXTMISMATCH:
-        msg_txt = f"expecting one of the following ext: {list(FMT2EXT[sfinfo.processed_as]['file_extensions'])}"
+        msg_txt = f"expecting one of the following ext: {list(FMT_INFO[sfinfo.processed_as].file_extensions)}"
         journal.diagnose(sfinfo, FDMsg.EXTMISMATCH, LogMsg(name="filehandler", msg=msg_txt))
         return FDMsg.EXTMISMATCH
 

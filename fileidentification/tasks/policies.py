@@ -12,7 +12,7 @@ from fileidentification.definitions.models import (
     RunJournal,
     SfInfo,
 )
-from fileidentification.definitions.settings import DEFAULTPOLICIES, FMT2EXT, FDMsg, PLMsg
+from fileidentification.definitions.settings import DEFAULTPOLICIES, FMT_INFO, FDMsg, PLMsg
 from fileidentification.tasks.os_tasks import remove
 from fileidentification.workspace import Workspace
 from fileidentification.wrappers.ffmpeg import ffmpeg_media_info
@@ -36,7 +36,7 @@ def build_policies(
 
     if blank:
         for puid in puids:
-            policies[puid] = PolicyParams(format_name=FMT2EXT[puid]["name"], remove_original=mode.REMOVEORIGINAL)
+            policies[puid] = PolicyParams(format_name=FMT_INFO[puid].name, remove_original=mode.REMOVEORIGINAL)
         return policies, blank_puids
 
     for puid in puids:
@@ -44,7 +44,7 @@ def build_policies(
             policies[puid] = default_policies[puid]
         # no default for this filetype and not strict: add an empty (blank) policy
         if not mode.STRICT and puid not in default_policies:
-            policies[puid] = PolicyParams(format_name=FMT2EXT[puid]["name"])
+            policies[puid] = PolicyParams(format_name=FMT_INFO[puid].name)
             blank_puids.append(puid)
         # extend: keep an already existing policy for this puid
         if extend and existing and puid in existing:

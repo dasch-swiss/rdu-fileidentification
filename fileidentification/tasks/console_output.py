@@ -8,7 +8,7 @@ from rich.table import Table
 from typer import colors, secho
 
 from fileidentification.definitions.models import BasicAnalytics, LogMsg, Mode, Policies, RunJournal
-from fileidentification.definitions.settings import FMT2EXT, FDMsg
+from fileidentification.definitions.settings import FMT_INFO, FDMsg
 
 
 def print_siegfried_errors(ba: BasicAnalytics) -> None:
@@ -48,7 +48,7 @@ def print_fmts(puids: list[str], ba: BasicAnalytics, policies: Policies, mode: M
         if ba.blank and puid in ba.blank:
             po = "blank"
             style = Style(color=colors.YELLOW)
-        table.add_row(puid, f"{FMT2EXT[puid]['name']}", f"{len(ba.puid_unique[puid])}", size, po, style=style)
+        table.add_row(puid, f"{FMT_INFO[puid].name}", f"{len(ba.puid_unique[puid])}", size, po, style=style)
     console = Console()
     console.print(table)
 

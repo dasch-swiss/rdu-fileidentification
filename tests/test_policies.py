@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 
 from fileidentification.definitions.models import Mode, PolicyParams, RunJournal
-from fileidentification.definitions.settings import DEFAULTPOLICIES, FMT2EXT, PLMsg
+from fileidentification.definitions.settings import DEFAULTPOLICIES, FMT_INFO, PLMsg
 from fileidentification.tasks import policies as policies_mod
 from fileidentification.tasks.policies import (
     PolicyError,
@@ -26,9 +26,9 @@ from tests.conftest import make_sfinfo, make_ws
 
 
 def _unknown_puid() -> str:
-    """A PUID that exists in FMT2EXT but has no default policy."""
+    """A PUID that exists in FMT_INFO but has no default policy."""
     defaults = json.loads(DEFAULTPOLICIES.read_text())["policies"]
-    return next(p for p in FMT2EXT if p not in defaults)
+    return next(p for p in FMT_INFO if p not in defaults)
 
 
 ACCEPTED = PolicyParams(format_name="JPEG", accepted=True)
