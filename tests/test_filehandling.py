@@ -7,7 +7,7 @@ assert on control flow and mode handling rather than on actual conversions.
 import json
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Self
+from typing import Any
 
 import pytest
 
@@ -30,20 +30,6 @@ def _fake_pygfried(puid: str = "fmt/43") -> SimpleNamespace:
         return {"files": [identify(f"{f}")["files"][0] for f in sorted(Path(path).glob("**/*")) if f.is_file()]}
 
     return SimpleNamespace(identify=identify, identify_dir=identify_dir)
-
-
-class _LockSpy:
-    """A context manager that counts how many times it is entered."""
-
-    def __init__(self) -> None:
-        self.entered = 0
-
-    def __enter__(self) -> Self:
-        self.entered += 1
-        return self
-
-    def __exit__(self, *_exc: object) -> None:
-        return None
 
 
 class TestBuildStack:
@@ -235,42 +221,6 @@ class TestConvert:
         fh.convert()
 
         assert converted in fh.stack  # the "converted ->" log is written by _verify (see test_conversion)
-
-    def test_soffice_conversion_is_serialized_by_the_lock(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        # soffice cannot run concurrent instances, so its conversions must go through _soffice_lock.
-        fh = FileHandler()
-        pending = make_sfinfo("sub/legacy.doc", puid="fmt/40")
-        pending.status.pending = True
-        fh.stack = [pending]
-        fh.policies = {
-            "fmt/40": PolicyParams(accepted=False, bin="soffice", target_container="docx", expected=["fmt/412"])
-        }
-        converted = make_sfinfo("sub/legacy.docx", puid="fmt/412")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p, ws: (converted, ["cmd"], None))
-
-        spy = _LockSpy()
-        fh._soffice_lock = spy  # type: ignore[assignment]
-        fh.convert()
-
-        assert spy.entered == 1  # the soffice branch acquired the serialization lock
-        assert converted in fh.stack
-
-    def test_non_soffice_conversion_skips_the_lock(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        fh = FileHandler()
-        pending = make_sfinfo("sub/orig.jpg", puid="fmt/43")
-        pending.status.pending = True
-        fh.stack = [pending]
-        fh.policies = {
-            "fmt/43": PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
-        }
-        converted = make_sfinfo("sub/orig.tif", puid="fmt/353")
-        monkeypatch.setattr("fileidentification.filehandling.convert_file", lambda s, p, ws: (converted, ["cmd"], None))
-
-        spy = _LockSpy()
-        fh._soffice_lock = spy  # type: ignore[assignment]
-        fh.convert()
-
-        assert spy.entered == 0  # non-soffice bins run unserialized (nullcontext)
 
     def test_failure_log_lands_in_errors_not_duplicated_in_files(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -38,9 +38,11 @@ class MediaTool(ABC):
     """
     An external tool (ffmpeg / imagemagick / soffice) behind a single interface.
     ``bin`` is the executable key used in policies and as the log label for probe output.
+    ``serial`` marks a tool that cannot run concurrent instances (the conversion module serializes it).
     """
 
     bin: str
+    serial: bool = False
 
     @abstractmethod
     def build_command(self, source: Path, args: PolicyParams, target: Path, wdir: Path) -> list[str]:
@@ -97,9 +99,10 @@ class Imagemagick(MediaTool):
 
 
 class Soffice(MediaTool):
-    """LibreOffice (soffice): office documents. Must run one conversion at a time (serialized by the caller)."""
+    """LibreOffice (soffice): office documents. Must run one conversion at a time (serial)."""
 
     bin = Bin.SOFFICE
+    serial = True
 
     def build_command(self, source: Path, args: PolicyParams, target: Path, wdir: Path) -> list[str]:
         soffice_filter = f"pdf{PDFSETTINGS}" if args.target_container == "pdf" else args.target_container

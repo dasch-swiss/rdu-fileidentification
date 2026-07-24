@@ -37,6 +37,12 @@ class TestResolution:
         assert tool_from_mime("application/pdf") is None
         assert tool_from_mime("") is None
 
+    def test_serial_flag_marks_soffice_only(self) -> None:
+        # soffice can't run concurrent instances; the conversion module serializes tools flagged serial
+        assert Soffice().serial is True
+        assert Ffmpeg().serial is False
+        assert Imagemagick().serial is False
+
 
 class TestBuildCommand:
     def _args(self, **kw: object) -> PolicyParams:

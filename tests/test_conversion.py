@@ -10,7 +10,7 @@ Real per-bin conversions are covered by test_docker.
 import shlex
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Self
 
 import pytest
 
@@ -28,6 +28,20 @@ def _tool(bin_: str) -> MediaTool:
     tool = tool_for(bin_)
     assert tool is not None
     return tool
+
+
+class _LockSpy:
+    """A context manager that counts how many times it is entered (stands in for the serial lock)."""
+
+    def __init__(self) -> None:
+        self.entered = 0
+
+    def __enter__(self) -> Self:
+        self.entered += 1
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        return None
 
 
 def _patch_identify(monkeypatch: pytest.MonkeyPatch, target: Path, puid: str) -> None:
@@ -223,3 +237,17 @@ class TestRunTool:
         # a path with a space must be quoted so the string is copy-pasteable
         assert shlex.quote(str(ws.abs_path(s.filename))) in cmd_str
         assert "'" in cmd_str  # the space forced shell quoting
+
+    def test_serial_tool_takes_the_lock(self, capture_cmd: list[list[str]], monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        # a serial tool (soffice) runs its subprocess under the module lock; a non-serial one does not
+        spy = _LockSpy()
+        monkeypatch.setattr(conv_mod, "_serial_lock", spy)
+        ws = make_ws(tmp_path, tmp_path)
+
+        soffice = PolicyParams(accepted=False, bin="soffice", target_container="docx", expected=["fmt/412"])
+        _run_tool(make_sfinfo("d.doc", md5="a" * 10), soffice, _tool("soffice"), ws)
+        assert spy.entered == 1
+
+        magick = PolicyParams(accepted=False, bin="magick", target_container="tif", expected=["fmt/353"])
+        _run_tool(make_sfinfo("i.jpg", md5="b" * 10), magick, _tool("magick"), ws)
+        assert spy.entered == 1  # unchanged: the non-serial tool skipped the lock

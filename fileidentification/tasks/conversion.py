@@ -1,5 +1,7 @@
 import shlex
 import subprocess
+import threading
+from contextlib import nullcontext
 from pathlib import Path
 
 import pygfried
@@ -8,6 +10,9 @@ from fileidentification.definitions.models import LogMsg, Policies, PolicyParams
 from fileidentification.definitions.settings import FPMsg, LogLevel
 from fileidentification.workspace import Workspace
 from fileidentification.wrappers.tools import MediaTool, tool_for
+
+# a tool flagged `serial` (e.g. soffice) cannot run concurrent instances; serialize its subprocess across the pool
+_serial_lock = threading.Semaphore(1)
 
 
 def _add_media_info(sfinfo: SfInfo, tool: MediaTool | None, path: Path) -> None:
@@ -70,7 +75,8 @@ def _run_tool(sfinfo: SfInfo, args: PolicyParams, tool: MediaTool, ws: Workspace
     target = wdir / f"{sfinfo.filename.stem}.{args.target_container}"
 
     cmd_list = tool.build_command(ws.abs_path(sfinfo.filename), args, target, wdir)
-    res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
+    with _serial_lock if tool.serial else nullcontext():
+        res = subprocess.run(cmd_list, check=False, capture_output=True, text=True)
 
     cmd_str = " ".join(shlex.quote(p) for p in cmd_list)
     return target, cmd_str, tool.read_log(res)

@@ -4,7 +4,6 @@ import sys
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -21,7 +20,7 @@ from fileidentification.definitions.models import (
     SfInfo,
     sfinfo2csv,
 )
-from fileidentification.definitions.settings import CSVFIELDS, MAX_WORKERS, PYG_WORKERS, Bin
+from fileidentification.definitions.settings import CSVFIELDS, MAX_WORKERS, PYG_WORKERS
 from fileidentification.tasks.console_output import (
     print_diagnostic,
     print_duplicates,
@@ -49,7 +48,6 @@ class FileHandler:
         self.stack: list[SfInfo] = []
         self.ws: Workspace = Workspace(Path(), Path())  # replaced in run() once root_folder / tmp are resolved
         self._stack_lock = threading.Lock()
-        self._soffice_lock = threading.Semaphore(1)
 
     def _build_stack(self, root_folder: Path) -> None:
         """
@@ -205,11 +203,7 @@ class FileHandler:
             return
 
         def _convert_one(sfinfo: SfInfo) -> None:
-            # soffice cannot run concurrent instances, so serialize its conversions through the lock
-            soffice = self.policies[sfinfo.processed_as].bin == Bin.SOFFICE  # type: ignore[index]
-            ctx = self._soffice_lock if soffice else nullcontext()
-            with ctx:
-                conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies, self.ws)
+            conv_sfinfo, cmd, bin_log = convert_file(sfinfo, self.policies, self.ws)
             if conv_sfinfo:
                 with self._stack_lock:
                     self.stack.append(conv_sfinfo)
